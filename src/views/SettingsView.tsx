@@ -24,7 +24,7 @@ import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function SettingsView() {
-  const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme } = useApp();
+  const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme, language, setLanguage, t } = useApp();
   const [activeTab, setActiveTab] = useState('profile');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -78,10 +78,10 @@ export default function SettingsView() {
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'profile', label: t('settings.profile'), icon: User },
+    { id: 'security', label: t('settings.security'), icon: Lock },
     { id: 'categories', label: 'Categories', icon: Database },
-    { id: 'appearance', label: 'Appearance', icon: Sun },
+    { id: 'appearance', label: t('settings.preferences'), icon: Sun },
   ];
 
   return (
@@ -91,7 +91,7 @@ export default function SettingsView() {
       className="space-y-10 pb-10"
     >
       <header className="px-2">
-        <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">Settings</h2>
+        <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">{t('settings.title')}</h2>
         <p className="text-on-surface-variant mt-3 text-sm uppercase tracking-widest font-medium">Manage your account preferences and application settings.</p>
       </header>
 
@@ -270,7 +270,7 @@ export default function SettingsView() {
           ) : activeTab === 'appearance' ? (
             <div className="glass rounded-[28px] lg:rounded-[40px] p-8 lg:p-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-              <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface mb-8 lg:mb-10 tracking-tight uppercase">Appearance</h3>
+              <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface mb-8 lg:mb-10 tracking-tight uppercase">{t('settings.preferences')}</h3>
 
               <div className="space-y-6 max-w-lg">
                 <p className="text-sm text-on-surface-variant font-medium leading-relaxed">Choose your preferred visual mode. Your selection is saved to your account and synced across devices.</p>
@@ -319,6 +319,24 @@ export default function SettingsView() {
                       </div>
                     )}
                   </button>
+                </div>
+
+                <div className="pt-8 mt-8 border-t border-th-divider">
+                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">{t('settings.language')}</h4>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={cn("px-6 py-3 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all", language === 'en' ? "border-primary bg-primary/10 text-primary" : "border-th-divider text-on-surface/50 hover:text-on-surface")}
+                    >
+                      {t('settings.english')}
+                    </button>
+                    <button
+                      onClick={() => setLanguage('id')}
+                      className={cn("px-6 py-3 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all", language === 'id' ? "border-primary bg-primary/10 text-primary" : "border-th-divider text-on-surface/50 hover:text-on-surface")}
+                    >
+                      {t('settings.indonesian')}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

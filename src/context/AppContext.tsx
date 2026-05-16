@@ -10,6 +10,7 @@ import type {
 } from '../lib/types';
 import { generateId } from '../lib/types';
 import { walletApi, categoryApi, transactionApi, budgetApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { translations, Language } from '../lib/i18n';
 
 export interface Toast {
   id: string;
@@ -29,9 +30,12 @@ interface AppContextType {
   updateProfile: (data: Partial<AuthUser>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 
-  // Theme
+  // Theme & Language
   theme: ThemeMode;
   toggleTheme: () => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
 
   // Navigation
   currentView: ViewType;
@@ -109,10 +113,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Theme state
+  // Theme & Language state
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('wm_theme') as ThemeMode | null;
     return saved || 'dark';
+  });
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('wm_language') as Language | null;
+    return saved || 'en';
   });
 
   // Navigation
@@ -131,11 +139,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
 
-  // ===================== THEME =====================
+  // ===================== THEME & LANGUAGE =====================
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('wm_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('wm_language', language);
+  }, [language]);
+
+  const t = useCallback((key: string) => {
+    return translations[language][key] || key;
+  }, [language]);
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -418,7 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       isAuthenticated, user, login, register, logout, updateProfile, changePassword,
-      theme, toggleTheme,
+      theme, toggleTheme, language, setLanguage, t,
       currentView, setCurrentView: handleSetCurrentView,
       isQuickEntryOpen, setIsQuickEntryOpen,
       isMobileSidebarOpen, setIsMobileSidebarOpen,

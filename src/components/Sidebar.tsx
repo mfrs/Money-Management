@@ -17,15 +17,15 @@ import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'wallets', label: 'Wallets', icon: Wallet },
-  { id: 'budget', label: 'Budget', icon: CreditCard },
-  { id: 'transactions', label: 'Transactions', icon: Receipt },
-  { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { id: 'wallets', labelKey: 'nav.wallets', icon: Wallet },
+  { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
+  { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
+  { id: 'reports', labelKey: 'nav.reports', icon: BarChart3 },
 ] as const;
 
 export default function Sidebar() {
-  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user } = useApp();
+  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user, t } = useApp();
 
   const navContent = (
     <div className="flex flex-col h-full p-6">
@@ -77,7 +77,7 @@ export default function Sidebar() {
               "transition-colors",
               currentView === item.id ? "text-surface" : "text-on-surface/20 group-hover:text-on-surface"
             )} />
-            {item.label}
+            {t(item.labelKey)}
           </button>
         ))}
       </nav>
@@ -94,7 +94,7 @@ export default function Sidebar() {
           ) : (
             <Moon size={18} className="text-on-surface/20 group-hover:text-indigo-500 transition-colors" />
           )}
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          {theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
         </button>
 
         {/* Settings */}
@@ -108,7 +108,7 @@ export default function Sidebar() {
           )}
         >
           <Settings size={18} className={cn(currentView === 'settings' ? "text-surface" : "text-on-surface/20 group-hover:text-on-surface")} />
-          Settings
+          {t('nav.settings')}
         </button>
 
         {/* Sign Out */}
@@ -117,7 +117,7 @@ export default function Sidebar() {
           className="w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface/30 hover:text-error hover:bg-error/5 transition-all duration-300 group"
         >
           <LogOut size={18} className="text-on-surface/20 group-hover:text-error transition-colors" />
-          Sign Out
+          {t('nav.signOut')}
         </button>
       </div>
     </div>

@@ -24,7 +24,7 @@ export default function Dashboard() {
     wallets, categories, transactions,
     totalBalance, totalIncome, totalExpenses,
     getCategorySpent, getCategoryById, getWalletById,
-    setCurrentView,
+    setCurrentView, t,
   } = useApp();
 
   // Top expense categories with spending data
@@ -92,7 +92,7 @@ export default function Dashboard() {
       {/* Balance Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
         <div>
-          <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">Total Balance</h2>
+          <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
           <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">
             {formatCurrency(totalBalance)}
           </div>
@@ -101,7 +101,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">Income</span>
+              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.income')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
               {formatCurrencyShort(totalIncome)}
@@ -110,7 +110,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(236,72,153,0.5)]"></div>
-              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">Expense</span>
+              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.expense')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
               {formatCurrencyShort(totalExpenses)}
@@ -131,7 +131,7 @@ export default function Dashboard() {
             </span>
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Burn Rate</h3>
+            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.burnRate')}</h3>
             <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
               {formatCurrencyShort(burnRate)}
             </div>
@@ -146,7 +146,7 @@ export default function Dashboard() {
           </div>
           <div className="flex justify-between items-end">
             <div>
-              <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Savings Rate</h3>
+              <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.savingsRate')}</h3>
               <div className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter">{Math.max(0, savingsRate)}%</div>
             </div>
             <div className="relative w-12 h-12">
@@ -165,7 +165,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Buffer Fund</h3>
+            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.bufferFund')}</h3>
             <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(bufferFund)}</div>
             <div className="w-full bg-on-surface/5 h-1.5 rounded-full mt-4 overflow-hidden">
               <div
@@ -199,7 +199,7 @@ export default function Dashboard() {
       {/* Budget Flow + Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
-          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">Budget Flow</h3>
+          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">{t('dash.budgetFlow')}</h3>
           <div className="space-y-8 lg:space-y-10">
             {categorySpending.map((item) => {
               const IconComp = getIcon(item.icon);
@@ -243,7 +243,7 @@ export default function Dashboard() {
         </div>
 
         <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col h-full bg-gradient-to-br from-white/[0.03] to-white/[0.01]">
-          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">Distribution</h3>
+          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">{t('dash.distribution')}</h3>
           <div className="flex-1 flex flex-col items-center justify-center">
             {pieData.length > 0 ? (
               <>
@@ -296,12 +296,12 @@ export default function Dashboard() {
       {/* Live Ledger */}
       <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
         <div className="flex justify-between items-center mb-8 px-2">
-          <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Live Ledger</h3>
+          <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">{t('dash.liveLedger')}</h3>
           <button
             onClick={() => setCurrentView('transactions')}
             className="text-[10px] font-bold text-on-surface/40 hover:text-on-surface transition-colors uppercase tracking-widest bg-on-surface/5 px-4 py-2 rounded-full border border-on-surface/5"
           >
-            View All
+            {t('dash.viewAll')}
           </button>
         </div>
         <div className="space-y-1">
@@ -335,7 +335,7 @@ export default function Dashboard() {
           })}
           {recentTransactions.length === 0 && (
             <div className="text-center py-12 text-on-surface/20 text-sm uppercase tracking-widest">
-              No transactions yet. Use Quick Add to get started!
+              {t('dash.noTransactions')}
             </div>
           )}
         </div>

@@ -3,7 +3,7 @@ import { Search, Bell, Plus, Menu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function TopBar() {
-  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user } = useApp();
+  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t } = useApp();
 
   const initials = user ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
 
@@ -31,7 +31,7 @@ export default function TopBar() {
           <input
             id="search-input"
             type="text"
-            placeholder="Search transactions..."
+            placeholder={t('topbar.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-th-input border border-th-input rounded-full text-xs focus:outline-none focus:border-th-input-focus transition-all text-on-surface placeholder:text-on-surface/30"
@@ -46,7 +46,7 @@ export default function TopBar() {
           className="flex items-center gap-2 bg-primary text-on-surface px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95 duration-200"
         >
           <Plus size={14} />
-          <span className="hidden sm:inline">Quick Add</span>
+          <span className="hidden sm:inline">{t('topbar.quickAdd')}</span>
         </button>
 
         <button className="hidden sm:block text-on-surface/60 hover:text-on-surface transition-colors p-2 rounded-full relative">
