@@ -27,20 +27,36 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function ReportsView() {
-  const { transactions, categories, totalBalance, totalIncome, totalExpenses, getCategorySpent } = useApp();
+  const { transactions, categories, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast } = useApp();
   const [timePeriod, setTimePeriod] = useState<'3M' | '6M' | '1Y'>('6M');
   const [isExporting, setIsExporting] = useState(false);
 
   const exportToPDF = async () => {
     setIsExporting(true);
+    addToast('Memproses PDF, mohon tunggu...', 'info');
+    
     try {
       const element = document.getElementById('report-content');
-      if (!element) return;
+      if (!element) throw new Error('Elemen laporan tidak ditemukan');
+      
+      // Tunggu sebentar untuk memastikan semua animasi dan chart render selesai
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0f0f19', // Match the dark theme surface
+        backgroundColor: '#0f0f19',
         useCORS: true,
+        allowTaint: true,
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Matikan animasi dan ubah styling yang bermasalah di html2canvas
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            * { transition: none !important; animation: none !important; }
+            .glass, .glass-dark { backdrop-filter: none !important; background-color: #1a1c23 !important; }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
       
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
@@ -50,8 +66,11 @@ export default function ReportsView() {
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`WealthManager_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (error) {
+      
+      addToast('Berhasil mengunduh PDF!', 'success');
+    } catch (error: any) {
       console.error('Error generating PDF:', error);
+      addToast('Gagal mengekspor PDF: ' + (error.message || 'Silakan coba lagi'), 'error');
     } finally {
       setIsExporting(false);
     }
