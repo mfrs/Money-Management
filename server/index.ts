@@ -290,8 +290,12 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 WealthManager API running at http://localhost:${PORT}`);
-  console.log(`📦 Database: PostgreSQL @ 103.247.10.39`);
-  console.log(`🔐 JWT Auth enabled`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 WealthManager API running at http://localhost:${PORT}`);
+    console.log(`📦 Database: PostgreSQL @ 103.247.10.39`);
+    console.log(`🔐 JWT Auth enabled`);
+  });
+}
+
+export default app;
