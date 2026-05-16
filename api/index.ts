@@ -269,6 +269,25 @@ app.delete('/api/budget/wallet-allocations/:id', authMiddleware, async (req: Aut
   res.json({ success: true });
 });
 
+// GOALS
+app.get('/api/goals', authMiddleware, async (req: AuthRequest, res: Response) => {
+  res.json(await prisma.goal.findMany({ where: { userId: req.userId! }, orderBy: { createdAt: 'desc' } }));
+});
+app.post('/api/goals', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const data = { ...req.body, userId: req.userId! };
+  if (data.deadline) data.deadline = new Date(data.deadline);
+  res.status(201).json(await prisma.goal.create({ data }));
+});
+app.put('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const data = { ...req.body };
+  if (data.deadline) data.deadline = new Date(data.deadline);
+  res.json(await prisma.goal.update({ where: { id: req.params.id, userId: req.userId! }, data }));
+});
+app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  await prisma.goal.delete({ where: { id: req.params.id, userId: req.userId! } });
+  res.json({ success: true });
+});
+
 // RESET DATA (user-scoped)
 app.post('/api/reset', authMiddleware, async (req: AuthRequest, res: Response) => {
   await prisma.transaction.deleteMany({ where: { userId: req.userId! } });

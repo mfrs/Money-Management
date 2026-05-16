@@ -23,6 +23,7 @@ model User {
   incomeSources    IncomeSource[]
   fixedExpenses    FixedExpense[]
   walletAllocations WalletAllocation[]
+  goals            Goal[]
 
   @@map("users")
 }
@@ -100,12 +101,15 @@ model IncomeSource {
 }
 
 model FixedExpense {
-  id      String  @id @default(cuid())
-  name    String
-  amount  Float   @default(0)
-  term    String  @default("01-MONTH")
-  icon    String  @default("CreditCard")
-  autoPay Boolean @default(false)
+  id        String    @id @default(cuid())
+  name      String
+  amount    Float     @default(0)
+  term      String    @default("01-MONTH")
+  icon      String    @default("CreditCard")
+  autoPay   Boolean   @default(false)
+  dueDate   Int?      // Day of the month 1-31
+  lastPaid  DateTime?
+  status    String    @default("active") // active, paused
 
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -124,4 +128,21 @@ model WalletAllocation {
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@map("wallet_allocations")
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime?
+  icon          String    @default("Target")
+  color         String    @default("#10B981")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
 }

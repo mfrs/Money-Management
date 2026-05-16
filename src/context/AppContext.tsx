@@ -7,9 +7,10 @@ import type {
   IncomeSource,
   FixedExpense,
   WalletAllocation,
+  Goal,
 } from '../lib/types';
 import { generateId } from '../lib/types';
-import { walletApi, categoryApi, transactionApi, budgetApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { walletApi, categoryApi, transactionApi, budgetApi, goalsApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
 
 export interface Toast {
@@ -59,6 +60,7 @@ interface AppContextType {
   wallets: Wallet[];
   categories: Category[];
   transactions: Transaction[];
+  goals: Goal[];
   budget: {
     incomeSources: IncomeSource[];
     fixedExpenses: FixedExpense[];
@@ -90,6 +92,11 @@ interface AppContextType {
   addWalletAllocation: (allocation: Omit<WalletAllocation, 'id'>) => void;
   updateWalletAllocation: (id: string, updates: Partial<WalletAllocation>) => void;
   deleteWalletAllocation: (id: string) => void;
+
+  // Goals CRUD
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void;
+  updateGoal: (id: string, updates: Partial<Goal>) => void;
+  deleteGoal: (id: string) => void;
 
   // Computed
   totalBalance: number;
@@ -144,6 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   // ===================== THEME & LANGUAGE =====================
   useEffect(() => {
@@ -240,6 +248,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIncomeSources([]);
     setFixedExpenses([]);
     setWalletAllocations([]);
+    setGoals([]);
     setCurrentView('dashboard');
     addToast('Signed out successfully', 'info');
   }, [addToast]);
@@ -260,13 +269,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     try {
       setIsLoading(true);
-      const [w, c, t, is, fe, wa] = await Promise.all([
+      const [w, c, t, is, fe, wa, g] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
         transactionApi.getAll(),
         budgetApi.getIncomeSources(),
         budgetApi.getFixedExpenses(),
         budgetApi.getWalletAllocations(),
+        goalsApi.getAll(),
       ]);
       setWallets(w);
       setCategories(c);
@@ -274,6 +284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIncomeSources(is);
       setFixedExpenses(fe);
       setWalletAllocations(wa);
+      setGoals(g);
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('token')) {
         logout();
@@ -423,6 +434,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     catch { addToast('Failed to delete allocation', 'error'); }
   }, [addToast]);
 
+  // ===================== GOALS =====================
+  const addGoal = useCallback(async (goal: Omit<Goal, 'id' | 'createdAt'>) => {
+    try { const c = await goalsApi.create(goal); setGoals(prev => [c, ...prev]); addToast(`Goal "${goal.name}" created`); }
+    catch { addToast('Failed to create goal', 'error'); }
+  }, [addToast]);
+
+  const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
+    try { const u = await goalsApi.update(id, updates); setGoals(prev => prev.map(g => g.id === id ? u : g)); }
+    catch { addToast('Failed to update goal', 'error'); }
+  }, [addToast]);
+
+  const deleteGoal = useCallback(async (id: string) => {
+    try { await goalsApi.delete(id); setGoals(prev => prev.filter(g => g.id !== id)); addToast('Goal deleted', 'info'); }
+    catch { addToast('Failed to delete goal', 'error'); }
+  }, [addToast]);
+
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);
   const now = new Date();
@@ -456,7 +483,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isMobileSidebarOpen, setIsMobileSidebarOpen,
       searchQuery, setSearchQuery,
       isLoading, authLoading,
-      wallets, categories, transactions,
+      wallets, categories, transactions, goals,
       budget: { incomeSources, fixedExpenses, walletAllocations },
       addWallet, updateWallet, deleteWallet,
       addCategory, updateCategory, deleteCategory,
@@ -464,6 +491,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addIncomeSource, updateIncomeSource, deleteIncomeSource,
       addFixedExpense, updateFixedExpense, deleteFixedExpense,
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
+      addGoal, updateGoal, deleteGoal,
       totalBalance, totalIncome, totalExpenses,
       getCategorySpent, getWalletById, getCategoryById,
       toasts, addToast, removeToast,

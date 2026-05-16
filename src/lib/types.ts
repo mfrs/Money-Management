@@ -45,6 +45,9 @@ export interface FixedExpense {
   term: string;
   icon: string;
   autoPay: boolean;
+  dueDate?: number;
+  lastPaid?: string;
+  status?: string;
 }
 
 export interface WalletAllocation {
@@ -59,7 +62,18 @@ export interface Budget {
   walletAllocations: WalletAllocation[];
 }
 
-export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings';
+export interface Goal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string;
+  icon: string;
+  color: string;
+  createdAt: string;
+}
+
+export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals';
 
 export interface AppData {
   wallets: Wallet[];

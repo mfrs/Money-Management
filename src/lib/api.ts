@@ -101,3 +101,11 @@ export const systemApi = {
   health: () => request<{ status: string; database: string }>('/health'),
   reset: () => request<any>('/reset', { method: 'POST' }),
 };
+
+// ===================== GOALS =====================
+export const goalsApi = {
+  getAll: () => request<any[]>('/goals'),
+  create: (data: any) => request<any>('/goals', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request<any>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<any>(`/goals/${id}`, { method: 'DELETE' }),
+};

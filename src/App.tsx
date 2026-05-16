@@ -9,6 +9,7 @@ import TransactionsView from './views/TransactionsView';
 import ReportsView from './views/ReportsView';
 import SettingsView from './views/SettingsView';
 import SignInView from './views/SignInView';
+import GoalsView from './views/GoalsView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
 import { AnimatePresence } from 'motion/react';
@@ -54,6 +55,7 @@ function AppContent() {
       case 'transactions': return <TransactionsView />;
       case 'reports': return <ReportsView />;
       case 'settings': return <SettingsView />;
+      case 'goals': return <GoalsView />;
       default: return <DashboardView />;
     }
   };

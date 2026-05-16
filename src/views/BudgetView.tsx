@@ -42,6 +42,7 @@ export default function BudgetView() {
   const [expName, setExpName] = useState('');
   const [expAmount, setExpAmount] = useState('');
   const [expTerm, setExpTerm] = useState('01-MONTH');
+  const [expDueDate, setExpDueDate] = useState('1');
 
   const handleAddExpense = () => {
     if (!expName.trim()) return;
@@ -51,9 +52,11 @@ export default function BudgetView() {
       term: expTerm,
       icon: 'CreditCard',
       autoPay: false,
+      dueDate: parseInt(expDueDate) || 1,
     });
     setExpName('');
     setExpAmount('');
+    setExpDueDate('1');
     setShowExpenseForm(false);
   };
 
@@ -143,7 +146,10 @@ export default function BudgetView() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-on-surface">{item.name}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-on-surface/30 font-bold mt-1.5">TERM: {item.term}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-on-surface/30 font-bold mt-1.5 flex gap-2">
+                          <span>TERM: {item.term}</span>
+                          {item.dueDate && <span className="text-secondary/80">• DUE: Day {item.dueDate}</span>}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6 lg:gap-10">
@@ -311,6 +317,10 @@ export default function BudgetView() {
                   <option value="06-MONTH">Semi-Annual</option>
                   <option value="12-MONTH">Annual</option>
                 </select>
+                <div className="relative">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">Due Day (1-31)</span>
+                  <input type="number" min="1" max="31" value={expDueDate} onChange={(e) => setExpDueDate(e.target.value)} placeholder="1" className="w-full pl-32 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                </div>
                 <button onClick={handleAddExpense} disabled={!expName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
                   <Save size={16} /> Add Expense
                 </button>
