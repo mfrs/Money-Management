@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Bell, Plus, Menu, AlertCircle, Calendar } from 'lucide-react';
+import { isExpensePaidForCurrentTerm } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrencyShort } from '../lib/types';
 import { AnimatePresence, motion } from 'motion/react';
@@ -21,13 +22,9 @@ export default function TopBar() {
     budget.fixedExpenses.forEach(exp => {
       if (!exp.dueDate) return;
       
-      const isPaidThisMonth = (() => {
-        if (!exp.lastPaid) return false;
-        const paidDate = new Date(exp.lastPaid);
-        return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
-      })();
+      const isPaid = isExpensePaidForCurrentTerm(exp.lastPaid, exp.term);
 
-      if (isPaidThisMonth) return;
+      if (isPaid) return;
 
       // Simple due date check (within next 3 days, or overdue)
       // Note: doesn't handle month boundary perfectly, but good enough for simple tracking
