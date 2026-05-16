@@ -24,7 +24,7 @@ import { formatCurrency, formatCurrencyShort } from '../lib/types';
 import { getIcon } from '../lib/icons';
 
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 
 export default function ReportsView() {
   const { transactions, categories, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast } = useApp();
@@ -42,27 +42,27 @@ export default function ReportsView() {
       // Tunggu sebentar untuk memastikan semua animasi dan chart render selesai
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      const canvas = await html2canvas(element, {
-        scale: 2,
+      const imgData = await htmlToImage.toJpeg(element, {
+        quality: 0.9,
+        pixelRatio: 2,
         backgroundColor: '#0f0f19',
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        onclone: (clonedDoc) => {
-          // Matikan animasi dan ubah styling yang bermasalah di html2canvas
-          const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            * { transition: none !important; animation: none !important; }
-            .glass, .glass-dark { backdrop-filter: none !important; background-color: #1a1c23 !important; }
-          `;
-          clonedDoc.head.appendChild(style);
+        style: {
+          transform: 'none',
+        },
+        filter: (node) => {
+          // You can filter out specific nodes if needed here
+          return true;
         }
       });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // The image properties logic might need a dummy image if we don't have canvas height
+      // htmlToImage returns data URL, we can get dimensions from it
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => { img.onload = resolve; });
+      
+      const pdfHeight = (img.height * pdfWidth) / img.width;
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`WealthManager_Report_${new Date().toISOString().split('T')[0]}.pdf`);
