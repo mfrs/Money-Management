@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  currency  String   @default("IDR")
+  theme     String   @default("dark")  // dark, light
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets          Wallet[]
+  categories       Category[]
+  transactions     Transaction[]
+  incomeSources    IncomeSource[]
+  fixedExpenses    FixedExpense[]
+  walletAllocations WalletAllocation[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // bank, ewallet, cash, savings
+  account   String   @default("")
+  balance   Float    @default(0)
+  icon      String   @default("Wallet")
+  color     String   @default("#3B82F6")
+  goal      Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions    Transaction[]
+  allocations     WalletAllocation[]
+
+  @@map("wallets")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // expense, income
+  icon        String   @default("HelpCircle")
+  color       String   @default("#3B82F6")
+  budgetLimit Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  type        String   // income, expense
+  date        DateTime
+  note        String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model IncomeSource {
+  id     String @id @default(cuid())
+  name   String
+  amount Float  @default(0)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("income_sources")
+}
+
+model FixedExpense {
+  id      String  @id @default(cuid())
+  name    String
+  amount  Float   @default(0)
+  term    String  @default("01-MONTH")
+  icon    String  @default("CreditCard")
+  autoPay Boolean @default(false)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fixed_expenses")
+}
+
+model WalletAllocation {
+  id       String @id @default(cuid())
+  amount   Float  @default(0)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_allocations")
+}

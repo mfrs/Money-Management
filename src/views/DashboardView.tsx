@@ -1,0 +1,345 @@
+import React, { useMemo } from 'react';
+import {
+  TrendingDown,
+  TrendingUp,
+  Flame,
+  PiggyBank,
+  ShieldCheck,
+  AlertTriangle,
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { cn } from '../lib/utils';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from 'recharts';
+import { useApp } from '../context/AppContext';
+import { formatCurrency, formatCurrencyShort, formatDate } from '../lib/types';
+import { getIcon } from '../lib/icons';
+
+export default function Dashboard() {
+  const {
+    wallets, categories, transactions,
+    totalBalance, totalIncome, totalExpenses,
+    getCategorySpent, getCategoryById, getWalletById,
+    setCurrentView,
+  } = useApp();
+
+  // Top expense categories with spending data
+  const categorySpending = useMemo(() => {
+    const expenseCats = categories.filter(c => c.type === 'expense');
+    return expenseCats
+      .map(cat => ({
+        ...cat,
+        spent: getCategorySpent(cat.id),
+        percentage: cat.budgetLimit > 0 ? Math.round((getCategorySpent(cat.id) / cat.budgetLimit) * 100) : 0,
+        remaining: cat.budgetLimit - getCategorySpent(cat.id),
+      }))
+      .filter(c => c.spent > 0)
+      .sort((a, b) => b.spent - a.spent)
+      .slice(0, 4);
+  }, [categories, getCategorySpent]);
+
+  // Pie chart data
+  const pieData = useMemo(() => {
+    return categorySpending.map(c => ({
+      name: c.name,
+      value: c.spent,
+      color: c.color,
+    }));
+  }, [categorySpending]);
+
+  // Recent transactions
+  const recentTransactions = useMemo(() => {
+    return [...transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6);
+  }, [transactions]);
+
+  // Daily burn rate (last 30 days expenses / 30)
+  const burnRate = useMemo(() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+    const recentExpenses = transactions
+      .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
+      .reduce((s, t) => s + t.amount, 0);
+    return Math.round(recentExpenses / 30);
+  }, [transactions]);
+
+  // Savings rate
+  const savingsRate = useMemo(() => {
+    if (totalIncome === 0) return 0;
+    return Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
+  }, [totalIncome, totalExpenses]);
+
+  // Buffer fund (savings wallets total)
+  const bufferFund = useMemo(() => {
+    return wallets.filter(w => w.type === 'savings').reduce((s, w) => s + w.balance, 0);
+  }, [wallets]);
+
+  // Budget alerts
+  const alerts = useMemo(() => {
+    return categorySpending.filter(c => c.percentage >= 80);
+  }, [categorySpending]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8 pb-10"
+    >
+      {/* Balance Header */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+        <div>
+          <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">Total Balance</h2>
+          <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">
+            {formatCurrency(totalBalance)}
+          </div>
+        </div>
+        <div className="flex gap-8 lg:gap-12">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">Income</span>
+            </div>
+            <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
+              {formatCurrencyShort(totalIncome)}
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(236,72,153,0.5)]"></div>
+              <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">Expense</span>
+            </div>
+            <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
+              {formatCurrencyShort(totalExpenses)}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Stats Cards */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+        <div className="glass rounded-[24px] p-6 flex flex-col justify-between h-44 group hover:bg-on-surface/[0.06] transition-colors">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-on-surface/5 rounded-xl text-primary border border-on-surface/10 group-hover:scale-110 transition-transform">
+              <Flame size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-primary flex items-center bg-primary/10 px-3 py-1 rounded-full uppercase tracking-wider">
+              /day
+            </span>
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Burn Rate</h3>
+            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
+              {formatCurrencyShort(burnRate)}
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-[24px] p-6 flex flex-col justify-between h-44 group hover:bg-on-surface/[0.06] transition-colors relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-on-surface/5 rounded-xl text-secondary border border-on-surface/10">
+              <PiggyBank size={20} />
+            </div>
+          </div>
+          <div className="flex justify-between items-end">
+            <div>
+              <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Savings Rate</h3>
+              <div className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter">{Math.max(0, savingsRate)}%</div>
+            </div>
+            <div className="relative w-12 h-12">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-on-surface/5" />
+                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={126} strokeDashoffset={126 - (126 * Math.max(0, savingsRate)) / 100} className="text-secondary" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-[24px] p-6 flex flex-col justify-between h-44 group hover:bg-on-surface/[0.06] transition-colors">
+          <div className="flex justify-between items-start">
+            <div className="p-3 bg-on-surface/5 rounded-xl text-tertiary border border-on-surface/10">
+              <ShieldCheck size={20} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">Buffer Fund</h3>
+            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(bufferFund)}</div>
+            <div className="w-full bg-on-surface/5 h-1.5 rounded-full mt-4 overflow-hidden">
+              <div
+                className="bg-tertiary h-full rounded-full shadow-[0_0_10px_rgba(236,72,153,0.3)] transition-all duration-1000"
+                style={{ width: `${Math.min(100, (bufferFund / (wallets.find(w => w.type === 'savings')?.goal || bufferFund)) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Budget Alerts */}
+      {alerts.length > 0 && (
+        <section className="space-y-3">
+          {alerts.map(alert => (
+            <div key={alert.id} className="bg-tertiary/10 border border-tertiary/20 rounded-[20px] p-5 flex items-center gap-5">
+              <div className="p-2.5 bg-tertiary text-on-surface rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-on-surface uppercase tracking-widest">Budget Alert</h4>
+                <p className="text-sm text-on-surface/60 mt-1">
+                  Category <span className="text-on-surface font-bold">{alert.name}</span> has reached {alert.percentage}% of budget limit.
+                </p>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* Budget Flow + Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">Budget Flow</h3>
+          <div className="space-y-8 lg:space-y-10">
+            {categorySpending.map((item) => {
+              const IconComp = getIcon(item.icon);
+              return (
+                <div key={item.id} className="group">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface/80 border border-on-surface/10 group-hover:bg-on-surface/10 transition-colors">
+                        <IconComp size={18} />
+                      </div>
+                      <span className="text-sm font-bold text-on-surface">{item.name}</span>
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-widest",
+                      item.percentage >= 80 ? "text-tertiary" : "text-on-surface/40"
+                    )}>
+                      {formatCurrency(Math.max(0, item.remaining))} left
+                    </span>
+                  </div>
+                  <div className="w-full bg-on-surface/5 h-2 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, item.percentage)}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className="h-full rounded-full"
+                      style={{
+                        backgroundColor: item.color,
+                        boxShadow: `0 0 12px ${item.color}44`
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {categorySpending.length === 0 && (
+              <div className="text-center py-12 text-on-surface/20 text-sm uppercase tracking-widest">
+                No expenses this month yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col h-full bg-gradient-to-br from-white/[0.03] to-white/[0.01]">
+          <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">Distribution</h3>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            {pieData.length > 0 ? (
+              <>
+                <div className="relative w-40 h-40 mb-10">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        innerRadius={55}
+                        outerRadius={75}
+                        paddingAngle={8}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[8px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Spent</div>
+                    <div className="font-display text-xl font-bold text-on-surface">{formatCurrencyShort(totalExpenses)}</div>
+                  </div>
+                </div>
+
+                <div className="w-full space-y-5">
+                  {pieData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.1)]" style={{ backgroundColor: item.color }}></div>
+                        <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest group-hover:text-on-surface/80 transition-colors">{item.name}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-on-surface tabular-nums">
+                        {totalExpenses > 0 ? Math.round((item.value / totalExpenses) * 100) : 0}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12 text-on-surface/20 text-sm uppercase tracking-widest">
+                No data yet
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Live Ledger */}
+      <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+        <div className="flex justify-between items-center mb-8 px-2">
+          <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Live Ledger</h3>
+          <button
+            onClick={() => setCurrentView('transactions')}
+            className="text-[10px] font-bold text-on-surface/40 hover:text-on-surface transition-colors uppercase tracking-widest bg-on-surface/5 px-4 py-2 rounded-full border border-on-surface/5"
+          >
+            View All
+          </button>
+        </div>
+        <div className="space-y-1">
+          {recentTransactions.map((tx) => {
+            const cat = getCategoryById(tx.categoryId);
+            const IconComp = cat ? getIcon(cat.icon) : TrendingDown;
+            return (
+              <div key={tx.id} className="flex items-center justify-between py-3 lg:py-4 px-3 lg:px-4 hover:bg-on-surface/[0.04] rounded-2xl transition-all cursor-pointer group">
+                <div className="flex items-center gap-4 lg:gap-5">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center border border-on-surface/10 transition-transform group-hover:scale-105",
+                    tx.type === 'income' ? "bg-primary/10 text-primary" : "bg-on-surface/5 text-on-surface/60"
+                  )}>
+                    <IconComp size={16} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-on-surface group-hover:text-on-surface transition-colors">{tx.description}</div>
+                    <div className="text-[10px] text-on-surface/30 uppercase tracking-widest mt-1">
+                      {cat?.name || 'Unknown'} • {formatDate(tx.date)}
+                    </div>
+                  </div>
+                </div>
+                <div className={cn(
+                  "text-sm font-bold tabular-nums",
+                  tx.type === 'income' ? "text-primary" : "text-on-surface"
+                )}>
+                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                </div>
+              </div>
+            );
+          })}
+          {recentTransactions.length === 0 && (
+            <div className="text-center py-12 text-on-surface/20 text-sm uppercase tracking-widest">
+              No transactions yet. Use Quick Add to get started!
+            </div>
+          )}
+        </div>
+      </section>
+    </motion.div>
+  );
+}

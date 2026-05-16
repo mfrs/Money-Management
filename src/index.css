@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lexend", ui-sans-serif, system-ui, sans-serif;
+
+  /* Dynamic theme colors — overridden by data-theme attribute */
+  --color-surface: var(--th-surface);
+  --color-surface-dim: var(--th-surface-dim);
+  --color-surface-bright: var(--th-surface-bright);
+  --color-surface-container-lowest: var(--th-container-lowest);
+  --color-surface-container-low: var(--th-container-low);
+  --color-surface-container: var(--th-container);
+  --color-surface-container-high: var(--th-container-high);
+  --color-surface-container-highest: var(--th-container-highest);
+
+  --color-on-surface: var(--th-on-surface);
+  --color-on-surface-variant: var(--th-on-surface-variant);
+
+  --color-primary: #3b82f6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: rgba(59, 130, 246, 0.2);
+  --color-primary-fixed-dim: #93c5fd;
+
+  --color-secondary: #8b5cf6;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: rgba(139, 92, 246, 0.2);
+  --color-secondary-fixed: #c4b5fd;
+  --color-secondary-fixed-dim: #a78bfa;
+
+  --color-tertiary: #ec4899;
+  --color-tertiary-container: rgba(236, 72, 153, 0.2);
+
+  --color-error: #ef4444;
+  --color-error-container: rgba(239, 68, 68, 0.2);
+
+  --radius-xl: 1.5rem;
+  --radius-lg: 1rem;
+}
+
+/* ===================== DARK THEME (default) ===================== */
+:root,
+[data-theme="dark"] {
+  --th-surface: #05070a;
+  --th-surface-dim: #0a0c10;
+  --th-surface-bright: #ffffff;
+  --th-container-lowest: rgba(255, 255, 255, 0.02);
+  --th-container-low: rgba(255, 255, 255, 0.04);
+  --th-container: rgba(255, 255, 255, 0.06);
+  --th-container-high: rgba(255, 255, 255, 0.1);
+  --th-container-highest: rgba(255, 255, 255, 0.15);
+  --th-on-surface: #ffffff;
+  --th-on-surface-variant: rgba(255, 255, 255, 0.6);
+
+  --th-glass-bg: rgba(255, 255, 255, 0.04);
+  --th-glass-border: rgba(255, 255, 255, 0.1);
+  --th-glass-dark-bg: rgba(0, 0, 0, 0.2);
+  --th-glass-dark-border: rgba(255, 255, 255, 0.05);
+  --th-text-primary: #ffffff;
+  --th-text-secondary: rgba(255, 255, 255, 0.6);
+  --th-text-tertiary: rgba(255, 255, 255, 0.3);
+  --th-text-muted: rgba(255, 255, 255, 0.1);
+  --th-divider: rgba(255, 255, 255, 0.05);
+  --th-input-bg: rgba(255, 255, 255, 0.05);
+  --th-input-border: rgba(255, 255, 255, 0.05);
+  --th-input-focus: rgba(255, 255, 255, 0.2);
+  --th-shadow-color: rgba(0, 0, 0, 0.3);
+  --th-accent-glow: 1;
+}
+
+/* ===================== LIGHT THEME ===================== */
+[data-theme="light"] {
+  --th-surface: #f5f7fa;
+  --th-surface-dim: #ebedf2;
+  --th-surface-bright: #000000;
+  --th-container-lowest: rgba(0, 0, 0, 0.02);
+  --th-container-low: rgba(0, 0, 0, 0.04);
+  --th-container: rgba(0, 0, 0, 0.06);
+  --th-container-high: rgba(0, 0, 0, 0.08);
+  --th-container-highest: rgba(0, 0, 0, 0.12);
+  --th-on-surface: #1a1a2e;
+  --th-on-surface-variant: rgba(26, 26, 46, 0.65);
+
+  --th-glass-bg: rgba(255, 255, 255, 0.7);
+  --th-glass-border: rgba(0, 0, 0, 0.08);
+  --th-glass-dark-bg: rgba(255, 255, 255, 0.5);
+  --th-glass-dark-border: rgba(0, 0, 0, 0.06);
+  --th-text-primary: #1a1a2e;
+  --th-text-secondary: rgba(26, 26, 46, 0.65);
+  --th-text-tertiary: rgba(26, 26, 46, 0.4);
+  --th-text-muted: rgba(26, 26, 46, 0.08);
+  --th-divider: rgba(0, 0, 0, 0.06);
+  --th-input-bg: rgba(0, 0, 0, 0.03);
+  --th-input-border: rgba(0, 0, 0, 0.08);
+  --th-input-focus: rgba(0, 0, 0, 0.15);
+  --th-shadow-color: rgba(0, 0, 0, 0.08);
+  --th-accent-glow: 0.5;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* ===================== GLASS COMPONENTS ===================== */
+.glass {
+  background: var(--th-glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--th-glass-border);
+}
+
+.glass-dark {
+  background: var(--th-glass-dark-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--th-glass-dark-border);
+}
+
+/* ===================== THEME-AWARE UTILITIES ===================== */
+.text-th-primary { color: var(--th-text-primary); }
+.text-th-secondary { color: var(--th-text-secondary); }
+.text-th-tertiary { color: var(--th-text-tertiary); }
+.text-th-muted { color: var(--th-text-muted); }
+.border-th-divider { border-color: var(--th-divider); }
+.bg-th-input { background: var(--th-input-bg); }
+.border-th-input { border-color: var(--th-input-border); }
+
+/* ===================== SHADOWS ===================== */
+.shadow-low {
+  box-shadow: 0px 2px 4px var(--th-shadow-color);
+}
+.shadow-medium {
+  box-shadow: 0px 10px 15px -3px var(--th-shadow-color);
+}
+
+/* ===================== SCROLLBAR ===================== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-container-high rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-container-highest;
+}
