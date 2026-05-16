@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "server": "tsx server/index.ts",
+    "server": "tsx api/index.ts",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
     "postinstall": "prisma generate",
     "build": "vite build",
