@@ -1,11 +1,89 @@
-import React from 'react';
-import { Search, Bell, Plus, Menu } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, Bell, Plus, Menu, AlertCircle, Calendar } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { formatCurrencyShort } from '../lib/types';
+import { AnimatePresence, motion } from 'motion/react';
 
 export default function TopBar() {
-  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t } = useApp();
+  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t, budget, goals } = useApp();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const initials = user ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
+
+  // Compute Notifications
+  const notifications = useMemo(() => {
+    const notifs: { id: string; title: string; message: string; type: 'warning' | 'info'; icon: any }[] = [];
+    const now = new Date();
+    const currentDay = now.getDate();
+    
+    // Check Fixed Expenses for Due Dates
+    budget.fixedExpenses.forEach(exp => {
+      if (!exp.dueDate) return;
+      
+      const isPaidThisMonth = (() => {
+        if (!exp.lastPaid) return false;
+        const paidDate = new Date(exp.lastPaid);
+        return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
+      })();
+
+      if (isPaidThisMonth) return;
+
+      // Simple due date check (within next 3 days, or overdue)
+      // Note: doesn't handle month boundary perfectly, but good enough for simple tracking
+      const daysUntilDue = exp.dueDate - currentDay;
+      
+      if (daysUntilDue < 0 && daysUntilDue > -10) {
+        notifs.push({
+          id: `exp-${exp.id}`,
+          title: 'Tagihan Jatuh Tempo',
+          message: `Tagihan ${exp.name} sudah lewat jatuh tempo (Tanggal ${exp.dueDate}).`,
+          type: 'warning',
+          icon: AlertCircle
+        });
+      } else if (daysUntilDue >= 0 && daysUntilDue <= 3) {
+        notifs.push({
+          id: `exp-${exp.id}`,
+          title: 'Pengingat Tagihan',
+          message: `Tagihan ${exp.name} akan jatuh tempo dalam ${daysUntilDue} hari.`,
+          type: 'info',
+          icon: Calendar
+        });
+      }
+    });
+
+    // Check Goals for approaching deadlines
+    goals.forEach(goal => {
+      if (!goal.deadline) return;
+      if (goal.currentAmount >= goal.targetAmount) return; // Completed
+
+      const deadlineDate = new Date(goal.deadline);
+      const diffTime = deadlineDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 0 && diffDays <= 7) {
+        notifs.push({
+          id: `goal-${goal.id}`,
+          title: 'Batas Waktu Goal',
+          message: `Target "${goal.name}" tersisa ${diffDays} hari lagi.`,
+          type: 'info',
+          icon: Calendar
+        });
+      }
+    });
+
+    return notifs;
+  }, [budget.fixedExpenses, goals]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,10 +127,60 @@ export default function TopBar() {
           <span className="hidden sm:inline">{t('topbar.quickAdd')}</span>
         </button>
 
-        <button className="hidden sm:block text-on-surface/60 hover:text-on-surface transition-colors p-2 rounded-full relative">
-          <Bell size={18} />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-tertiary rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]"></span>
-        </button>
+        <div className="relative" ref={notifRef}>
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="text-on-surface/60 hover:text-on-surface transition-colors p-2 rounded-full relative"
+          >
+            <Bell size={18} />
+            {notifications.length > 0 && (
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-tertiary rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]"></span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 mt-4 w-80 glass rounded-[24px] shadow-2xl border border-on-surface/10 overflow-hidden"
+              >
+                <div className="p-4 border-b border-on-surface/5 flex justify-between items-center bg-on-surface/[0.02]">
+                  <h3 className="font-bold text-sm uppercase tracking-widest text-on-surface">Notifications</h3>
+                  {notifications.length > 0 && (
+                    <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{notifications.length}</span>
+                  )}
+                </div>
+                
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-on-surface/40 text-xs font-bold uppercase tracking-widest">
+                      No new notifications
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {notifications.map(notif => {
+                        const Icon = notif.icon;
+                        return (
+                          <div key={notif.id} className="p-4 border-b border-on-surface/5 hover:bg-on-surface/[0.03] transition-colors flex gap-3">
+                            <div className={`mt-0.5 ${notif.type === 'warning' ? 'text-error' : 'text-secondary'}`}>
+                              <Icon size={16} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-on-surface mb-1">{notif.title}</p>
+                              <p className="text-[10px] text-on-surface/60 leading-relaxed">{notif.message}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         <div className="hidden sm:flex items-center gap-3 bg-th-input px-3 py-1.5 rounded-full border border-th-input">
           <div className="w-6 h-6 rounded-full overflow-hidden border border-primary/30 bg-primary/20 flex items-center justify-center">

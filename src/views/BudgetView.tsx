@@ -8,6 +8,7 @@ import {
   Wallet,
   X,
   Save,
+  Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -138,6 +139,13 @@ export default function BudgetView() {
             <div className="space-y-1">
               {budget.fixedExpenses.map((item) => {
                 const IconComp = getIcon(item.icon);
+                const isPaidThisMonth = (() => {
+                  if (!item.lastPaid) return false;
+                  const paidDate = new Date(item.lastPaid);
+                  const now = new Date();
+                  return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
+                })();
+
                 return (
                   <div key={item.id} className="flex items-center justify-between p-4 lg:p-5 hover:bg-on-surface/[0.04] rounded-2xl transition-all group">
                     <div className="flex items-center gap-4 lg:gap-5">
@@ -146,14 +154,28 @@ export default function BudgetView() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-on-surface">{item.name}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-on-surface/30 font-bold mt-1.5 flex gap-2">
+                        <p className="text-[9px] uppercase tracking-widest text-on-surface/30 font-bold mt-1.5 flex gap-2 items-center">
                           <span>TERM: {item.term}</span>
                           {item.dueDate && <span className="text-secondary/80">• DUE: Day {item.dueDate}</span>}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6 lg:gap-10">
-                      <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount)}</span>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount)}</span>
+                        {isPaidThisMonth ? (
+                          <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Check size={10} /> Telah Dibayar
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={() => updateFixedExpense(item.id, { lastPaid: new Date().toISOString() })}
+                            className="text-[9px] font-bold text-on-surface/50 hover:text-on-surface bg-on-surface/5 hover:bg-on-surface/10 px-2 py-0.5 rounded-full uppercase tracking-widest transition-all"
+                          >
+                            Tandai Dibayar
+                          </button>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => updateFixedExpense(item.id, { autoPay: !item.autoPay })}
