@@ -49,7 +49,7 @@ export default function TopBar() {
           <span className="hidden sm:inline">Quick Add</span>
         </button>
 
-        <button className="text-on-surface/60 hover:text-on-surface transition-colors p-2 rounded-full relative">
+        <button className="hidden sm:block text-on-surface/60 hover:text-on-surface transition-colors p-2 rounded-full relative">
           <Bell size={18} />
           <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-tertiary rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]"></span>
         </button>

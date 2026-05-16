@@ -23,9 +23,39 @@ import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort } from '../lib/types';
 import { getIcon } from '../lib/icons';
 
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
 export default function ReportsView() {
   const { transactions, categories, totalBalance, totalIncome, totalExpenses, getCategorySpent } = useApp();
   const [timePeriod, setTimePeriod] = useState<'3M' | '6M' | '1Y'>('6M');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportToPDF = async () => {
+    setIsExporting(true);
+    try {
+      const element = document.getElementById('report-content');
+      if (!element) return;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#0f0f19', // Match the dark theme surface
+        useCORS: true,
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`WealthManager_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Monthly data for chart
   const chartData = useMemo(() => {
@@ -137,12 +167,20 @@ export default function ReportsView() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8 pb-10"
+      id="report-content"
     >
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2">
         <div>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">Financial Reports</h2>
           <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">Analytics breakdown of your financial distribution and spending patterns.</p>
         </div>
+        <button
+          onClick={exportToPDF}
+          disabled={isExporting}
+          className="bg-primary text-on-surface px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isExporting ? 'Exporting...' : 'Export to PDF'}
+        </button>
       </header>
 
       {/* Metric Cards */}
