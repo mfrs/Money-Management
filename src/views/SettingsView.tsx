@@ -24,7 +24,7 @@ import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function SettingsView() {
-  const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme, language, setLanguage, t } = useApp();
+  const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme, language, setLanguage, t, appName, setAppName, appLogo, setAppLogo } = useApp();
   const [activeTab, setActiveTab] = useState('profile');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -336,6 +336,34 @@ export default function SettingsView() {
                     >
                       {t('settings.indonesian')}
                     </button>
+                  </div>
+                </div>
+
+                <div className="pt-8 mt-8 border-t border-th-divider">
+                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">Application Identity</h4>
+                  
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">App Name / Tab Title</label>
+                      <input
+                        type="text"
+                        value={appName}
+                        onChange={(e) => setAppName(e.target.value)}
+                        placeholder="e.g. Wealth"
+                        className="w-full px-5 py-4 bg-th-input border border-th-input rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-th-input-focus transition-all"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">App Logo (Emoji, Text, or URL)</label>
+                      <input
+                        type="text"
+                        value={appLogo}
+                        onChange={(e) => setAppLogo(e.target.value)}
+                        placeholder="e.g. 💰 or https://..."
+                        className="w-full px-5 py-4 bg-th-input border border-th-input rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-th-input-focus transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

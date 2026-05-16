@@ -25,15 +25,21 @@ const navItems = [
 ] as const;
 
 export default function Sidebar() {
-  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user, t } = useApp();
+  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user, t, appName, appLogo } = useApp();
 
   const navContent = (
     <div className="flex flex-col h-full p-6">
       {/* Logo */}
       <div className="flex items-center justify-between mb-12">
         <div className="flex items-center gap-4">
-          <CircleGauge className="text-on-surface" size={24} />
-          <span className="font-display text-lg font-bold text-on-surface tracking-widest uppercase">Wealth</span>
+          {appLogo === 'CircleGauge' ? (
+            <CircleGauge className="text-on-surface shrink-0" size={24} />
+          ) : appLogo.startsWith('http') || appLogo.startsWith('data:') ? (
+            <img src={appLogo} alt="Logo" className="w-6 h-6 object-contain shrink-0" />
+          ) : (
+            <span className="text-xl shrink-0 leading-none">{appLogo}</span>
+          )}
+          <span className="font-display text-lg font-bold text-on-surface tracking-widest uppercase truncate max-w-[140px]">{appName}</span>
         </div>
         <button
           onClick={() => setIsMobileSidebarOpen(false)}

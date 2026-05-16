@@ -36,6 +36,10 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  appName: string;
+  setAppName: (name: string) => void;
+  appLogo: string;
+  setAppLogo: (logo: string) => void;
 
   // Navigation
   currentView: ViewType;
@@ -122,6 +126,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('wm_language') as Language | null;
     return saved || 'en';
   });
+  const [appName, setAppName] = useState(() => localStorage.getItem('wm_appName') || 'Wealth');
+  const [appLogo, setAppLogo] = useState(() => localStorage.getItem('wm_appLogo') || 'CircleGauge');
 
   // Navigation
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
@@ -148,6 +154,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('wm_language', language);
   }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('wm_appName', appName);
+    document.title = `${appName} — Personal Finance`;
+  }, [appName]);
+
+  useEffect(() => {
+    localStorage.setItem('wm_appLogo', appLogo);
+  }, [appLogo]);
 
   const t = useCallback((key: string) => {
     return translations[language][key] || key;
@@ -435,6 +450,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       isAuthenticated, user, login, register, logout, updateProfile, changePassword,
       theme, toggleTheme, language, setLanguage, t,
+      appName, setAppName, appLogo, setAppLogo,
       currentView, setCurrentView: handleSetCurrentView,
       isQuickEntryOpen, setIsQuickEntryOpen,
       isMobileSidebarOpen, setIsMobileSidebarOpen,
