@@ -118,22 +118,32 @@ export default function ReportsView() {
   const insights = useMemo(() => {
     const result = [];
 
-    // Savings insight
-    const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100) : 0;
-    if (savingsRate > 20) {
+    // Critical over-spending insight
+    if (totalExpenses > totalIncome) {
       result.push({
-        title: 'Strong Savings',
-        text: `You're saving ${savingsRate}% of your income this month. Keep it up!`,
-        icon: CheckCircle,
-        positive: true,
-      });
-    } else if (savingsRate > 0) {
-      result.push({
-        title: 'Low Savings Rate',
-        text: `Only ${savingsRate}% savings rate. Consider reducing expenses to reach the recommended 20%.`,
+        title: 'Overspending Alert',
+        text: `Your monthly expenses (${formatCurrencyShort(totalExpenses)}) have exceeded your income (${formatCurrencyShort(totalIncome)}).`,
         icon: AlertCircle,
         positive: false,
       });
+    } else {
+      // Savings insight (only if not overspending)
+      const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100) : 0;
+      if (savingsRate >= 20) {
+        result.push({
+          title: 'Strong Savings',
+          text: `You're saving ${savingsRate}% of your income this month. Keep it up!`,
+          icon: CheckCircle,
+          positive: true,
+        });
+      } else if (savingsRate > 0 && totalIncome > 0) {
+        result.push({
+          title: 'Low Savings Rate',
+          text: `Only ${savingsRate}% savings rate. Consider reducing expenses to reach the recommended 20%.`,
+          icon: AlertCircle,
+          positive: false,
+        });
+      }
     }
 
     // Over-budget categories
@@ -151,12 +161,21 @@ export default function ReportsView() {
     }
 
     if (result.length === 0) {
-      result.push({
-        title: 'Looking Good',
-        text: 'Your spending is within healthy limits. No budget categories are in danger.',
-        icon: CheckCircle,
-        positive: true,
-      });
+      if (totalExpenses === 0 && totalIncome === 0) {
+        result.push({
+          title: 'No Activity',
+          text: 'You have no transactions this month. Start tracking your finances!',
+          icon: Lightbulb,
+          positive: true,
+        });
+      } else {
+        result.push({
+          title: 'Looking Good',
+          text: 'Your spending is within healthy limits. No budget categories are in danger.',
+          icon: CheckCircle,
+          positive: true,
+        });
+      }
     }
 
     return result;
