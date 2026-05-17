@@ -8,6 +8,7 @@ import {
   X,
   MoreHorizontal,
   Plus,
+  ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -22,7 +23,7 @@ export default function TransactionsView() {
   const {
     transactions, categories, wallets, searchQuery,
     addTransaction, deleteTransaction,
-    getCategoryById, getWalletById,
+    getCategoryById, getWalletById, t
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
@@ -257,29 +258,29 @@ export default function TransactionsView() {
                       <div className="flex items-center gap-4 lg:gap-5">
                         <div className={cn(
                           "w-9 h-9 lg:w-10 lg:h-10 rounded-xl glass-dark border border-on-surface/5 flex items-center justify-center group-hover:border-primary/20 transition-all",
-                          tx.type === 'income' ? "text-primary" : "text-on-surface/50"
+                          tx.type === 'income' ? "text-primary" : tx.type === 'transfer' ? "text-secondary" : "text-on-surface/50"
                         )}>
-                          <IconComp size={16} />
+                          {tx.type === 'transfer' ? <ArrowUpDown size={16} className="rotate-45" /> : <IconComp size={16} />}
                         </div>
                         <div>
                           <span className="text-sm font-bold text-on-surface">{tx.description}</span>
-                          <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{cat?.name}</span>
+                          <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{tx.type === 'transfer' ? t('common.transfer') : cat?.name}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7 hidden lg:table-cell">
-                      <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">{cat?.name || 'Unknown'}</span>
+                      <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">{tx.type === 'transfer' ? t('common.transfer') : (cat?.name || 'Unknown')}</span>
                     </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7 hidden md:table-cell">
-                      <span className="px-3 lg:px-4 py-1.5 glass-dark rounded-lg text-[9px] font-bold text-on-surface/60 border border-on-surface/5 uppercase tracking-[0.2em]">
-                        {wallet?.name || 'Unknown'}
+                      <span className="px-3 lg:px-4 py-1.5 glass-dark rounded-lg text-[9px] font-bold text-on-surface/60 border border-on-surface/5 uppercase tracking-[0.2em] inline-flex items-center gap-1.5">
+                        {wallet?.name || 'Unknown'} {tx.type === 'transfer' && tx.toWalletId && <><ArrowRight size={10} className="opacity-50" /> {getWalletById(tx.toWalletId)?.name}</>}
                       </span>
                     </td>
                     <td className={cn(
                       "px-6 lg:px-10 py-5 lg:py-7 text-right text-base lg:text-lg font-bold font-display tracking-tighter whitespace-nowrap",
-                      tx.type === 'income' ? "text-primary" : "text-on-surface/80"
+                      tx.type === 'income' ? "text-primary" : tx.type === 'transfer' ? "text-secondary" : "text-on-surface/80"
                     )}>
-                      {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
                     </td>
                     <td className="px-4 lg:px-6 py-5 lg:py-7">
                       <button

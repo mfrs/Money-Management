@@ -21,7 +21,7 @@ const navItems = [
   { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { id: 'wallets', labelKey: 'nav.wallets', icon: Wallet },
   { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
-  { id: 'goals', labelKey: 'Goals', icon: Target },
+  { id: 'goals', labelKey: 'nav.goals', icon: Target },
   { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
   { id: 'reports', labelKey: 'nav.reports', icon: BarChart3 },
 ] as const;

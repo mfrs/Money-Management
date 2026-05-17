@@ -15,9 +15,10 @@ import { cn } from '../lib/utils';
 
 export default function QuickEntryModal() {
   const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addTransaction } = useApp();
-  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
+  const [toWalletId, setToWalletId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
@@ -28,14 +29,17 @@ export default function QuickEntryModal() {
   const handleSubmit = () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return;
-    if (!walletId || !categoryId) return;
+    if (!walletId) return;
+    if (type === 'transfer' && !toWalletId) return;
+    if (type !== 'transfer' && !categoryId) return;
 
     addTransaction({
-      description: description || note || filteredCategories.find(c => c.id === categoryId)?.name || 'Transaction',
+      description: type === 'transfer' ? description || note || 'Transfer' : description || note || filteredCategories.find(c => c.id === categoryId)?.name || 'Transaction',
       amount: numAmount,
       type,
-      categoryId,
+      categoryId: type === 'transfer' ? undefined : categoryId,
       walletId,
+      toWalletId: type === 'transfer' ? toWalletId : undefined,
       date: `${date}T${new Date().toTimeString().split(' ')[0]}`,
       note,
     });
@@ -51,6 +55,7 @@ export default function QuickEntryModal() {
   React.useEffect(() => {
     if (isQuickEntryOpen) {
       if (!walletId && wallets.length > 0) setWalletId(wallets[0].id);
+      if (!toWalletId && wallets.length > 1) setToWalletId(wallets[1].id);
       if (!categoryId && filteredCategories.length > 0) setCategoryId(filteredCategories[0].id);
       setDate(new Date().toISOString().split('T')[0]);
     }
@@ -85,9 +90,9 @@ export default function QuickEntryModal() {
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center shadow-low",
-                  type === 'expense' ? "bg-tertiary/20 text-tertiary" : "bg-primary/20 text-primary"
+                  type === 'expense' ? "bg-tertiary/20 text-tertiary" : type === 'transfer' ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"
                 )}>
-                  {type === 'expense' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                  {type === 'expense' ? <ArrowUpRight size={20} /> : type === 'transfer' ? <ArrowUpRight className="rotate-45" size={20} /> : <ArrowDownLeft size={20} />}
                 </div>
                 <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">Quick Entry</h3>
               </div>
@@ -107,7 +112,7 @@ export default function QuickEntryModal() {
                   type="button"
                   onClick={() => setType('expense')}
                   className={cn(
-                    "flex-1 py-3 lg:py-3.5 px-6 rounded-[16px] lg:rounded-[20px] text-xs font-bold uppercase tracking-widest transition-all",
+                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
                     type === 'expense' ? "bg-tertiary/20 text-tertiary shadow-md border border-tertiary/20" : "text-on-surface/30 hover:text-on-surface/60"
                   )}
                 >
@@ -117,11 +122,21 @@ export default function QuickEntryModal() {
                   type="button"
                   onClick={() => setType('income')}
                   className={cn(
-                    "flex-1 py-3 lg:py-3.5 px-6 rounded-[16px] lg:rounded-[20px] text-xs font-bold uppercase tracking-widest transition-all",
+                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
                     type === 'income' ? "bg-primary/20 text-primary shadow-md border border-primary/20" : "text-on-surface/30 hover:text-on-surface/60"
                   )}
                 >
                   Income
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('transfer')}
+                  className={cn(
+                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
+                    type === 'transfer' ? "bg-secondary/20 text-secondary shadow-md border border-secondary/20" : "text-on-surface/30 hover:text-on-surface/60"
+                  )}
+                >
+                  Transfer
                 </button>
               </div>
 
@@ -165,7 +180,7 @@ export default function QuickEntryModal() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
                     <Wallet size={12} />
-                    Wallet
+                    {type === 'transfer' ? 'From Wallet' : 'Wallet'}
                   </label>
                   <div className="relative group">
                     <select
@@ -183,20 +198,33 @@ export default function QuickEntryModal() {
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                    <Tag size={12} />
-                    Category
+                    {type === 'transfer' ? <Wallet size={12} /> : <Tag size={12} />}
+                    {type === 'transfer' ? 'To Wallet' : 'Category'}
                   </label>
                   <div className="relative group">
-                    <select
-                      id="select-category"
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
-                    >
-                      {filteredCategories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    {type === 'transfer' ? (
+                      <select
+                        id="select-to-wallet"
+                        value={toWalletId}
+                        onChange={(e) => setToWalletId(e.target.value)}
+                        className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
+                      >
+                        {wallets.map(w => (
+                          <option key={w.id} value={w.id} disabled={w.id === walletId}>{w.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        id="select-category"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
+                      >
+                        {filteredCategories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    )}
                     <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
                   </div>
                 </div>
@@ -237,16 +265,18 @@ export default function QuickEntryModal() {
               <button
                 id="btn-save-transaction"
                 onClick={handleSubmit}
-                disabled={!amount || parseFloat(amount) <= 0 || !walletId || !categoryId}
+                disabled={!amount || parseFloat(amount) <= 0 || !walletId || (type === 'transfer' ? !toWalletId : !categoryId)}
                 className={cn(
                   "w-full py-5 lg:py-6 text-on-surface text-sm font-bold uppercase tracking-[0.3em] rounded-2xl lg:rounded-3xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 duration-200 mt-2",
                   type === 'expense'
                     ? "bg-tertiary hover:bg-tertiary/80 disabled:bg-tertiary/30"
+                    : type === 'transfer'
+                    ? "bg-secondary hover:bg-secondary/80 disabled:bg-secondary/30"
                     : "bg-primary hover:bg-primary/80 disabled:bg-primary/30",
                   (!amount || parseFloat(amount) <= 0) && "opacity-50 cursor-not-allowed"
                 )}
               >
-                Save {type === 'expense' ? 'Expense' : 'Income'}
+                Save {type === 'expense' ? 'Expense' : type === 'transfer' ? 'Transfer' : 'Income'}
               </button>
             </div>
           </motion.div>

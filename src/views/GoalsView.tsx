@@ -67,14 +67,14 @@ export default function GoalsView() {
     >
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2">
         <div>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">Financial Goals</h2>
-          <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">Set targets and track your savings progress.</p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">{t('goals.title')}</h2>
+          <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">{t('goals.subtitle')}</p>
         </div>
         <button
           onClick={openAdd}
           className="bg-primary text-on-surface px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center gap-2"
         >
-          <Plus size={16} /> New Goal
+          <Plus size={16} /> {t('goals.new')}
         </button>
       </header>
 
@@ -146,8 +146,8 @@ export default function GoalsView() {
         {goals.length === 0 && (
           <div className="col-span-full py-20 text-center glass rounded-[32px] border-dashed border-2 border-on-surface/10">
             <Target size={48} className="mx-auto text-on-surface/20 mb-4" />
-            <h3 className="font-bold text-lg text-on-surface uppercase tracking-widest mb-2">No Goals Yet</h3>
-            <p className="text-sm text-on-surface/40 font-medium max-w-md mx-auto">Set a financial target to start tracking your savings journey.</p>
+            <h3 className="font-bold text-lg text-on-surface uppercase tracking-widest mb-2">{t('goals.empty')}</h3>
+            <p className="text-sm text-on-surface/40 font-medium max-w-md mx-auto">{t('goals.emptySub')}</p>
           </div>
         )}
       </div>
@@ -166,12 +166,12 @@ export default function GoalsView() {
               </button>
               
               <h3 className="font-display text-2xl font-bold text-on-surface tracking-tighter uppercase mb-8">
-                {editingId ? 'Edit Goal' : 'New Goal'}
+                {editingId ? t('goals.edit') : t('goals.new')}
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Goal Name</label>
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('goals.name')}</label>
                   <input
                     type="text"
                     required
@@ -184,7 +184,7 @@ export default function GoalsView() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Target Amount</label>
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('goals.target')}</label>
                     <input
                       type="number"
                       required
@@ -195,7 +195,7 @@ export default function GoalsView() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Current Saved</label>
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('goals.current')}</label>
                     <input
                       type="number"
                       value={currentAmount}
@@ -208,7 +208,7 @@ export default function GoalsView() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Deadline (Optional)</label>
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('goals.deadline')}</label>
                     <input
                       type="date"
                       value={deadline}
@@ -217,7 +217,7 @@ export default function GoalsView() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Color</label>
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('goals.color')}</label>
                     <input
                       type="color"
                       value={color}
@@ -228,7 +228,7 @@ export default function GoalsView() {
                 </div>
 
                 <button type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl">
-                  {editingId ? 'Update Goal' : 'Save Goal'}
+                  {editingId ? t('goals.update') : t('goals.save')}
                 </button>
               </form>
             </motion.div>

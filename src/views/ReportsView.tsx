@@ -27,9 +27,11 @@ import { jsPDF } from 'jspdf';
 import * as htmlToImage from 'html-to-image';
 
 export default function ReportsView() {
-  const { transactions, categories, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast } = useApp();
+  const { transactions, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t } = useApp();
   const [timePeriod, setTimePeriod] = useState<'3M' | '6M' | '1Y'>('6M');
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'analytics' | 'journal'>('analytics');
+  const [selectedWalletId, setSelectedWalletId] = useState(wallets[0]?.id || '');
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -200,6 +202,47 @@ export default function ReportsView() {
     return result;
   }, [totalIncome, totalExpenses, categories, getCategorySpent]);
 
+  const journalEntries = useMemo(() => {
+    if (activeTab !== 'journal' || !selectedWalletId) return [];
+    
+    const wallet = wallets.find(w => w.id === selectedWalletId);
+    if (!wallet) return [];
+
+    const relevantTxs = transactions.filter(t => t.walletId === selectedWalletId || t.toWalletId === selectedWalletId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const entries: any[] = [];
+    let currentBalance = wallet.balance;
+
+    for (const tx of relevantTxs) {
+      let debit = 0;
+      let credit = 0;
+
+      if (tx.type === 'income') {
+        debit = tx.amount;
+      } else if (tx.type === 'expense') {
+        credit = tx.amount;
+      } else if (tx.type === 'transfer') {
+        if (tx.walletId === selectedWalletId) {
+          credit = tx.amount;
+        } else {
+          debit = tx.amount;
+        }
+      }
+
+      entries.push({
+        ...tx,
+        debit,
+        credit,
+        runningBalance: currentBalance
+      });
+
+      currentBalance = currentBalance - debit + credit;
+    }
+
+    return entries;
+  }, [transactions, selectedWalletId, activeTab, wallets]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -209,17 +252,26 @@ export default function ReportsView() {
     >
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2">
         <div>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">Financial Reports</h2>
-          <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">Analytics breakdown of your financial distribution and spending patterns.</p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">{t('reports.title')}</h2>
+          <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">{t('reports.subtitle')}</p>
         </div>
-        <button
-          onClick={exportToPDF}
-          disabled={isExporting}
-          className="bg-primary text-on-surface px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isExporting ? 'Exporting...' : 'Export to PDF'}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="flex p-1 bg-on-surface/5 rounded-full border border-on-surface/5">
+            <button onClick={() => setActiveTab('analytics')} className={cn("px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'analytics' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.analytics')}</button>
+            <button onClick={() => setActiveTab('journal')} className={cn("px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'journal' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.walletJournal')}</button>
+          </div>
+          <button
+            onClick={exportToPDF}
+            disabled={isExporting}
+            className="bg-primary text-on-surface px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isExporting ? t('reports.exporting') : t('reports.export')}
+          </button>
+        </div>
       </header>
+
+      {activeTab === 'analytics' ? (
+        <>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
@@ -251,7 +303,7 @@ export default function ReportsView() {
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 lg:mb-12 gap-6 lg:gap-8 relative z-10">
           <div className="text-center md:text-left">
-            <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase">Income vs Expenses</h3>
+            <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase">{t('reports.incomeVsExpenses')}</h3>
             <p className="text-sm text-on-surface/30 mt-3 uppercase tracking-widest font-medium">Monthly overview</p>
           </div>
           <div className="flex items-center glass-dark p-1.5 rounded-full border border-on-surface/5">
@@ -345,7 +397,7 @@ export default function ReportsView() {
         {/* Breakdown */}
         <div className="glass rounded-[28px] lg:rounded-[40px] p-6 lg:p-10 flex flex-col border border-on-surface/5">
           <div className="flex justify-between items-center mb-8 lg:mb-10">
-            <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase">Expense Breakdown</h3>
+            <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase">{t('reports.expenseBreakdown')}</h3>
           </div>
           <div className="flex flex-col gap-8 lg:gap-10 flex-grow justify-center">
             {breakdown.map((item, i) => {
@@ -387,7 +439,7 @@ export default function ReportsView() {
           <div className="relative z-10">
             <div className="flex items-center gap-5 mb-8 lg:mb-10 glass-dark w-fit px-6 lg:px-8 py-3 lg:py-4 rounded-3xl border border-on-surface/20 backdrop-blur-3xl shadow-2xl">
               <Lightbulb className="text-on-surface" size={22} />
-              <h3 className="font-display text-base lg:text-lg font-bold text-on-surface tracking-widest uppercase leading-none">Smart Insights</h3>
+              <h3 className="font-display text-base lg:text-lg font-bold text-on-surface tracking-widest uppercase leading-none">{t('reports.smartInsights')}</h3>
             </div>
 
             <ul className="flex flex-col gap-4">
@@ -404,6 +456,74 @@ export default function ReportsView() {
           </div>
         </div>
       </div>
+      </>
+      ) : (
+        <div className="glass rounded-[28px] lg:rounded-[40px] flex flex-col overflow-hidden relative">
+          <div className="p-6 lg:p-8 border-b border-on-surface/5 flex flex-wrap gap-4 lg:gap-6 justify-between items-center bg-on-surface/[0.02]">
+            <div className="space-y-1">
+              <h3 className="font-display text-xl font-bold text-on-surface uppercase tracking-tight">{t('reports.walletJournal')}</h3>
+              <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium">{t('reports.walletJournalSub')}</p>
+            </div>
+            <div className="relative group min-w-[200px]">
+              <select
+                value={selectedWalletId}
+                onChange={(e) => setSelectedWalletId(e.target.value)}
+                className="w-full px-5 py-3.5 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-widest"
+              >
+                {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none">▼</div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] bg-on-surface/[0.01]">
+                  <th className="px-6 lg:px-8 py-5">{t('reports.date')}</th>
+                  <th className="px-6 lg:px-8 py-5">{t('reports.description')}</th>
+                  <th className="px-6 lg:px-8 py-5 text-right">{t('reports.debit')}</th>
+                  <th className="px-6 lg:px-8 py-5 text-right">{t('reports.credit')}</th>
+                  <th className="px-6 lg:px-8 py-5 text-right text-primary">{t('reports.balance')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {journalEntries.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-on-surface/[0.03] transition-colors">
+                    <td className="px-6 lg:px-8 py-4 text-xs font-bold text-on-surface/30 uppercase tracking-widest whitespace-nowrap">
+                      {new Date(entry.date).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="px-6 lg:px-8 py-4">
+                      <p className="text-sm font-bold text-on-surface">{entry.description}</p>
+                      {entry.type === 'transfer' && (
+                        <p className="text-[9px] text-on-surface/40 uppercase tracking-widest mt-0.5">
+                          {entry.walletId === selectedWalletId ? t('reports.transferOut') : t('reports.transferIn')}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold text-secondary font-display tracking-tighter tabular-nums whitespace-nowrap">
+                      {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                    </td>
+                    <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold text-on-surface/80 font-display tracking-tighter tabular-nums whitespace-nowrap">
+                      {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                    </td>
+                    <td className="px-6 lg:px-8 py-4 text-right text-base font-bold text-primary font-display tracking-tighter tabular-nums whitespace-nowrap">
+                      {formatCurrency(entry.runningBalance)}
+                    </td>
+                  </tr>
+                ))}
+                {journalEntries.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
+                      {t('reports.noTransactions')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

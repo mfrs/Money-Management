@@ -340,11 +340,11 @@ export default function SettingsView() {
                 </div>
 
                 <div className="pt-8 mt-8 border-t border-th-divider">
-                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">Application Identity</h4>
+                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">{t('settings.identity')}</h4>
                   
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">App Name / Tab Title</label>
+                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('settings.appName')}</label>
                       <input
                         type="text"
                         value={appName}
@@ -355,7 +355,7 @@ export default function SettingsView() {
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">App Logo (Emoji, Text, or URL)</label>
+                      <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('settings.appLogo')}</label>
                       <input
                         type="text"
                         value={appLogo}

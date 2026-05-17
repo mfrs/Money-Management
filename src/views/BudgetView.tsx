@@ -22,7 +22,7 @@ export default function BudgetView() {
     addIncomeSource, updateIncomeSource, deleteIncomeSource,
     addFixedExpense, updateFixedExpense, deleteFixedExpense,
     addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
-    setCurrentView, addToast,
+    setCurrentView, addToast, t,
   } = useApp();
 
   // Computed totals
@@ -78,10 +78,10 @@ export default function BudgetView() {
       className="space-y-8 pb-32"
     >
       <div className="mb-6 px-2">
-        <p className="text-[10px] font-bold text-primary tracking-[0.3em] uppercase mb-3">Financial Engineering</p>
-        <h3 className="font-display text-3xl lg:text-4xl font-extrabold text-on-surface tracking-tighter uppercase">Income & Budget Allocation</h3>
+        <p className="text-[10px] font-bold text-primary tracking-[0.3em] uppercase mb-3">{t('budget.engineering')}</p>
+        <h3 className="font-display text-3xl lg:text-4xl font-extrabold text-on-surface tracking-tighter uppercase">{t('budget.allocationTitle')}</h3>
         <p className="text-sm text-on-surface/40 mt-3 max-w-2xl leading-relaxed font-medium uppercase tracking-[0.05em]">
-          Plan your monthly income distribution across fixed expenses and savings goals.
+          {t('budget.allocationSub')}
         </p>
       </div>
 
@@ -95,7 +95,7 @@ export default function BudgetView() {
                 <div className="w-12 h-12 rounded-xl bg-on-surface/5 border border-on-surface/10 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                   <CreditCard size={20} />
                 </div>
-                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest leading-none">Inflow Sources</h4>
+                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest leading-none">{t('budget.inflow')}</h4>
               </div>
             </div>
 
@@ -114,7 +114,7 @@ export default function BudgetView() {
             </div>
 
             <div className="mt-8 lg:mt-10 pt-8 border-t border-on-surface/5 flex justify-between items-center relative z-10">
-              <span className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Total Inflow</span>
+              <span className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.totalInflow')}</span>
               <span className="font-display text-2xl lg:text-3xl font-bold text-primary tracking-tighter">{formatCurrency(totalIncome)}</span>
             </div>
           </div>
@@ -126,13 +126,13 @@ export default function BudgetView() {
                 <div className="w-12 h-12 rounded-xl bg-on-surface/5 border border-on-surface/10 flex items-center justify-center text-secondary">
                   <History size={20} />
                 </div>
-                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">Fixed Expenses</h4>
+                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">{t('budget.fixed')}</h4>
               </div>
               <button
                 onClick={() => setShowExpenseForm(true)}
                 className="text-[10px] font-bold text-on-surface/30 hover:text-on-surface uppercase tracking-widest px-4 py-2 bg-on-surface/5 rounded-full border border-on-surface/5 transition-all flex items-center gap-2"
               >
-                <Plus size={14} /> Add
+                <Plus size={14} /> {t('common.add')}
               </button>
             </div>
 
@@ -160,14 +160,14 @@ export default function BudgetView() {
                         <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount)}</span>
                         {isPaid ? (
                           <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Check size={10} /> Telah Dibayar
+                            <Check size={10} /> {t('budget.paid')}
                           </span>
                         ) : (
                           <button 
                             onClick={() => updateFixedExpense(item.id, { lastPaid: new Date().toISOString() })}
                             className="text-[9px] font-bold text-on-surface/50 hover:text-on-surface bg-on-surface/5 hover:bg-on-surface/10 px-2 py-0.5 rounded-full uppercase tracking-widest transition-all"
                           >
-                            Tandai Dibayar
+                            {t('budget.markPaid')}
                           </button>
                         )}
                       </div>
@@ -201,7 +201,7 @@ export default function BudgetView() {
             </div>
 
             <div className="mt-8 flex justify-between items-center px-4">
-              <span className="text-[10px] font-bold text-on-surface/20 uppercase tracking-widest">Total Fixed</span>
+              <span className="text-[10px] font-bold text-on-surface/20 uppercase tracking-widest">{t('budget.fixedTotal')}</span>
               <span className="text-lg font-bold text-on-surface tracking-tighter">{formatCurrency(totalFixed)}</span>
             </div>
           </div>
@@ -215,10 +215,10 @@ export default function BudgetView() {
                 <div className="w-12 h-12 rounded-xl bg-on-surface/5 border border-on-surface/10 flex items-center justify-center text-tertiary">
                   <Wallet size={20} />
                 </div>
-                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">Wallet Allocation</h4>
+                <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">{t('budget.walletAlloc')}</h4>
               </div>
               <p className="text-sm text-on-surface/40 leading-relaxed font-medium">
-                Distribute residual <span className="text-on-surface font-bold">{formatCurrency(Math.max(0, residual))}</span> into strategic vaults.
+                {t('budget.residualDesc')} <span className="text-on-surface font-bold">{formatCurrency(Math.max(0, residual))}</span> {t('budget.residualInto')}
               </p>
             </div>
 
@@ -263,7 +263,7 @@ export default function BudgetView() {
                 className="p-8 lg:p-10 rounded-2xl border border-dashed border-on-surface/10 bg-transparent flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-on-surface/[0.02] hover:border-on-surface/20 transition-all text-on-surface/20 hover:text-on-surface min-h-[120px] group"
               >
                 <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Add Allocation</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{t('budget.addAllocation')}</span>
               </button>
             </div>
           </div>
@@ -276,23 +276,23 @@ export default function BudgetView() {
         <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-6 lg:gap-10 overflow-x-auto">
           <div className="flex items-center gap-6 lg:gap-10 flex-1">
             <div className="space-y-1 px-4 whitespace-nowrap">
-              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Gross Flow</p>
+              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.grossFlow')}</p>
               <p className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalIncome)}</p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
-              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Committed</p>
+              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.committed')}</p>
               <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">{formatCurrency(totalCommitted)}</p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
-              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Residual</p>
+              <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.residual')}</p>
               <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>{formatCurrency(residual)}</p>
             </div>
 
             <div className="flex-1 max-w-sm ml-6 lg:ml-10 hidden lg:block">
               <div className="flex justify-between text-[9px] font-bold text-on-surface/20 uppercase tracking-widest mb-2.5">
-                <span>Allocation</span>
+                <span>{t('budget.allocation')}</span>
                 <span className="text-primary font-mono tabular-nums">{allocationPercent}%</span>
               </div>
               <div className="h-1.5 w-full bg-on-surface/5 rounded-full overflow-hidden">
@@ -319,7 +319,7 @@ export default function BudgetView() {
               className="glass rounded-[32px] p-8 w-full max-w-sm relative z-10 border border-on-surface/10"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-display text-lg font-bold text-on-surface">Add Fixed Expense</h3>
+                <h3 className="font-display text-lg font-bold text-on-surface">{t('budget.addFixed')}</h3>
                 <button onClick={() => setShowExpenseForm(false)} className="text-on-surface/30 hover:text-on-surface"><X size={18} /></button>
               </div>
               <div className="space-y-4">
@@ -329,17 +329,17 @@ export default function BudgetView() {
                   <input type="number" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} placeholder="0" className="w-full pl-12 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
                 </div>
                 <select value={expTerm} onChange={(e) => setExpTerm(e.target.value)} className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none appearance-none cursor-pointer uppercase tracking-widest">
-                  <option value="01-MONTH">Monthly</option>
-                  <option value="03-MONTH">Quarterly</option>
-                  <option value="06-MONTH">Semi-Annual</option>
-                  <option value="12-MONTH">Annual</option>
+                  <option value="01-MONTH">{t('budget.monthly')}</option>
+                  <option value="03-MONTH">{t('budget.quarterly')}</option>
+                  <option value="06-MONTH">{t('budget.semiAnnual')}</option>
+                  <option value="12-MONTH">{t('budget.annual')}</option>
                 </select>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">Due Day (1-31)</span>
-                  <input type="number" min="1" max="31" value={expDueDate} onChange={(e) => setExpDueDate(e.target.value)} placeholder="1" className="w-full pl-32 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">{t('budget.dueDay')}</span>
+                  <input type="number" min="1" max="31" value={expDueDate} onChange={(e) => setExpDueDate(e.target.value)} placeholder="1" className="w-full pl-40 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
                 </div>
                 <button onClick={handleAddExpense} disabled={!expName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
-                  <Save size={16} /> Add Expense
+                  <Save size={16} /> {t('common.save')}
                 </button>
               </div>
             </motion.div>

@@ -43,7 +43,8 @@ model Wallet {
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  transactions    Transaction[]
+  transactions    Transaction[] @relation("WalletTransactions")
+  transfersIn     Transaction[] @relation("TransferToWallet")
   allocations     WalletAllocation[]
 
   @@map("wallets")
@@ -71,7 +72,7 @@ model Transaction {
   id          String   @id @default(cuid())
   description String
   amount      Float
-  type        String   // income, expense
+  type        String   // income, expense, transfer
   date        DateTime
   note        String   @default("")
   createdAt   DateTime @default(now())
@@ -80,11 +81,14 @@ model Transaction {
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   walletId String
-  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet   Wallet @relation("WalletTransactions", fields: [walletId], references: [id], onDelete: Cascade)
+
+  toWalletId String?
+  toWallet   Wallet? @relation("TransferToWallet", fields: [toWalletId], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }

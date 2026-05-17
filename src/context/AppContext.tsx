@@ -364,9 +364,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (w.id === tx.walletId) {
           return { ...w, balance: tx.type === 'income' ? w.balance + tx.amount : w.balance - tx.amount };
         }
+        if (tx.type === 'transfer' && w.id === tx.toWalletId) {
+          return { ...w, balance: w.balance + tx.amount };
+        }
         return w;
       }));
-      addToast(tx.type === 'income' ? 'Income recorded!' : 'Expense recorded!');
+      addToast(tx.type === 'transfer' ? 'Transfer recorded!' : tx.type === 'income' ? 'Income recorded!' : 'Expense recorded!');
     } catch { addToast('Failed to add transaction', 'error'); }
   }, [addToast]);
 
@@ -386,6 +389,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setWallets(prev => prev.map(w => {
           if (w.id === tx.walletId) {
             return { ...w, balance: tx.type === 'income' ? w.balance - tx.amount : w.balance + tx.amount };
+          }
+          if (tx.type === 'transfer' && w.id === tx.toWalletId) {
+            return { ...w, balance: w.balance - tx.amount };
           }
           return w;
         }));

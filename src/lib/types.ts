@@ -24,9 +24,10 @@ export interface Transaction {
   id: string;
   description: string;
   amount: number;
-  type: 'income' | 'expense';
-  categoryId: string;
+  type: 'income' | 'expense' | 'transfer';
+  categoryId?: string;
   walletId: string;
+  toWalletId?: string;
   date: string;
   note: string;
   createdAt: string;

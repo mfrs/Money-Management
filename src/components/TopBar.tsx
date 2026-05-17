@@ -144,7 +144,7 @@ export default function TopBar() {
                 className="absolute right-0 mt-4 w-80 glass rounded-[24px] shadow-2xl border border-on-surface/10 overflow-hidden"
               >
                 <div className="p-4 border-b border-on-surface/5 flex justify-between items-center bg-on-surface/[0.02]">
-                  <h3 className="font-bold text-sm uppercase tracking-widest text-on-surface">Notifications</h3>
+                  <h3 className="font-bold text-sm uppercase tracking-widest text-on-surface">{t('notif.title')}</h3>
                   {notifications.length > 0 && (
                     <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{notifications.length}</span>
                   )}
@@ -153,7 +153,7 @@ export default function TopBar() {
                 <div className="max-h-80 overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-on-surface/40 text-xs font-bold uppercase tracking-widest">
-                      No new notifications
+                      {t('notif.empty')}
                     </div>
                   ) : (
                     <div className="flex flex-col">
