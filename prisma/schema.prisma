@@ -12,6 +12,7 @@ model User {
   name      String
   email     String   @unique
   password  String
+  isAdmin   Boolean  @default(false)
   currency  String   @default("IDR")
   theme     String   @default("dark")  // dark, light
   createdAt DateTime @default(now())
@@ -19,7 +20,7 @@ model User {
 
   wallets          Wallet[]
   categories       Category[]
-  transactions     Transaction[]
+  journals         Journal[]
   incomeSources    IncomeSource[]
   fixedExpenses    FixedExpense[]
   walletAllocations WalletAllocation[]
@@ -43,8 +44,7 @@ model Wallet {
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  transactions    Transaction[] @relation("WalletTransactions")
-  transfersIn     Transaction[] @relation("TransferToWallet")
+  journalLines    JournalLine[]
   allocations     WalletAllocation[]
 
   @@map("wallets")
@@ -63,16 +63,14 @@ model Category {
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  transactions Transaction[]
+  journalLines JournalLine[]
 
   @@map("categories")
 }
 
-model Transaction {
+model Journal {
   id          String   @id @default(cuid())
   description String
-  amount      Float
-  type        String   // income, expense, transfer
   date        DateTime
   note        String   @default("")
   createdAt   DateTime @default(now())
@@ -81,16 +79,27 @@ model Transaction {
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  lines JournalLine[]
 
-  walletId String
-  wallet   Wallet @relation("WalletTransactions", fields: [walletId], references: [id], onDelete: Cascade)
+  @@map("journals")
+}
 
-  toWalletId String?
-  toWallet   Wallet? @relation("TransferToWallet", fields: [toWalletId], references: [id], onDelete: SetNull)
+model JournalLine {
+  id          String   @id @default(cuid())
+  journalId   String
+  journal     Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  
+  walletId    String?
+  wallet      Wallet?  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  type        String   // DEBIT, CREDIT
+  createdAt   DateTime @default(now())
 
-  @@map("transactions")
+  @@map("journal_lines")
 }
 
 model IncomeSource {

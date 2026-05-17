@@ -377,7 +377,7 @@ export default function SettingsView() {
       <ConfirmDialog
         isOpen={showResetConfirm}
         title="Reset All Data"
-        message="This will permanently delete all your wallets, transactions, categories, and budget data. This cannot be undone."
+        message="This will permanently delete all your wallets, journals, categories, and budget data. This cannot be undone."
         confirmLabel="Reset Everything"
         onConfirm={() => { resetAllData(); setShowResetConfirm(false); }}
         onCancel={() => setShowResetConfirm(false)}

@@ -293,7 +293,7 @@ export default function CategoriesView() {
       <ConfirmDialog
         isOpen={!!deleteId}
         title="Delete Category"
-        message="This will permanently delete this category. Existing transactions using this category will retain their data."
+        message="This will permanently delete this category. Existing journals using this category will retain their data."
         onConfirm={() => { if (deleteId) deleteCategory(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />

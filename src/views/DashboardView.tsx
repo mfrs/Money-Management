@@ -21,7 +21,7 @@ import { getIcon } from '../lib/icons';
 
 export default function Dashboard() {
   const {
-    wallets, categories, transactions,
+    wallets, categories, journals,
     totalBalance, totalIncome, totalExpenses,
     getCategorySpent, getCategoryById, getWalletById,
     setCurrentView, t,
@@ -51,21 +51,49 @@ export default function Dashboard() {
     }));
   }, [categorySpending]);
 
+  const mappedTransactions = useMemo(() => {
+    return journals.map(j => {
+      const categoryLine = j.lines.find(l => l.categoryId);
+      const walletLines = j.lines.filter(l => l.walletId);
+      
+      let type: 'income' | 'expense' | 'transfer' = 'expense';
+      let categoryId = undefined;
+      let amount = 0;
+
+      if (walletLines.length === 2 && !categoryLine) {
+        type = 'transfer';
+        amount = walletLines[0].amount;
+      } else if (categoryLine) {
+        categoryId = categoryLine.categoryId;
+        amount = categoryLine.amount;
+        type = categoryLine.type === 'CREDIT' ? 'income' : 'expense';
+      }
+
+      return {
+        id: j.id,
+        description: j.description,
+        date: j.date,
+        type,
+        amount,
+        categoryId,
+      };
+    });
+  }, [journals]);
+
   // Recent transactions
   const recentTransactions = useMemo(() => {
-    return [...transactions]
+    return [...mappedTransactions]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 6);
-  }, [transactions]);
+  }, [mappedTransactions]);
 
-  // Daily burn rate (last 30 days expenses / 30)
   const burnRate = useMemo(() => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-    const recentExpenses = transactions
+    const recentExpenses = mappedTransactions
       .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
       .reduce((s, t) => s + t.amount, 0);
     return Math.round(recentExpenses / 30);
-  }, [transactions]);
+  }, [mappedTransactions]);
 
   // Savings rate
   const savingsRate = useMemo(() => {

@@ -20,16 +20,22 @@ export interface Category {
   createdAt: string;
 }
 
-export interface Transaction {
+export interface JournalLine {
+  id: string;
+  journalId: string;
+  walletId?: string;
+  categoryId?: string;
+  amount: number;
+  type: 'DEBIT' | 'CREDIT';
+  createdAt: string;
+}
+
+export interface Journal {
   id: string;
   description: string;
-  amount: number;
-  type: 'income' | 'expense' | 'transfer';
-  categoryId?: string;
-  walletId: string;
-  toWalletId?: string;
   date: string;
   note: string;
+  lines: JournalLine[];
   createdAt: string;
 }
 
@@ -79,7 +85,7 @@ export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 're
 export interface AppData {
   wallets: Wallet[];
   categories: Category[];
-  transactions: Transaction[];
+  journals: Journal[];
   budget: Budget;
 }
 

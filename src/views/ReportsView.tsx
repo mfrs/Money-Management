@@ -27,7 +27,7 @@ import { jsPDF } from 'jspdf';
 import * as htmlToImage from 'html-to-image';
 
 export default function ReportsView() {
-  const { transactions, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t } = useApp();
+  const { journals, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t } = useApp();
   const [timePeriod, setTimePeriod] = useState<'3M' | '6M' | '1Y'>('6M');
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'journal'>('analytics');
@@ -78,6 +78,49 @@ export default function ReportsView() {
     }
   };
 
+  const mappedTransactions = useMemo(() => {
+    return journals.map(j => {
+      const categoryLine = j.lines.find(l => l.categoryId);
+      const walletLines = j.lines.filter(l => l.walletId);
+      
+      let type: 'income' | 'expense' | 'transfer' = 'expense';
+      let categoryId = undefined;
+      let walletId = walletLines[0]?.walletId || '';
+      let toWalletId = undefined;
+      let amount = 0;
+
+      if (walletLines.length === 2 && !categoryLine) {
+        type = 'transfer';
+        const creditLine = walletLines.find(l => l.type === 'CREDIT');
+        const debitLine = walletLines.find(l => l.type === 'DEBIT');
+        if (creditLine) {
+          walletId = creditLine.walletId;
+          amount = creditLine.amount;
+        }
+        if (debitLine) {
+          toWalletId = debitLine.walletId;
+        }
+      } else if (categoryLine) {
+        categoryId = categoryLine.categoryId;
+        amount = categoryLine.amount;
+        type = categoryLine.type === 'CREDIT' ? 'income' : 'expense';
+        const wLine = walletLines.find(l => l.walletId);
+        if (wLine) walletId = wLine.walletId;
+      }
+
+      return {
+        id: j.id,
+        description: j.description,
+        date: j.date,
+        type,
+        amount,
+        categoryId,
+        walletId,
+        toWalletId,
+      };
+    });
+  }, [journals]);
+
   // Monthly data for chart
   const chartData = useMemo(() => {
     const months: Record<string, { income: number; expenses: number }> = {};
@@ -92,7 +135,7 @@ export default function ReportsView() {
     }
 
     // Fill data
-    transactions.forEach(tx => {
+    mappedTransactions.forEach(tx => {
       const d = new Date(tx.date);
       const key = d.toLocaleDateString('en-US', { month: 'short' });
       if (months[key]) {
@@ -102,7 +145,7 @@ export default function ReportsView() {
     });
 
     return Object.entries(months).map(([name, data]) => ({ name, ...data }));
-  }, [transactions, timePeriod]);
+  }, [mappedTransactions, timePeriod]);
 
   // Expense breakdown by category
   const breakdown = useMemo(() => {
@@ -129,11 +172,11 @@ export default function ReportsView() {
   // Daily burn rate
   const burnRate = useMemo(() => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-    const recent = transactions
+    const recent = mappedTransactions
       .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
       .reduce((s, t) => s + t.amount, 0);
     return Math.round(recent / 30);
-  }, [transactions]);
+  }, [mappedTransactions]);
 
   // Insights
   const insights = useMemo(() => {
@@ -208,7 +251,7 @@ export default function ReportsView() {
     const wallet = wallets.find(w => w.id === selectedWalletId);
     if (!wallet) return [];
 
-    const relevantTxs = transactions.filter(t => t.walletId === selectedWalletId || t.toWalletId === selectedWalletId)
+    const relevantTxs = mappedTransactions.filter(t => t.walletId === selectedWalletId || t.toWalletId === selectedWalletId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const entries: any[] = [];
@@ -241,7 +284,7 @@ export default function ReportsView() {
     }
 
     return entries;
-  }, [transactions, selectedWalletId, activeTab, wallets]);
+  }, [mappedTransactions, selectedWalletId, activeTab, wallets]);
 
   return (
     <motion.div
@@ -278,7 +321,7 @@ export default function ReportsView() {
         {[
           { label: 'Total Savings', value: formatCurrency(Math.max(0, totalIncome - totalExpenses)), change: totalIncome > 0 ? `${Math.round(((totalIncome - totalExpenses) / totalIncome) * 100)}%` : '0%', icon: PiggyBank, color: 'text-primary' },
           { label: 'Daily Burn Rate', value: formatCurrencyShort(burnRate), change: '/day', icon: Flame, color: 'text-secondary' },
-          { label: 'Net Worth', value: formatCurrency(totalBalance), change: `${transactions.length} txns`, icon: TrendingUp, color: 'text-tertiary' },
+          { label: 'Net Worth', value: formatCurrency(totalBalance), change: `${mappedTransactions.length} txns`, icon: TrendingUp, color: 'text-tertiary' },
         ].map((metric, i) => (
           <div key={i} className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col justify-between h-48 lg:h-52 border border-on-surface/5 hover:border-on-surface/20 transition-all group relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-on-surface/[0.02] rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/5 transition-all duration-700" />

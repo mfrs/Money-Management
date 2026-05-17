@@ -25,7 +25,7 @@ const walletTypes = [
 const walletColors = ['#005AA9', '#00A5CF', '#9CA3AF', '#F2A900', '#22C55E', '#8B5CF6', '#EC4899', '#EF4444'];
 
 export default function WalletsView() {
-  const { wallets, totalBalance, addWallet, updateWallet, deleteWallet, transactions } = useApp();
+  const { wallets, totalBalance, addWallet, updateWallet, deleteWallet, journals } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -85,16 +85,22 @@ export default function WalletsView() {
   const liquidity = wallets.filter(w => w.type !== 'savings').reduce((s, w) => s + w.balance, 0);
   const allocated = wallets.filter(w => w.type === 'savings').reduce((s, w) => s + w.balance, 0);
 
-  // Last transaction per wallet
+  // Last journal per wallet
   const getLastActivity = (walletId: string) => {
-    const tx = transactions
-      .filter(t => t.walletId === walletId)
+    const j = journals
+      .filter(j => j.lines.some(l => l.walletId === walletId))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-    if (!tx) return { name: 'No activity', change: '' };
+      
+    if (!j) return { name: 'No activity', change: '' };
+    
+    const netChange = j.lines
+      .filter(l => l.walletId === walletId)
+      .reduce((sum, l) => sum + (l.type === 'DEBIT' ? l.amount : -l.amount), 0);
+      
     return {
-      name: tx.description,
-      change: `${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}`,
-      isNegative: tx.type === 'expense',
+      name: j.description,
+      change: `${netChange >= 0 ? '+' : ''}${formatCurrency(netChange)}`,
+      isNegative: netChange < 0,
     };
   };
 
@@ -360,7 +366,7 @@ export default function WalletsView() {
       <ConfirmDialog
         isOpen={!!deleteId}
         title="Delete Vault"
-        message="This will permanently delete this vault and all its associated transactions. This action cannot be undone."
+        message="This will permanently delete this vault and all its associated journals. This action cannot be undone."
         onConfirm={() => { if (deleteId) deleteWallet(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />

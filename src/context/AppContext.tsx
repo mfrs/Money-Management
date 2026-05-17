@@ -3,14 +3,14 @@ import type {
   ViewType,
   Wallet,
   Category,
-  Transaction,
+  Journal,
   IncomeSource,
   FixedExpense,
   WalletAllocation,
   Goal,
 } from '../lib/types';
 import { generateId } from '../lib/types';
-import { walletApi, categoryApi, transactionApi, budgetApi, goalsApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
 
 export interface Toast {
@@ -59,7 +59,7 @@ interface AppContextType {
   // Data
   wallets: Wallet[];
   categories: Category[];
-  transactions: Transaction[];
+  journals: Journal[];
   goals: Goal[];
   budget: {
     incomeSources: IncomeSource[];
@@ -77,10 +77,10 @@ interface AppContextType {
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
 
-  // Transaction CRUD
-  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => void;
-  updateTransaction: (id: string, updates: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
+  // Journal CRUD
+  addJournal: (payload: any) => void;
+  updateJournal: (id: string, updates: Partial<Journal>) => void;
+  deleteJournal: (id: string) => void;
 
   // Budget CRUD
   addIncomeSource: (source: Omit<IncomeSource, 'id'>) => void;
@@ -147,7 +147,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Data state
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [journals, setJournals] = useState<Journal[]>([]);
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
@@ -244,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setWallets([]);
     setCategories([]);
-    setTransactions([]);
+    setJournals([]);
     setIncomeSources([]);
     setFixedExpenses([]);
     setWalletAllocations([]);
@@ -269,10 +269,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     try {
       setIsLoading(true);
-      const [w, c, t, is, fe, wa, g] = await Promise.all([
+      const [w, c, j, is, fe, wa, g] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
-        transactionApi.getAll(),
+        journalApi.getAll(),
         budgetApi.getIncomeSources(),
         budgetApi.getFixedExpenses(),
         budgetApi.getWalletAllocations(),
@@ -280,7 +280,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ]);
       setWallets(w);
       setCategories(c);
-      setTransactions(t);
+      setJournals(j);
       setIncomeSources(is);
       setFixedExpenses(fe);
       setWalletAllocations(wa);
@@ -325,7 +325,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await walletApi.delete(id);
       setWallets(prev => prev.filter(w => w.id !== id));
-      setTransactions(prev => prev.filter(t => t.walletId !== id));
+      setJournals(prev => prev.filter(j => !j.lines.some(l => l.walletId === id)));
       setWalletAllocations(prev => prev.filter(a => a.walletId !== id));
       addToast('Wallet deleted', 'info');
     } catch { addToast('Failed to delete wallet', 'error'); }
@@ -355,50 +355,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { addToast('Failed to delete category', 'error'); }
   }, [addToast]);
 
-  // ===================== TRANSACTION CRUD =====================
-  const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'createdAt'>) => {
+  // ===================== JOURNAL CRUD =====================
+  const addJournal = useCallback(async (payload: any) => {
     try {
-      const created = await transactionApi.create(tx);
-      setTransactions(prev => [created, ...prev]);
+      const created = await journalApi.create(payload);
+      setJournals(prev => [created, ...prev]);
+      
+      // Update local wallet balances correctly based on journal lines
       setWallets(prev => prev.map(w => {
-        if (w.id === tx.walletId) {
-          return { ...w, balance: tx.type === 'income' ? w.balance + tx.amount : w.balance - tx.amount };
-        }
-        if (tx.type === 'transfer' && w.id === tx.toWalletId) {
-          return { ...w, balance: w.balance + tx.amount };
-        }
-        return w;
+        let newBalance = w.balance;
+        created.lines.forEach((line: any) => {
+          if (line.walletId === w.id) {
+            newBalance += (line.type === 'DEBIT' ? line.amount : -line.amount);
+          }
+        });
+        return { ...w, balance: newBalance };
       }));
-      addToast(tx.type === 'transfer' ? 'Transfer recorded!' : tx.type === 'income' ? 'Income recorded!' : 'Expense recorded!');
-    } catch { addToast('Failed to add transaction', 'error'); }
+      addToast('Journal recorded!');
+    } catch { addToast('Failed to add journal', 'error'); }
   }, [addToast]);
 
-  const updateTransaction = useCallback(async (_id: string, _updates: Partial<Transaction>) => {
+  const updateJournal = useCallback(async (_id: string, _updates: Partial<Journal>) => {
     try {
-      addToast('Transaction updated');
+      addToast('Journal updated');
       await loadAllData();
-    } catch { addToast('Failed to update transaction', 'error'); }
+    } catch { addToast('Failed to update journal', 'error'); }
   }, [addToast, loadAllData]);
 
-  const deleteTransaction = useCallback(async (id: string) => {
+  const deleteJournal = useCallback(async (id: string) => {
     try {
-      const tx = transactions.find(t => t.id === id);
-      await transactionApi.delete(id);
-      setTransactions(prev => prev.filter(t => t.id !== id));
-      if (tx) {
+      const journal = journals.find(j => j.id === id);
+      await journalApi.delete(id);
+      setJournals(prev => prev.filter(j => j.id !== id));
+      if (journal) {
         setWallets(prev => prev.map(w => {
-          if (w.id === tx.walletId) {
-            return { ...w, balance: tx.type === 'income' ? w.balance - tx.amount : w.balance + tx.amount };
-          }
-          if (tx.type === 'transfer' && w.id === tx.toWalletId) {
-            return { ...w, balance: w.balance - tx.amount };
-          }
-          return w;
+          let newBalance = w.balance;
+          journal.lines.forEach((line: any) => {
+            if (line.walletId === w.id) {
+              // reverse the transaction
+              newBalance -= (line.type === 'DEBIT' ? line.amount : -line.amount);
+            }
+          });
+          return { ...w, balance: newBalance };
         }));
       }
-      addToast('Transaction deleted', 'info');
-    } catch { addToast('Failed to delete transaction', 'error'); }
-  }, [transactions, addToast]);
+      addToast('Journal deleted', 'info');
+    } catch { addToast('Failed to delete journal', 'error'); }
+  }, [journals, addToast]);
 
   // ===================== BUDGET =====================
   const addIncomeSource = useCallback(async (source: Omit<IncomeSource, 'id'>) => {
@@ -459,15 +462,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);
   const now = new Date();
-  const monthlyTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const d = new Date(t.date);
+  const monthlyJournals = useMemo(() => {
+    return journals.filter(j => {
+      const d = new Date(j.date);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
-  }, [transactions]);
-  const totalIncome = useMemo(() => monthlyTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), [monthlyTransactions]);
-  const totalExpenses = useMemo(() => monthlyTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0), [monthlyTransactions]);
-  const getCategorySpent = useCallback((categoryId: string) => monthlyTransactions.filter(t => t.categoryId === categoryId && t.type === 'expense').reduce((s, t) => s + t.amount, 0), [monthlyTransactions]);
+  }, [journals]);
+
+  const totalIncome = useMemo(() => monthlyJournals.reduce((sum, j) => {
+    const incomeLine = j.lines.find(l => l.categoryId && l.type === 'CREDIT');
+    return sum + (incomeLine ? incomeLine.amount : 0);
+  }, 0), [monthlyJournals]);
+
+  const totalExpenses = useMemo(() => monthlyJournals.reduce((sum, j) => {
+    const expenseLine = j.lines.find(l => l.categoryId && l.type === 'DEBIT');
+    return sum + (expenseLine ? expenseLine.amount : 0);
+  }, 0), [monthlyJournals]);
+
+  const getCategorySpent = useCallback((categoryId: string) => monthlyJournals.reduce((sum, j) => {
+    const expenseLine = j.lines.find(l => l.categoryId === categoryId && l.type === 'DEBIT');
+    return sum + (expenseLine ? expenseLine.amount : 0);
+  }, 0), [monthlyJournals]);
+
   const getWalletById = useCallback((id: string) => wallets.find(w => w.id === id), [wallets]);
   const getCategoryById = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
 
@@ -489,11 +505,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isMobileSidebarOpen, setIsMobileSidebarOpen,
       searchQuery, setSearchQuery,
       isLoading, authLoading,
-      wallets, categories, transactions, goals,
+      wallets, categories, journals, goals,
       budget: { incomeSources, fixedExpenses, walletAllocations },
       addWallet, updateWallet, deleteWallet,
       addCategory, updateCategory, deleteCategory,
-      addTransaction, updateTransaction, deleteTransaction,
+      addJournal, updateJournal, deleteJournal,
       addIncomeSource, updateIncomeSource, deleteIncomeSource,
       addFixedExpense, updateFixedExpense, deleteFixedExpense,
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,

@@ -21,8 +21,8 @@ const PAGE_SIZE = 8;
 
 export default function TransactionsView() {
   const {
-    transactions, categories, wallets, searchQuery,
-    addTransaction, deleteTransaction,
+    journals, categories, wallets, searchQuery,
+    addJournal, deleteJournal,
     getCategoryById, getWalletById, t
   } = useApp();
 
@@ -45,9 +45,53 @@ export default function TransactionsView() {
 
   const filteredCategories = categories.filter(c => c.type === formType);
 
+  const mappedTransactions = useMemo(() => {
+    return journals.map(j => {
+      const categoryLine = j.lines.find(l => l.categoryId);
+      const walletLines = j.lines.filter(l => l.walletId);
+      
+      let type: 'income' | 'expense' | 'transfer' = 'expense';
+      let categoryId = undefined;
+      let walletId = walletLines[0]?.walletId || '';
+      let toWalletId = undefined;
+      let amount = 0;
+
+      if (walletLines.length === 2 && !categoryLine) {
+        type = 'transfer';
+        const creditLine = walletLines.find(l => l.type === 'CREDIT');
+        const debitLine = walletLines.find(l => l.type === 'DEBIT');
+        if (creditLine) {
+          walletId = creditLine.walletId;
+          amount = creditLine.amount;
+        }
+        if (debitLine) {
+          toWalletId = debitLine.walletId;
+        }
+      } else if (categoryLine) {
+        categoryId = categoryLine.categoryId;
+        amount = categoryLine.amount;
+        type = categoryLine.type === 'CREDIT' ? 'income' : 'expense';
+        const wLine = walletLines.find(l => l.walletId);
+        if (wLine) walletId = wLine.walletId;
+      }
+
+      return {
+        id: j.id,
+        description: j.description,
+        note: j.note,
+        date: j.date,
+        type,
+        amount,
+        categoryId,
+        walletId,
+        toWalletId,
+      };
+    });
+  }, [journals]);
+
   // Filter and sort transactions
   const filtered = useMemo(() => {
-    let result = [...transactions];
+    let result = [...mappedTransactions];
 
     // Tab filter
     if (activeTab !== 'all') {
@@ -88,7 +132,7 @@ export default function TransactionsView() {
     }
 
     return result;
-  }, [transactions, activeTab, filterCategory, filterWallet, searchQuery, sortOrder, getCategoryById, getWalletById]);
+  }, [mappedTransactions, activeTab, filterCategory, filterWallet, searchQuery, sortOrder, getCategoryById, getWalletById]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -100,7 +144,7 @@ export default function TransactionsView() {
     const num = parseFloat(formAmount);
     if (!num || num <= 0 || !formWallet || !formCategory) return;
 
-    addTransaction({
+    addJournal({
       description: formDescription || 'Transaction',
       amount: num,
       type: formType,
@@ -407,7 +451,7 @@ export default function TransactionsView() {
         isOpen={!!deleteId}
         title="Delete Transaction"
         message="This will delete this transaction and reverse the wallet balance change."
-        onConfirm={() => { if (deleteId) deleteTransaction(deleteId); setDeleteId(null); }}
+        onConfirm={() => { if (deleteId) deleteJournal(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />
     </motion.div>

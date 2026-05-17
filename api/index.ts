@@ -67,7 +67,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.status(201).json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Registration failed' });
@@ -88,7 +88,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Login failed' });
@@ -96,7 +96,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 });
 
 app.get('/api/auth/me', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { id: true, name: true, email: true, currency: true, theme: true, createdAt: true } });
+  const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, createdAt: true } });
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
 });
@@ -113,7 +113,7 @@ app.put('/api/auth/profile', authMiddleware, async (req: AuthRequest, res: Respo
     const user = await prisma.user.update({
       where: { id: req.userId! },
       data,
-      select: { id: true, name: true, email: true, currency: true, theme: true },
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true },
     });
     res.json(user);
   } catch (err: any) {
@@ -186,74 +186,68 @@ app.delete('/api/categories/:id', authMiddleware, async (req: AuthRequest, res: 
   res.json({ success: true });
 });
 
-// TRANSACTIONS
-app.get('/api/transactions', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const transactions = await prisma.transaction.findMany({
+// JOURNALS
+app.get('/api/journals', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const journals = await prisma.journal.findMany({
     where: { userId: req.userId! },
     orderBy: { date: 'desc' },
-    include: { category: true, wallet: true },
+    include: { lines: true },
   });
-  res.json(transactions);
+  res.json(journals);
 });
 
-app.post('/api/transactions', authMiddleware, async (req: AuthRequest, res: Response) => {
+app.post('/api/journals', authMiddleware, async (req: AuthRequest, res: Response) => {
   const { description, amount, type, categoryId, walletId, toWalletId, date, note } = req.body;
+  
+  const lines: any[] = [];
   
   if (type === 'transfer') {
     if (!toWalletId) return res.status(400).json({ error: 'toWalletId is required for transfers' });
-    const [transaction] = await prisma.$transaction([
-      prisma.transaction.create({
-        data: { description, amount, type, categoryId: null, walletId, toWalletId, date: new Date(date), note: note || '', userId: req.userId! },
-      }),
-      prisma.wallet.update({
-        where: { id: walletId, userId: req.userId! },
-        data: { balance: { decrement: amount } },
-      }),
-      prisma.wallet.update({
-        where: { id: toWalletId, userId: req.userId! },
-        data: { balance: { increment: amount } },
-      }),
-    ]);
-    res.status(201).json(transaction);
-  } else {
-    const [transaction] = await prisma.$transaction([
-      prisma.transaction.create({
-        data: { description, amount, type, categoryId, walletId, date: new Date(date), note: note || '', userId: req.userId! },
-      }),
-      prisma.wallet.update({
-        where: { id: walletId, userId: req.userId! },
-        data: { balance: { [type === 'income' ? 'increment' : 'decrement']: amount } },
-      }),
-    ]);
-    res.status(201).json(transaction);
+    lines.push({ walletId, amount, type: 'CREDIT' });
+    lines.push({ walletId: toWalletId, amount, type: 'DEBIT' });
+  } else if (type === 'expense') {
+    lines.push({ walletId, amount, type: 'CREDIT' });
+    lines.push({ categoryId, amount, type: 'DEBIT' });
+  } else if (type === 'income') {
+    lines.push({ walletId, amount, type: 'DEBIT' });
+    lines.push({ categoryId, amount, type: 'CREDIT' });
   }
+
+  const [journal] = await prisma.$transaction([
+    prisma.journal.create({
+      data: {
+        description, date: new Date(date), note: note || '', userId: req.userId!,
+        lines: { create: lines }
+      },
+      include: { lines: true }
+    }),
+    ...lines.filter(l => l.walletId).map(l => 
+      prisma.wallet.update({
+        where: { id: l.walletId, userId: req.userId! },
+        data: { balance: { [l.type === 'DEBIT' ? 'increment' : 'decrement']: amount } }
+      })
+    )
+  ]);
+  
+  res.status(201).json(journal);
 });
 
-app.delete('/api/transactions/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const tx = await prisma.transaction.findFirst({ where: { id: req.params.id, userId: req.userId! } });
-  if (!tx) return res.status(404).json({ error: 'Not found' });
+app.delete('/api/journals/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const journal = await prisma.journal.findFirst({ where: { id: req.params.id, userId: req.userId! }, include: { lines: true } });
+  if (!journal) return res.status(404).json({ error: 'Not found' });
 
-  if (tx.type === 'transfer') {
-    await prisma.$transaction([
-      prisma.transaction.delete({ where: { id: req.params.id } }),
-      prisma.wallet.update({
-        where: { id: tx.walletId },
-        data: { balance: { increment: tx.amount } },
-      }),
-      prisma.wallet.update({
-        where: { id: tx.toWalletId! },
-        data: { balance: { decrement: tx.amount } },
-      }),
-    ]);
-  } else {
-    await prisma.$transaction([
-      prisma.transaction.delete({ where: { id: req.params.id } }),
-      prisma.wallet.update({
-        where: { id: tx.walletId },
-        data: { balance: { [tx.type === 'income' ? 'decrement' : 'increment']: tx.amount } },
-      }),
-    ]);
-  }
+  const walletUpdates = journal.lines.filter(l => l.walletId).map(l => 
+    prisma.wallet.update({
+      where: { id: l.walletId },
+      data: { balance: { [l.type === 'DEBIT' ? 'decrement' : 'increment']: l.amount } }
+    })
+  );
+
+  await prisma.$transaction([
+    prisma.journal.delete({ where: { id: req.params.id } }),
+    ...walletUpdates
+  ]);
+
   res.json({ success: true });
 });
 
@@ -323,7 +317,7 @@ app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Respo
 
 // RESET DATA (user-scoped)
 app.post('/api/reset', authMiddleware, async (req: AuthRequest, res: Response) => {
-  await prisma.transaction.deleteMany({ where: { userId: req.userId! } });
+  await prisma.journal.deleteMany({ where: { userId: req.userId! } });
   await prisma.walletAllocation.deleteMany({ where: { userId: req.userId! } });
   await prisma.fixedExpense.deleteMany({ where: { userId: req.userId! } });
   await prisma.incomeSource.deleteMany({ where: { userId: req.userId! } });

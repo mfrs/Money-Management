@@ -14,7 +14,7 @@ import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
 
 export default function QuickEntryModal() {
-  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addTransaction } = useApp();
+  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal } = useApp();
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
@@ -33,7 +33,7 @@ export default function QuickEntryModal() {
     if (type === 'transfer' && !toWalletId) return;
     if (type !== 'transfer' && !categoryId) return;
 
-    addTransaction({
+    addJournal({
       description: type === 'transfer' ? description || note || 'Transfer' : description || note || filteredCategories.find(c => c.id === categoryId)?.name || 'Transaction',
       amount: numAmount,
       type,

@@ -34,6 +34,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  isAdmin: boolean;
   currency: string;
   theme: string;
 }
@@ -71,11 +72,11 @@ export const categoryApi = {
   delete: (id: string) => request<any>(`/categories/${id}`, { method: 'DELETE' }),
 };
 
-// ===================== TRANSACTIONS =====================
-export const transactionApi = {
-  getAll: () => request<any[]>('/transactions'),
-  create: (data: any) => request<any>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  delete: (id: string) => request<any>(`/transactions/${id}`, { method: 'DELETE' }),
+// ===================== JOURNALS =====================
+export const journalApi = {
+  getAll: () => request<any[]>('/journals'),
+  create: (data: any) => request<any>('/journals', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => request<any>(`/journals/${id}`, { method: 'DELETE' }),
 };
 
 // ===================== BUDGET =====================
