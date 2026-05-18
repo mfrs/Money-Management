@@ -79,9 +79,11 @@ export default function ReportsView() {
   };
 
   const mappedTransactions = useMemo(() => {
-    return journals.map(j => {
-      const categoryLine = j.lines.find(l => l.categoryId);
-      const walletLines = j.lines.filter(l => l.walletId);
+    return journals
+      .filter(j => !j.isReversed && !j.description.startsWith('[REVERSAL]'))
+      .map(j => {
+        const categoryLine = j.lines.find(l => l.categoryId);
+        const walletLines = j.lines.filter(l => l.walletId);
       
       let type: 'income' | 'expense' | 'transfer' = 'expense';
       let categoryId = undefined;

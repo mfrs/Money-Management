@@ -88,7 +88,7 @@ export default function WalletsView() {
   // Last journal per wallet
   const getLastActivity = (walletId: string) => {
     const j = journals
-      .filter(j => j.lines.some(l => l.walletId === walletId))
+      .filter(j => !j.isReversed && !j.description.startsWith('[REVERSAL]') && j.lines.some(l => l.walletId === walletId))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
       
     if (!j) return { name: 'No activity', change: '' };

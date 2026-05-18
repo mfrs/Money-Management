@@ -451,6 +451,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const now = new Date();
   const monthlyJournals = useMemo(() => {
     return journals.filter(j => {
+      if (j.isReversed || j.description.startsWith('[REVERSAL]')) return false;
       const d = new Date(j.date);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
