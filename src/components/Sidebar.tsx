@@ -5,6 +5,7 @@ import {
   Receipt,
   BarChart3,
   Settings,
+  BookOpen,
   LogOut,
   CircleGauge,
   X,
@@ -24,6 +25,7 @@ const navItems = [
   { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
   { id: 'goals', labelKey: 'nav.goals', icon: Target },
   { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
+  { id: 'ledger', labelKey: 'General Ledger', icon: BookOpen },
   { id: 'reports', labelKey: 'nav.reports', icon: BarChart3 },
 ] as const;
 
@@ -86,7 +88,7 @@ export default function Sidebar() {
               "transition-colors",
               currentView === item.id ? "text-surface" : "text-on-surface/20 group-hover:text-on-surface"
             )} />
-            {t(item.labelKey)}
+            {item.labelKey.startsWith('nav.') ? t(item.labelKey) : item.labelKey}
           </button>
         ))}
 

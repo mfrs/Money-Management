@@ -11,6 +11,7 @@ import SettingsView from './views/SettingsView';
 import SignInView from './views/SignInView';
 import GoalsView from './views/GoalsView';
 import AdminView from './views/AdminView';
+import LedgerView from './views/LedgerView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
 import { AnimatePresence } from 'motion/react';
@@ -58,6 +59,7 @@ function AppContent() {
       case 'settings': return <SettingsView />;
       case 'goals': return <GoalsView />;
       case 'admin': return <AdminView />;
+      case 'ledger': return <LedgerView />;
       default: return <DashboardView />;
     }
   };
