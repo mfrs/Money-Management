@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   TrendingDown,
   TrendingUp,
@@ -6,6 +6,8 @@ import {
   PiggyBank,
   ShieldCheck,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -26,6 +28,31 @@ export default function Dashboard() {
     getCategorySpent, getCategoryById, getWalletById,
     setCurrentView, t, isSensored,
   } = useApp();
+
+  const [selectedMonthDate, setSelectedMonthDate] = useState(new Date());
+
+  const handlePrevMonth = () => {
+    setSelectedMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const daysOfWeek = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+  const now = new Date();
+  const year = selectedMonthDate.getFullYear();
+  const month = selectedMonthDate.getMonth();
+
+  const firstDayIndex = new Date(year, month, 1).getDay(); // 0-6
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(year, month, 0).getDate();
 
   // Top expense categories with spending data
   const categorySpending = useMemo(() => {
@@ -81,6 +108,50 @@ export default function Dashboard() {
       };
     });
   }, [journals]);
+
+  const calendarCells = useMemo(() => {
+    const cells: { day: number; isCurrentMonth: boolean; expenses: number }[] = [];
+
+    // Prev month padding
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      cells.push({
+        day: prevMonthTotalDays - i,
+        isCurrentMonth: false,
+        expenses: 0
+      });
+    }
+
+    // Current month
+    for (let i = 1; i <= totalDays; i++) {
+      const dayExpenses = mappedTransactions
+        .filter(t => {
+          if (t.type !== 'expense') return false;
+          const txDate = new Date(t.date);
+          return txDate.getFullYear() === year &&
+                 txDate.getMonth() === month &&
+                 txDate.getDate() === i;
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      cells.push({
+        day: i,
+        isCurrentMonth: true,
+        expenses: dayExpenses
+      });
+    }
+
+    // Next month padding
+    const remainingSlots = 42 - cells.length;
+    for (let i = 1; i <= remainingSlots; i++) {
+      cells.push({
+        day: i,
+        isCurrentMonth: false,
+        expenses: 0
+      });
+    }
+
+    return cells;
+  }, [mappedTransactions, year, month, firstDayIndex, totalDays, prevMonthTotalDays]);
 
   // Recent transactions
   const recentTransactions = useMemo(() => {
@@ -322,6 +393,73 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Monthly Activity Calendar */}
+      <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-2">
+          <div>
+            <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Aktifitas Bulanan</h3>
+            <p className="text-[10px] text-on-surface/30 uppercase tracking-widest mt-1">Total Pengeluaran Harian</p>
+          </div>
+          <div className="flex items-center gap-4 bg-on-surface/5 px-4 py-2 rounded-full border border-on-surface/5 self-start sm:self-auto shadow-sm">
+            <button
+              onClick={handlePrevMonth}
+              className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-1"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface min-w-[120px] text-center select-none">
+              {monthNames[selectedMonthDate.getMonth()]} {selectedMonthDate.getFullYear()}
+            </span>
+            <button
+              onClick={handleNextMonth}
+              className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-1"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-2 text-center">
+          {daysOfWeek.map(day => (
+            <div key={day} className="text-[9px] lg:text-[10px] font-bold text-on-surface/30 uppercase tracking-widest py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 lg:gap-2">
+          {calendarCells.map((cell, idx) => {
+            const isToday = cell.isCurrentMonth && 
+                            cell.day === now.getDate() && 
+                            selectedMonthDate.getMonth() === now.getMonth() && 
+                            selectedMonthDate.getFullYear() === now.getFullYear();
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "min-h-[60px] lg:min-h-[85px] rounded-[14px] lg:rounded-2xl p-2 flex flex-col justify-between transition-all border border-on-surface/5",
+                  cell.isCurrentMonth 
+                    ? (isToday ? "bg-primary/[0.05] border-primary/20 shadow-[0_0_12px_rgba(59,130,246,0.1)]" : "bg-on-surface/[0.01] hover:bg-on-surface/[0.04]") 
+                    : "bg-transparent opacity-10 pointer-events-none border-none"
+                )}
+              >
+                <span className={cn(
+                  "text-[11px] lg:text-xs font-bold",
+                  isToday ? "text-primary" : "text-on-surface/50"
+                )}>
+                  {cell.day}
+                </span>
+                {cell.isCurrentMonth && cell.expenses > 0 && (
+                  <div className="text-[8px] lg:text-[10px] font-mono font-bold text-tertiary text-right tracking-tighter truncate mt-1">
+                    -{formatCurrencyShort(cell.expenses, isSensored)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Live Ledger */}
       <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
