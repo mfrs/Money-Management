@@ -57,7 +57,7 @@ export default function AIChatAssistant() {
       const rec = new SpeechRecognition();
       rec.continuous = true;
       rec.interimResults = true;
-      rec.lang = language === 'id' ? 'id-ID' : 'en-US';
+      rec.lang = 'id-ID'; // Diatur secara eksplisit ke Bahasa Indonesia (id-ID) untuk akurasi perekaman maksimal
 
       rec.onstart = () => {
         setIsListening(true);
