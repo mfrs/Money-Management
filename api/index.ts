@@ -424,7 +424,7 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
     Important: Do not include markdown code blocks (\`\`\`json) in your response, just the raw JSON object.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [
         {
           role: 'user',
