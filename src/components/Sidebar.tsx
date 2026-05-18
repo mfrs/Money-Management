@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   Target,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -88,6 +89,24 @@ export default function Sidebar() {
             {t(item.labelKey)}
           </button>
         ))}
+
+        {user?.isAdmin && (
+          <button
+            onClick={() => setCurrentView('admin' as any)}
+            className={cn(
+              "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group mt-4 border border-primary/20",
+              currentView === 'admin'
+                ? "bg-primary/20 text-primary shadow-xl"
+                : "text-primary/50 hover:text-primary hover:bg-primary/10"
+            )}
+          >
+            <ShieldCheck size={18} className={cn(
+              "transition-colors",
+              currentView === 'admin' ? "text-primary" : "text-primary/50 group-hover:text-primary"
+            )} />
+            Admin Panel
+          </button>
+        )}
       </nav>
 
       {/* Footer */}

@@ -1,0 +1,277 @@
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Users,
+  ShieldAlert,
+  ArrowLeft,
+  Wallet,
+  Receipt,
+  Tag,
+} from 'lucide-react';
+import { adminApi, AuthUser } from '../lib/api';
+import { cn } from '../lib/utils';
+import { formatCurrencyShort } from '../lib/types';
+import { useApp } from '../context/AppContext';
+
+interface AdminUser extends AuthUser {
+  createdAt: string;
+  _count: {
+    wallets: number;
+    journals: number;
+    categories: number;
+  };
+}
+
+export default function AdminView() {
+  const { user: currentUser } = useApp();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Drill-down state
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [userData, setUserData] = useState<{ wallets: any[], journals: any[], categories: any[] } | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await adminApi.getUsers();
+      setUsers(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserClick = async (user: AdminUser) => {
+    setSelectedUser(user);
+    try {
+      setLoadingData(true);
+      const data = await adminApi.getUserData(user.id);
+      setUserData(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  if (!currentUser?.isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+        <ShieldAlert size={64} className="text-error mb-6" />
+        <h2 className="font-display text-3xl font-bold text-on-surface mb-2">Access Denied</h2>
+        <p className="text-on-surface/40 uppercase tracking-widest text-sm font-medium">You do not have permission to view this page.</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8 pb-10 relative"
+    >
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
+        <div>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase">Admin Panel</h2>
+          <p className="text-sm text-on-surface/40 mt-3 max-w-lg leading-relaxed uppercase tracking-widest font-medium">
+            Full System Overview & User Control.
+          </p>
+        </div>
+      </header>
+
+      {/* Main View: User List */}
+      <AnimatePresence mode="wait">
+        {!selectedUser ? (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center border border-primary/30">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-on-surface uppercase">Registered Users</h3>
+                  <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">Total {users.length} accounts</p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-10 text-on-surface/40 uppercase tracking-widest text-sm">Loading users...</div>
+              ) : error ? (
+                <div className="text-center py-10 text-error uppercase tracking-widest text-sm">{error}</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-on-surface/5 text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">
+                        <th className="py-4 px-4">User</th>
+                        <th className="py-4 px-4">Status</th>
+                        <th className="py-4 px-4 text-center">Wallets</th>
+                        <th className="py-4 px-4 text-center">Journals</th>
+                        <th className="py-4 px-4 text-right">Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-on-surface/5">
+                      {users.map((user) => (
+                        <tr 
+                          key={user.id} 
+                          onClick={() => handleUserClick(user)}
+                          className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
+                        >
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-on-surface/10 flex items-center justify-center font-display font-bold text-sm text-on-surface border border-on-surface/5 group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-on-surface">{user.name}</p>
+                                <p className="text-[10px] text-on-surface/40">{user.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            {user.isAdmin ? (
+                              <span className="text-[9px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tracking-widest border border-primary/20">Admin</span>
+                            ) : (
+                              <span className="text-[9px] font-bold text-on-surface/40 bg-on-surface/5 px-3 py-1 rounded-full uppercase tracking-widest border border-on-surface/5">User</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.wallets}</td>
+                          <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.journals}</td>
+                          <td className="py-4 px-4 text-right text-xs font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="details"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="space-y-6"
+          >
+            {/* Back Button & Header */}
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => { setSelectedUser(null); setUserData(null); }}
+                className="w-12 h-12 rounded-full glass-dark flex items-center justify-center text-on-surface hover:bg-on-surface/10 transition-colors border border-on-surface/10"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h3 className="font-display text-2xl font-bold text-on-surface">Data Overview: {selectedUser.name}</h3>
+                <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">{selectedUser.email}</p>
+              </div>
+            </div>
+
+            {loadingData ? (
+              <div className="glass rounded-[32px] p-20 text-center text-on-surface/40 uppercase tracking-widest text-sm">
+                Scanning Database...
+              </div>
+            ) : userData && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Stats */}
+                <div className="lg:col-span-1 space-y-6">
+                  <div className="glass rounded-[32px] p-6 border border-on-surface/5">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+                        <Wallet size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-on-surface uppercase tracking-widest">Wallets</span>
+                    </div>
+                    <div className="space-y-4">
+                      {userData.wallets.map(w => (
+                        <div key={w.id} className="flex justify-between items-center p-4 bg-on-surface/5 rounded-2xl">
+                          <div>
+                            <p className="text-sm font-bold text-on-surface uppercase tracking-wider">{w.name}</p>
+                            <p className="text-[10px] text-on-surface/40 uppercase mt-1">{w.type}</p>
+                          </div>
+                          <p className="font-display text-lg font-bold text-primary">{formatCurrencyShort(w.balance)}</p>
+                        </div>
+                      ))}
+                      {userData.wallets.length === 0 && <p className="text-xs text-on-surface/30">No wallets found</p>}
+                    </div>
+                  </div>
+
+                  <div className="glass rounded-[32px] p-6 border border-on-surface/5">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-secondary/20 text-secondary flex items-center justify-center">
+                        <Tag size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-on-surface uppercase tracking-widest">Categories</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {userData.categories.map(c => (
+                        <span key={c.id} className="text-[10px] font-bold text-on-surface bg-on-surface/10 px-3 py-1.5 rounded-full border border-on-surface/5">
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Journals */}
+                <div className="lg:col-span-2 glass rounded-[32px] p-8 border border-on-surface/5">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-xl bg-tertiary/20 text-tertiary flex items-center justify-center border border-tertiary/30">
+                      <Receipt size={24} />
+                    </div>
+                    <span className="font-display text-xl font-bold text-on-surface uppercase">Raw Journals</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {userData.journals.map(j => {
+                      // Calc total debit/credit for this journal
+                      const debit = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
+                      
+                      return (
+                        <div key={j.id} className="p-5 bg-on-surface/5 rounded-2xl border border-on-surface/5 flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-bold text-on-surface">{j.description}</p>
+                            <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mt-1">
+                              {new Date(j.date).toLocaleDateString()} • {j.lines.length} lines
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-display text-base font-bold text-on-surface tabular-nums">{formatCurrencyShort(debit)}</p>
+                            <p className="text-[9px] font-bold text-on-surface/30 uppercase mt-1 tracking-[0.2em]">Balanced</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {userData.journals.length === 0 && (
+                      <div className="text-center py-10 text-on-surface/30 text-xs uppercase tracking-widest">
+                        No journals recorded
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}

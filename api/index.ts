@@ -35,6 +35,52 @@ function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   }
 }
 
+async function adminMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    next();
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// ===================== ADMIN ROUTES =====================
+app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isAdmin: true,
+      createdAt: true,
+      _count: {
+        select: { wallets: true, journals: true, categories: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  res.json(users);
+});
+
+app.get('/api/admin/users/:id/data', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const userId = req.params.id;
+  
+  const [wallets, journals, categories] = await Promise.all([
+    prisma.wallet.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+    prisma.journal.findMany({ 
+      where: { userId }, 
+      include: { lines: true },
+      orderBy: { date: 'desc' }
+    }),
+    prisma.category.findMany({ where: { userId } })
+  ]);
+  
+  res.json({ wallets, journals, categories });
+});
+
 // ===================== AUTH ROUTES =====================
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {

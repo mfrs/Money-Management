@@ -110,3 +110,9 @@ export const goalsApi = {
   update: (id: string, data: any) => request<any>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<any>(`/goals/${id}`, { method: 'DELETE' }),
 };
+
+// ===================== ADMIN =====================
+export const adminApi = {
+  getUsers: () => request<any[]>('/admin/users'),
+  getUserData: (userId: string) => request<any>(`/admin/users/${userId}/data`),
+};
