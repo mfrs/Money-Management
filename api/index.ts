@@ -3,7 +3,6 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenAI } from '@google/genai';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -400,7 +399,7 @@ app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Respo
   res.json({ success: true });
 });
 
-// RECEIPT SCANNER (GEMINI AI)
+// RECEIPT SCANNER (OPENROUTER AI - VISION)
 app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { imageBase64, mimeType } = req.body;
@@ -408,12 +407,11 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
       return res.status(400).json({ error: 'Image data is required' });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'Gemini API key is not configured on the server' });
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key is not configured on the server' });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
     const prompt = `You are an expert accountant. Extract data from this receipt.
     Return ONLY a valid JSON object with the following keys:
     - "merchantName": string (The name of the store or merchant)
@@ -423,21 +421,42 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
     If you cannot find a value, use null.
     Important: Do not include markdown code blocks (\`\`\`json) in your response, just the raw JSON object.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { inlineData: { data: imageBase64, mimeType } },
-            { text: prompt }
-          ]
-        }
-      ]
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "WealthManager"
+      },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${imageBase64}`
+                }
+              }
+            ]
+          }
+        ]
+      })
     });
 
-    let rawText = response.text;
-    // Clean up markdown just in case the model ignored instructions
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+    }
+
+    const result = await response.json() as any;
+    let rawText = result.choices?.[0]?.message?.content || '{}';
+
     if (rawText && rawText.includes('\`\`\`')) {
       rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
     }
@@ -455,7 +474,8 @@ app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Respon
   try {
     const { text, wallets, categories, goals, currentDate } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
-    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini API key not configured' });
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
     // Fetch user's recent active transactions to allow deletion matching
     const recentJournals = await prisma.journal.findMany({
@@ -544,8 +564,6 @@ app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Respon
 
     const goalsList = goals || [];
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
     const prompt = `You are a world-class personal financial planner and parser assistant.
 User text: "${text}"
 Current Date Context: ${currentDate}
@@ -652,15 +670,34 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        }
      }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "WealthManager"
+      },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
     });
 
-    let rawText = response.text;
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+    }
+
+    const result = await response.json() as any;
+    let rawText = result.choices?.[0]?.message?.content || '{}';
+
     if (rawText && rawText.includes('\`\`\`')) {
       rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
     }
