@@ -14,6 +14,7 @@ import AdminView from './views/AdminView';
 import LedgerView from './views/LedgerView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
+import AIChatAssistant from './components/AIChatAssistant';
 import { AnimatePresence } from 'motion/react';
 
 function AppContent() {
@@ -80,6 +81,7 @@ function AppContent() {
       </main>
 
       <QuickEntryModal />
+      <AIChatAssistant />
       <ToastContainer />
 
       {/* Dynamic background accents */}
