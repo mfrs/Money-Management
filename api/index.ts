@@ -602,6 +602,16 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
      }
 
 4. If the user wants to CREATE/ADD a transaction (either by voice/text or scanned receipt details):
+   - Resolve the transaction type:
+     * 'income': If money is coming in (e.g., "masuk uang", "terima", "gaji", "tambah saldo"). If only one wallet is mentioned, it is always 'income', NOT 'transfer'.
+     * 'expense': If money is going out (e.g., "bayar", "beli", "keluar uang", "kurang saldo").
+     * 'transfer': ONLY if money is being moved between two distinct wallets (e.g., "transfer dari BCA ke Jago").
+   - Resolve the amount:
+     * Parse the exact numeric amount as a positive JSON number (e.g., 10000000 instead of "10jt" or "NaN").
+     * If multiple numbers are mentioned (e.g., "masuk uang 10jt ke bank jago 20jt"), carefully identify the primary transaction amount. In "masuk uang 10jt ke bank jago 20jt", the transaction amount is 10000000, and "20jt" is the final balance.
+   - Resolve the wallet and category:
+     * Map the mentioned wallet (e.g., "bank jago" or "jago") to its corresponding UUID in Available Wallets.
+     * Map to a suitable Category UUID from Available Categories based on the type (e.g., pick a matching income category if type is 'income', or expense category if type is 'expense'). Never leave categoryId null if the type is 'income' or 'expense'.
    - If the amount is mentioned in a foreign currency (like $10 or 12 USD or 1000 JPY), automatically convert it to the user's primary currency (IDR, assuming $1 = 16000 IDR, 1 SGD = 12000 IDR, etc.).
    - Check if this new transaction would exceed the matched category's budgetLimit, or push it above 80% of the limit.
    - If so, generate a warning message in the "budgetAlert" field. Example: "Awas! Pengeluaran ini membuat kategori Makan kamu melebihi budget Rp 3.000.000 (terpakai Rp 3.150.000)." If not, leave "budgetAlert" as null.
@@ -614,11 +624,11 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
      {
        "action": "create",
        "type": "expense", // or "income" or "transfer"
-       "amount": 150000, // converted to base currency if foreign currency was used
-       "description": "Makan siang solaria",
-       "walletId": "uuid-of-wallet",
+       "amount": 150000, // resolved positive JSON number
+       "description": "Makan siang solaria", // a clear and descriptive description based on user input, never "Unknown"
+       "walletId": "uuid-of-wallet", // resolved UUID of the target wallet (e.g., Bank Jago UUID)
        "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
-       "categoryId": "uuid-of-category", // only if type is expense or income, else null
+       "categoryId": "uuid-of-category", // resolved UUID of the category (must match type: income or expense), never null
        "date": "2024-05-18T12:00:00.000Z", // use ISO string
        "budgetAlert": "Warning message if budget exceeded/near limit, else null",
        "duplicateAlert": "Warning message if similar transaction found, else null"

@@ -39,13 +39,15 @@ export default function AIChatAssistant() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatCurrency = (val: number) => {
+  const formatCurrency = (val: any) => {
+    const num = typeof val === 'number' ? val : parseFloat(val);
+    if (isNaN(num)) return language === 'id' ? 'Rp 0' : '$0';
     return new Intl.NumberFormat(language === 'id' ? 'id-ID' : 'en-US', {
       style: 'currency',
       currency: wallets[0]?.user?.currency || 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(val);
+    }).format(num);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
