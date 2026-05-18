@@ -106,6 +106,7 @@ export default function AIChatAssistant() {
         }
       ]);
     } catch (err: any) {
+      console.error('Chat AI Assistant Error:', err);
       setMessages(prev => [
         ...prev,
         {

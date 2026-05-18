@@ -487,7 +487,10 @@ Return ONLY a valid JSON object with the following structure, with NO markdown f
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: prompt
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json'
+      }
     });
 
     let rawText = response.text;
