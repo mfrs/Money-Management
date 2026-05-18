@@ -457,9 +457,30 @@ app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Respon
     if (!text) return res.status(400).json({ error: 'Text is required' });
     if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini API key not configured' });
 
+    // Fetch user's recent active transactions to allow deletion matching
+    const recentJournals = await prisma.journal.findMany({
+      where: { userId: req.userId!, isReversal: false, reversed: false },
+      orderBy: { date: 'desc' },
+      take: 25,
+      include: {
+        wallet: true,
+        category: true
+      }
+    });
+
+    const recentJournalsText = recentJournals.map(j => ({
+      id: j.id,
+      description: j.description,
+      amount: j.amount,
+      type: j.type,
+      date: j.date.toISOString().split('T')[0],
+      walletName: j.wallet.name,
+      categoryName: j.category?.name || 'N/A'
+    }));
+
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
-    const prompt = `You are a financial assistant parsing a natural language transaction.
+    const prompt = `You are a financial assistant parsing a natural language transaction command.
 User text: "${text}"
 Current Date Context: ${currentDate}
 
@@ -469,21 +490,40 @@ ${JSON.stringify(wallets)}
 Available Categories (JSON):
 ${JSON.stringify(categories)}
 
-Analyze the text and extract the transaction details. 
-Determine the closest matching 'walletId' (and 'toWalletId' if it's a transfer) from the Available Wallets.
-Determine the closest matching 'categoryId' from the Available Categories based on the context. If no category matches perfectly, choose the most logical one or leave null.
-Type MUST be one of: 'expense', 'income', or 'transfer'.
+Recent Active Transactions (JSON):
+${JSON.stringify(recentJournalsText)}
 
-Return ONLY a valid JSON object with the following structure, with NO markdown formatting:
-{
-  "type": "expense", // or "income" or "transfer"
-  "amount": 150000,
-  "description": "Makan siang solaria",
-  "walletId": "uuid-of-wallet",
-  "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
-  "categoryId": "uuid-of-category", // only if type is expense or income, else null
-  "date": "2024-05-18T12:00:00.000Z" // use ISO string. Guess the time if not mentioned, or use current time
-}`;
+Determine the user's intent. 
+
+1. If the user wants to DELETE, REVERSE, CANCEL, or says something is "tidak jadi" (which means cancelled/not happening) for an existing transaction:
+   - Identify which transaction from the "Recent Active Transactions" list matches the description (e.g. "Americano"), amount, wallet, or date mentioned by the user.
+   - Return ONLY a valid JSON with this structure:
+     {
+       "action": "delete",
+       "journalId": "the-matched-journal-id",
+       "description": "the-matched-journal-description",
+       "amount": the-matched-journal-amount,
+       "walletName": "the-matched-wallet-name"
+     }
+   - If they want to delete but no matching transaction is found in the list, return:
+     {
+       "action": "delete_not_found",
+       "message": "Transaksi tidak ditemukan di riwayat terbaru."
+     }
+
+2. If the user wants to CREATE/ADD a transaction:
+   - Extract the details as usual.
+   - Return ONLY a valid JSON with this structure:
+     {
+       "action": "create",
+       "type": "expense", // or "income" or "transfer"
+       "amount": 150000,
+       "description": "Makan siang solaria",
+       "walletId": "uuid-of-wallet",
+       "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
+       "categoryId": "uuid-of-category", // only if type is expense or income, else null
+       "date": "2024-05-18T12:00:00.000Z" // use ISO string
+     }`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

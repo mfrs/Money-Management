@@ -11,7 +11,8 @@ import {
   TrendingUp,
   ArrowRightLeft,
   Wallet,
-  Tag
+  Tag,
+  Trash
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -23,20 +24,12 @@ interface ChatMessage {
   sender: 'user' | 'ai';
   text: string;
   timestamp: Date;
-  parsedData?: {
-    type: 'expense' | 'income' | 'transfer';
-    amount: number;
-    description: string;
-    walletId: string;
-    toWalletId?: string | null;
-    categoryId?: string | null;
-    date: string;
-  } | null;
+  parsedData?: any;
   status?: 'pending' | 'confirmed' | 'cancelled';
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, addJournal, addToast, language } = useApp();
+  const { wallets, categories, addJournal, deleteJournal, addToast, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -91,20 +84,46 @@ export default function AIChatAssistant() {
         new Date().toISOString()
       );
 
-      // Add AI response with parsed data
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          sender: 'ai',
-          text: language === 'id' 
-            ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
-            : "I detected the following transaction details. Does this look correct?",
-          timestamp: new Date(),
-          parsedData: data,
-          status: 'pending'
-        }
-      ]);
+      if (data.action === 'delete_not_found') {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: data.message || (language === 'id' ? "Transaksi tidak ditemukan." : "Transaction not found."),
+            timestamp: new Date()
+          }
+        ]);
+      } else if (data.action === 'delete') {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? "Saya menemukan transaksi berikut untuk dihapus/dibatalkan. Apakah Anda yakin ingin membatalkannya?"
+              : "I found the following transaction to cancel/delete. Are you sure you want to cancel it?",
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      } else {
+        // Fallback or "create" action
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id' 
+              ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
+              : "I detected the following transaction details. Does this look correct?",
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      }
     } catch (err: any) {
       console.error('Chat AI Assistant Error:', err);
       setMessages(prev => [
@@ -123,40 +142,64 @@ export default function AIChatAssistant() {
     }
   };
 
-  const handleConfirm = (messageId: string, parsedData: any) => {
+  const handleConfirm = async (messageId: string, parsedData: any) => {
     try {
-      // Create transaction
-      addJournal({
-        description: parsedData.description,
-        amount: parsedData.amount,
-        type: parsedData.type,
-        categoryId: parsedData.type === 'transfer' ? undefined : parsedData.categoryId,
-        walletId: parsedData.walletId,
-        toWalletId: parsedData.type === 'transfer' ? parsedData.toWalletId : undefined,
-        date: parsedData.date,
-        note: `Recorded via AI Assistant Chat`,
-      });
+      if (parsedData.action === 'delete') {
+        // Delete transaction
+        await deleteJournal(parsedData.journalId);
 
-      // Update message status
-      setMessages(prev =>
-        prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
-      );
+        // Update message status
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
 
-      // Push success message
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          sender: 'ai',
-          text: language === 'id'
-            ? `Mantap! Transaksi "${parsedData.description}" berhasil disimpan ke dompet Anda! 🎉`
-            : `Success! Transaction "${parsedData.description}" has been recorded! 🎉`,
-          timestamp: new Date()
-        }
-      ]);
-      addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transaction recorded!', 'success');
+        // Push success message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Sip! Transaksi "${parsedData.description}" sebesar ${formatCurrency(parsedData.amount)} berhasil dihapus/dibatalkan! 🔄`
+              : `Success! Transaction "${parsedData.description}" of ${formatCurrency(parsedData.amount)} has been deleted/reversed! 🔄`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Transaksi dihapus!' : 'Transaction deleted!', 'success');
+      } else {
+        // Create transaction
+        addJournal({
+          description: parsedData.description,
+          amount: parsedData.amount,
+          type: parsedData.type || 'expense',
+          categoryId: parsedData.type === 'transfer' ? undefined : parsedData.categoryId,
+          walletId: parsedData.walletId,
+          toWalletId: parsedData.type === 'transfer' ? parsedData.toWalletId : undefined,
+          date: parsedData.date,
+          note: `Recorded via AI Assistant Chat`,
+        });
+
+        // Update message status
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        // Push success message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Mantap! Transaksi "${parsedData.description}" berhasil disimpan ke dompet Anda! 🎉`
+              : `Success! Transaction "${parsedData.description}" has been recorded! 🎉`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transaction recorded!', 'success');
+      }
     } catch (err) {
-      addToast(language === 'id' ? 'Gagal mencatat transaksi' : 'Failed to record transaction', 'error');
+      addToast(language === 'id' ? 'Gagal memproses transaksi' : 'Failed to process transaction', 'error');
     }
   };
 
@@ -275,12 +318,27 @@ export default function AIChatAssistant() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="w-full bg-on-surface/5 border border-secondary/25 rounded-2xl p-4 mt-2 space-y-3 shadow-md"
+                      className={cn(
+                        "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border",
+                        msg.parsedData.action === 'delete' ? "border-error/30" : "border-secondary/25"
+                      )}
                     >
                       <div className="flex items-center justify-between border-b border-on-surface/5 pb-2">
-                        <span className="text-[10px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1.5">
-                          {msg.parsedData.type === 'expense' ? <TrendingDown size={12} className="text-error" /> : msg.parsedData.type === 'income' ? <TrendingUp size={12} className="text-success" /> : <ArrowRightLeft size={12} className="text-secondary" />}
-                          {msg.parsedData.type}
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
+                          msg.parsedData.action === 'delete' ? "text-error" : "text-secondary"
+                        )}>
+                          {msg.parsedData.action === 'delete' ? (
+                            <>
+                              <Trash size={12} />
+                              {language === 'id' ? 'BATALKAN TRANSAKSI' : 'REVERSE TRANSACTION'}
+                            </>
+                          ) : (
+                            <>
+                              {msg.parsedData.type === 'expense' ? <TrendingDown size={12} className="text-error" /> : msg.parsedData.type === 'income' ? <TrendingUp size={12} className="text-success" /> : <ArrowRightLeft size={12} className="text-secondary" />}
+                              {msg.parsedData.type}
+                            </>
+                          )}
                         </span>
                         <span className="text-xs font-bold text-on-surface">
                           {formatCurrency(msg.parsedData.amount)}
@@ -293,12 +351,14 @@ export default function AIChatAssistant() {
                         <div className="flex items-center gap-1 text-[10px] text-on-surface/40 mt-2">
                           <Wallet size={10} />
                           <span>
-                            {wallets.find(w => w.id === msg.parsedData?.walletId)?.name || 'Unknown'}
+                            {msg.parsedData.action === 'delete' 
+                              ? msg.parsedData.walletName 
+                              : (wallets.find(w => w.id === msg.parsedData?.walletId)?.name || 'Unknown')}
                             {msg.parsedData.type === 'transfer' && ` → ${wallets.find(w => w.id === msg.parsedData?.toWalletId)?.name || 'Unknown'}`}
                           </span>
                         </div>
 
-                        {msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
+                        {msg.parsedData.action !== 'delete' && msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
                           <div className="flex items-center gap-1 text-[10px] text-on-surface/40">
                             <Tag size={10} />
                             <span>{categories.find(c => c.id === msg.parsedData?.categoryId)?.name || 'Unknown'}</span>
