@@ -106,6 +106,10 @@ export default function AIChatAssistant() {
           ? `Struk terdeteksi dari *${merchant}* sebesar *${formatCurrency(amount)}*.\nApakah Anda ingin mencatat pengeluaran ini?`
           : `Receipt detected from *${merchant}* for *${formatCurrency(amount)}*.\nWould you like to record this expense?`;
 
+        if (data.duplicateAlert) {
+          msgText = `${data.duplicateAlert}\n\n${msgText}`;
+        }
+
         if (data.budgetAlert) {
           msgText = `${data.budgetAlert}\n\n${msgText}`;
         }
@@ -250,6 +254,10 @@ export default function AIChatAssistant() {
         let msgText = language === 'id'
           ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
           : "I detected the following transaction details. Does this look correct?";
+
+        if (data.duplicateAlert) {
+          msgText = `${data.duplicateAlert}\n\n${msgText}`;
+        }
 
         if (data.budgetAlert) {
           msgText = `${data.budgetAlert}\n\n${msgText}`;
@@ -492,14 +500,21 @@ export default function AIChatAssistant() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className={cn(
-                        "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border",
-                        msg.parsedData.action === 'delete' ? "border-error/30" : msg.parsedData.action === 'allocate_goal' ? "border-success/30" : "border-secondary/25"
+                        "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border transition-all",
+                        msg.parsedData.action === 'delete' ? "border-error/30" : 
+                        msg.parsedData.action === 'allocate_goal' ? "border-success/30" : 
+                        msg.parsedData.duplicateAlert ? "border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : 
+                        msg.parsedData.budgetAlert ? "border-error/30" : 
+                        "border-secondary/25"
                       )}
                     >
                       <div className="flex items-center justify-between border-b border-on-surface/5 pb-2">
                         <span className={cn(
                           "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
-                          msg.parsedData.action === 'delete' ? "text-error" : msg.parsedData.action === 'allocate_goal' ? "text-success" : "text-secondary"
+                          msg.parsedData.action === 'delete' ? "text-error" : 
+                          msg.parsedData.action === 'allocate_goal' ? "text-success" : 
+                          msg.parsedData.duplicateAlert ? "text-amber-500" : 
+                          "text-secondary"
                         )}>
                           {msg.parsedData.action === 'delete' ? (
                             <>

@@ -601,10 +601,15 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        "message": "Transaksi tidak ditemukan di riwayat terbaru."
      }
 
-4. If the user wants to CREATE/ADD a transaction:
+4. If the user wants to CREATE/ADD a transaction (either by voice/text or scanned receipt details):
    - If the amount is mentioned in a foreign currency (like $10 or 12 USD or 1000 JPY), automatically convert it to the user's primary currency (IDR, assuming $1 = 16000 IDR, 1 SGD = 12000 IDR, etc.).
    - Check if this new transaction would exceed the matched category's budgetLimit, or push it above 80% of the limit.
    - If so, generate a warning message in the "budgetAlert" field. Example: "Awas! Pengeluaran ini membuat kategori Makan kamu melebihi budget Rp 3.000.000 (terpakai Rp 3.150.000)." If not, leave "budgetAlert" as null.
+   - Check if a highly similar transaction has already been recorded in the "Recent Active Transactions" list to prevent double entry (deduplication). A highly similar transaction has:
+     * The exact same amount (or very close, within 2%).
+     * A very similar description or merchant name (e.g., "Starbucks" matches "Starbucks Coffee", "Solaria" matches "Makan solaria").
+     * A date very close to the target date (within 2 days).
+     * If a highly similar transaction exists, populate the "duplicateAlert" field with a warning. Example: "Peringatan: Transaksi serupa (Starbucks sebesar Rp 85.000 pada tanggal 18 Mei) sudah pernah dicatat sebelumnya di dompet BCA. Apakah Anda yakin ini bukan transaksi ganda? ⚠️". If no duplicate is detected, set "duplicateAlert" to null.
    - Return ONLY this structure:
      {
        "action": "create",
@@ -615,7 +620,8 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
        "categoryId": "uuid-of-category", // only if type is expense or income, else null
        "date": "2024-05-18T12:00:00.000Z", // use ISO string
-       "budgetAlert": "Warning message if budget exceeded/near limit, else null"
+       "budgetAlert": "Warning message if budget exceeded/near limit, else null",
+       "duplicateAlert": "Warning message if similar transaction found, else null"
      }`;
 
     const response = await ai.models.generateContent({
