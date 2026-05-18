@@ -87,9 +87,9 @@ export default function AIChatAssistant() {
     if (!recognitionRef.current) {
       addToast(
         language === 'id' 
-          ? 'Browser Anda tidak mendukung perekaman suara.' 
-          : 'Your browser does not support speech recognition.', 
-        'warning'
+          ? 'Perekaman suara dinonaktifkan (butuh koneksi aman HTTPS / localhost).' 
+          : 'Voice input disabled (requires secure connection HTTPS / localhost).', 
+        'info'
       );
       return;
     }
