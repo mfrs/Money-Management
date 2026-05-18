@@ -7,11 +7,13 @@ import {
   Wallet,
   Receipt,
   Tag,
+  Trash2,
 } from 'lucide-react';
 import { adminApi, AuthUser } from '../lib/api';
 import { cn } from '../lib/utils';
 import { formatCurrencyShort } from '../lib/types';
 import { useApp } from '../context/AppContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface AdminUser extends AuthUser {
   createdAt: string;
@@ -28,10 +30,10 @@ export default function AdminView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Drill-down state
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userData, setUserData] = useState<{ wallets: any[], journals: any[], categories: any[] } | null>(null);
   const [loadingData, setLoadingData] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -59,6 +61,19 @@ export default function AdminView() {
       console.error(err);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteId) return;
+    try {
+      await adminApi.deleteUser(deleteId);
+      setDeleteId(null);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to delete user: ' + (err.message || 'Server error'));
     }
   };
 
@@ -169,18 +184,25 @@ export default function AdminView() {
             exit={{ opacity: 0, x: 20 }}
             className="space-y-6"
           >
-            {/* Back Button & Header */}
-            <div className="flex items-center gap-6">
-              <button
-                onClick={() => { setSelectedUser(null); setUserData(null); }}
-                className="w-12 h-12 rounded-full glass-dark flex items-center justify-center text-on-surface hover:bg-on-surface/10 transition-colors border border-on-surface/10"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div>
-                <h3 className="font-display text-2xl font-bold text-on-surface">Data Overview: {selectedUser.name}</h3>
-                <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">{selectedUser.email}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => { setSelectedUser(null); setUserData(null); }}
+                  className="w-12 h-12 rounded-full glass-dark flex items-center justify-center text-on-surface hover:bg-on-surface/10 transition-colors border border-on-surface/10"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <h3 className="font-display text-2xl font-bold text-on-surface">Data Overview: {selectedUser.name}</h3>
+                  <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">{selectedUser.email}</p>
+                </div>
               </div>
+              <button
+                onClick={() => setDeleteId(selectedUser.id)}
+                className="flex items-center gap-3 px-6 py-3 bg-error/10 text-error rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-error/20 transition-all border border-error/20"
+              >
+                <Trash2 size={16} /> Delete User
+              </button>
             </div>
 
             {loadingData ? (
@@ -272,6 +294,14 @@ export default function AdminView() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete User Account"
+        message="Are you absolutely sure you want to permanently delete this user? All their wallets, journals, and categories will be erased from the database. This action CANNOT be undone."
+        onConfirm={handleDeleteUser}
+        onCancel={() => setDeleteId(null)}
+      />
     </motion.div>
   );
 }

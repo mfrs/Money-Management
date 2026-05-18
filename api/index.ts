@@ -81,6 +81,21 @@ app.get('/api/admin/users/:id/data', authMiddleware, adminMiddleware, async (req
   res.json({ wallets, journals, categories });
 });
 
+app.delete('/api/admin/users/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const userId = req.params.id;
+  // Prevent admin from deleting themselves accidentally
+  if (userId === req.userId) {
+    return res.status(400).json({ error: 'Cannot delete your own admin account' });
+  }
+  
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 // ===================== AUTH ROUTES =====================
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
