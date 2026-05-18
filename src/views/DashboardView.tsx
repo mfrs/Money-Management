@@ -21,6 +21,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort, formatDate } from '../lib/types';
 import { getIcon } from '../lib/icons';
+import CensoredAmount from '../components/CensoredAmount';
 
 export default function Dashboard() {
   const {
@@ -197,7 +198,7 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
           <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">
-            {formatCurrency(totalBalance, isSensored)}
+            <CensoredAmount amount={totalBalance} isSensored={isSensored} />
           </div>
         </div>
         <div className="flex gap-8 lg:gap-12">
@@ -207,7 +208,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.income')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(totalIncome, isSensored)}
+              <CensoredAmount amount={totalIncome} isSensored={isSensored} useShort />
             </div>
           </div>
           <div>
@@ -216,7 +217,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.expense')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(totalExpenses, isSensored)}
+              <CensoredAmount amount={totalExpenses} isSensored={isSensored} useShort />
             </div>
           </div>
         </div>
@@ -236,7 +237,7 @@ export default function Dashboard() {
           <div>
             <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.burnRate')}</h3>
             <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(burnRate, isSensored)}
+              <CensoredAmount amount={burnRate} isSensored={isSensored} useShort />
             </div>
           </div>
         </div>
@@ -269,7 +270,9 @@ export default function Dashboard() {
           </div>
           <div>
             <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.bufferFund')}</h3>
-            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(bufferFund, isSensored)}</div>
+            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
+              <CensoredAmount amount={bufferFund} isSensored={isSensored} useShort />
+            </div>
             <div className="w-full bg-on-surface/5 h-1.5 rounded-full mt-4 overflow-hidden">
               <div
                 className="bg-tertiary h-full rounded-full shadow-[0_0_10px_rgba(236,72,153,0.3)] transition-all duration-1000"
@@ -320,7 +323,7 @@ export default function Dashboard() {
                       "text-[10px] font-bold uppercase tracking-widest",
                       item.percentage >= 80 ? "text-tertiary" : "text-on-surface/40"
                     )}>
-                      {formatCurrency(Math.max(0, item.remaining), isSensored)} left
+                      <CensoredAmount amount={Math.max(0, item.remaining)} isSensored={isSensored} suffix=" left" />
                     </span>
                   </div>
                   <div className="w-full bg-on-surface/5 h-2 rounded-full overflow-hidden">
@@ -482,9 +485,14 @@ export default function Dashboard() {
                     {cell.day}
                   </span>
                   {cell.isCurrentMonth && cell.expenses > 0 ? (
-                    <span className="text-[7.5px] lg:text-[8.5px] font-mono font-bold text-tertiary tracking-tighter truncate mb-0.5">
-                      -{isSensored ? '••••' : formatCurrencyShort(cell.expenses, isSensored).replace('Rp ', '')}
-                    </span>
+                    <CensoredAmount
+                      amount={cell.expenses}
+                      isSensored={isSensored}
+                      useShort
+                      stripRp
+                      prefix="-"
+                      className="text-[7.5px] lg:text-[8.5px] font-mono font-bold text-tertiary tracking-tighter truncate mb-0.5"
+                    />
                   ) : (
                     <span className="h-[10px]" />
                   )}
@@ -519,7 +527,9 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <div className="text-[8px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Spent</div>
-                    <div className="font-display text-lg font-bold text-on-surface">{formatCurrencyShort(totalExpenses, isSensored)}</div>
+                    <div className="font-display text-lg font-bold text-on-surface pointer-events-auto">
+                      <CensoredAmount amount={totalExpenses} isSensored={isSensored} useShort />
+                    </div>
                   </div>
                 </div>
 
@@ -581,7 +591,11 @@ export default function Dashboard() {
                   "text-sm font-bold tabular-nums",
                   tx.type === 'income' ? "text-primary" : "text-on-surface"
                 )}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount, isSensored)}
+                  <CensoredAmount
+                    amount={tx.amount}
+                    isSensored={isSensored}
+                    prefix={tx.type === 'income' ? '+' : '-'}
+                  />
                 </div>
               </div>
             );

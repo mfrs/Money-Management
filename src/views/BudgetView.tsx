@@ -15,6 +15,7 @@ import { useApp } from '../context/AppContext';
 import { cn, isExpensePaidForCurrentTerm } from '../lib/utils';
 import { formatCurrency } from '../lib/types';
 import { getIcon } from '../lib/icons';
+import CensoredAmount from '../components/CensoredAmount';
 
 export default function BudgetView() {
   const {
@@ -115,7 +116,9 @@ export default function BudgetView() {
 
             <div className="mt-8 lg:mt-10 pt-8 border-t border-on-surface/5 flex justify-between items-center relative z-10">
               <span className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.totalInflow')}</span>
-              <span className="font-display text-2xl lg:text-3xl font-bold text-primary tracking-tighter">{formatCurrency(totalIncome, isSensored)}</span>
+              <span className="font-display text-2xl lg:text-3xl font-bold text-primary tracking-tighter">
+                <CensoredAmount amount={totalIncome} isSensored={isSensored} />
+              </span>
             </div>
           </div>
 
@@ -157,7 +160,9 @@ export default function BudgetView() {
                     </div>
                     <div className="flex items-center gap-6 lg:gap-10">
                       <div className="flex flex-col items-end gap-1.5">
-                        <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount, isSensored)}</span>
+                        <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">
+                          <CensoredAmount amount={item.amount} isSensored={isSensored} />
+                        </span>
                         {isPaid ? (
                           <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <Check size={10} /> {t('budget.paid')}
@@ -202,7 +207,9 @@ export default function BudgetView() {
 
             <div className="mt-8 flex justify-between items-center px-4">
               <span className="text-[10px] font-bold text-on-surface/20 uppercase tracking-widest">{t('budget.fixedTotal')}</span>
-              <span className="text-lg font-bold text-on-surface tracking-tighter">{formatCurrency(totalFixed, isSensored)}</span>
+              <span className="text-lg font-bold text-on-surface tracking-tighter">
+                <CensoredAmount amount={totalFixed} isSensored={isSensored} />
+              </span>
             </div>
           </div>
         </div>
@@ -218,7 +225,7 @@ export default function BudgetView() {
                 <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">{t('budget.walletAlloc')}</h4>
               </div>
               <p className="text-sm text-on-surface/40 leading-relaxed font-medium">
-                {t('budget.residualDesc')} <span className="text-on-surface font-bold">{formatCurrency(Math.max(0, residual), isSensored)}</span> {t('budget.residualInto')}
+                {t('budget.residualDesc')} <span className="text-on-surface font-bold"><CensoredAmount amount={Math.max(0, residual)} isSensored={isSensored} /></span> {t('budget.residualInto')}
               </p>
             </div>
 
@@ -237,7 +244,9 @@ export default function BudgetView() {
                         <span className="text-xs font-bold text-on-surface tracking-widest uppercase">{wallet.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">{formatCurrency(wallet.balance, isSensored)}</span>
+                        <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
+                          <CensoredAmount amount={wallet.balance} isSensored={isSensored} />
+                        </span>
                         <button onClick={() => deleteWalletAllocation(alloc.id)} className="text-on-surface/10 hover:text-error transition-colors p-1">
                           <Trash2 size={12} />
                         </button>
@@ -277,17 +286,23 @@ export default function BudgetView() {
           <div className="flex items-center gap-6 lg:gap-10 flex-1">
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.grossFlow')}</p>
-              <p className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalIncome, isSensored)}</p>
+              <p className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tighter">
+                <CensoredAmount amount={totalIncome} isSensored={isSensored} />
+              </p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.committed')}</p>
-              <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">{formatCurrency(totalCommitted, isSensored)}</p>
+              <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">
+                <CensoredAmount amount={totalCommitted} isSensored={isSensored} />
+              </p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.residual')}</p>
-              <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>{formatCurrency(residual, isSensored)}</p>
+              <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>
+                <CensoredAmount amount={residual} isSensored={isSensored} />
+              </p>
             </div>
 
             <div className="flex-1 max-w-sm ml-6 lg:ml-10 hidden lg:block">

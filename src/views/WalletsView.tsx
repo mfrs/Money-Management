@@ -13,6 +13,7 @@ import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort, Wallet } from '../lib/types';
 import { getIcon } from '../lib/icons';
+import CensoredAmount from '../components/CensoredAmount';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const walletTypes = [
@@ -99,7 +100,7 @@ export default function WalletsView() {
       
     return {
       name: j.description,
-      change: `${netChange >= 0 ? '+' : ''}${formatCurrency(netChange, isSensored)}`,
+      change: netChange,
       isNegative: netChange < 0,
     };
   };
@@ -133,7 +134,9 @@ export default function WalletsView() {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="space-y-6">
             <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.3em] mb-2">Aggregate Capital</p>
-            <h3 className="font-display text-4xl md:text-5xl lg:text-7xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalBalance, isSensored)}</h3>
+            <h3 className="font-display text-4xl md:text-5xl lg:text-7xl font-bold text-on-surface tracking-tighter">
+              <CensoredAmount amount={totalBalance} isSensored={isSensored} />
+            </h3>
             <div className="flex items-center gap-2 text-[10px] font-bold text-primary bg-primary/10 w-fit px-4 py-2 rounded-full border border-primary/20 uppercase tracking-widest">
               <TrendingUp size={14} />
               <span>{wallets.length} Vaults Active</span>
@@ -142,11 +145,15 @@ export default function WalletsView() {
           <div className="flex flex-wrap gap-4 w-full md:w-auto">
             <div className="flex-1 md:flex-none glass-dark rounded-2xl p-6 min-w-[160px] border border-on-surface/5 group-hover:border-on-surface/10 transition-colors">
               <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mb-3">Liquidity</p>
-              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(liquidity, isSensored)}</p>
+              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
+                <CensoredAmount amount={liquidity} isSensored={isSensored} useShort />
+              </p>
             </div>
             <div className="flex-1 md:flex-none glass-dark rounded-2xl p-6 min-w-[160px] border border-on-surface/5 group-hover:border-on-surface/10 transition-colors">
               <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mb-3">Allocated</p>
-              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(allocated, isSensored)}</p>
+              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
+                <CensoredAmount amount={allocated} isSensored={isSensored} useShort />
+              </p>
             </div>
           </div>
         </div>
@@ -212,7 +219,9 @@ export default function WalletsView() {
 
               <div className="mb-8 lg:mb-10 relative z-10">
                 <p className="text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] mb-3">{wallet.account}</p>
-                <p className="font-display text-2xl lg:text-3xl font-bold text-on-surface tracking-tighter tabular-nums">{formatCurrency(wallet.balance, isSensored)}</p>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-on-surface tracking-tighter tabular-nums">
+                  <CensoredAmount amount={wallet.balance} isSensored={isSensored} />
+                </p>
                 {progress !== undefined && (
                   <div className="mt-8 space-y-3">
                     <div className="h-1.5 w-full bg-on-surface/5 rounded-full overflow-hidden">
@@ -220,7 +229,9 @@ export default function WalletsView() {
                     </div>
                     <div className="flex justify-between text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
                       <span>{progress}% goal reached</span>
-                      <span className="text-on-surface/40">{formatCurrencyShort(wallet.goal!, isSensored)}</span>
+                      <span className="text-on-surface/40">
+                        <CensoredAmount amount={wallet.goal!} isSensored={isSensored} useShort />
+                      </span>
                     </div>
                   </div>
                 )}
@@ -230,9 +241,13 @@ export default function WalletsView() {
                 <p className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest mb-3">Last Activity</p>
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-bold text-on-surface/80">{activity.name}</span>
-                  {activity.change && (
+                  {activity.change !== null && (
                     <span className={cn("text-xs font-bold font-mono tracking-tighter", activity.isNegative ? "text-tertiary" : "text-primary")}>
-                      {activity.change}
+                      <CensoredAmount
+                        amount={Math.abs(activity.change as number)}
+                        isSensored={isSensored}
+                        prefix={activity.isNegative ? '-' : '+'}
+                      />
                     </span>
                   )}
                 </div>
