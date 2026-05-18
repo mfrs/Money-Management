@@ -124,4 +124,8 @@ export const toolsApi = {
     method: 'POST',
     body: JSON.stringify({ imageBase64, mimeType })
   }),
+  chatEntry: (text: string, wallets: any[], categories: any[], currentDate: string) => request<any>('/chat-entry', {
+    method: 'POST',
+    body: JSON.stringify({ text, wallets, categories, currentDate })
+  }),
 };

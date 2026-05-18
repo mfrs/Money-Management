@@ -450,6 +450,59 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
   }
 });
 
+// AI CHAT ENTRY (GEMINI AI)
+app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { text, wallets, categories, currentDate } = req.body;
+    if (!text) return res.status(400).json({ error: 'Text is required' });
+    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    const prompt = `You are a financial assistant parsing a natural language transaction.
+User text: "${text}"
+Current Date Context: ${currentDate}
+
+Available Wallets (JSON):
+${JSON.stringify(wallets)}
+
+Available Categories (JSON):
+${JSON.stringify(categories)}
+
+Analyze the text and extract the transaction details. 
+Determine the closest matching 'walletId' (and 'toWalletId' if it's a transfer) from the Available Wallets.
+Determine the closest matching 'categoryId' from the Available Categories based on the context. If no category matches perfectly, choose the most logical one or leave null.
+Type MUST be one of: 'expense', 'income', or 'transfer'.
+
+Return ONLY a valid JSON object with the following structure, with NO markdown formatting:
+{
+  "type": "expense", // or "income" or "transfer"
+  "amount": 150000,
+  "description": "Makan siang solaria",
+  "walletId": "uuid-of-wallet",
+  "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
+  "categoryId": "uuid-of-category", // only if type is expense or income, else null
+  "date": "2024-05-18T12:00:00.000Z" // use ISO string. Guess the time if not mentioned, or use current time
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+
+    let rawText = response.text;
+    if (rawText && rawText.includes('\`\`\`')) {
+      rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+    }
+
+    const parsedData = JSON.parse(rawText || '{}');
+    res.json(parsedData);
+  } catch (error: any) {
+    console.error('Chat Entry Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to parse chat' });
+  }
+});
+
 // RESET DATA (user-scoped)
 app.post('/api/reset', authMiddleware, async (req: AuthRequest, res: Response) => {
   await prisma.journal.deleteMany({ where: { userId: req.userId! } });

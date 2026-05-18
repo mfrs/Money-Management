@@ -9,7 +9,8 @@ import {
   StickyNote,
   ChevronDown,
   Camera,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -27,6 +28,8 @@ export default function QuickEntryModal() {
   const [note, setNote] = useState('');
   const [description, setDescription] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [isProcessingChat, setIsProcessingChat] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const filteredCategories = categories.filter(c => c.type === type);
@@ -65,6 +68,37 @@ export default function QuickEntryModal() {
     } catch (err) {
       setIsScanning(false);
       addToast('Gagal memproses gambar', 'error');
+    }
+  };
+
+  const handleChatEntry = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' || !aiInput.trim() || isProcessingChat) return;
+    
+    setIsProcessingChat(true);
+    addToast('Menganalisis chat...', 'info');
+    
+    try {
+      const data = await toolsApi.chatEntry(
+        aiInput,
+        wallets.map(w => ({ id: w.id, name: w.name })),
+        categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
+        new Date().toISOString()
+      );
+      
+      if (data.type) setType(data.type);
+      if (data.amount) setAmount(data.amount.toString());
+      if (data.description) setDescription(data.description);
+      if (data.date) setDate(data.date.split('T')[0]);
+      if (data.walletId) setWalletId(data.walletId);
+      if (data.categoryId) setCategoryId(data.categoryId);
+      if (data.toWalletId) setToWalletId(data.toWalletId);
+      
+      setAiInput('');
+      addToast('Berhasil mengisi dari chat!', 'success');
+    } catch (err: any) {
+      addToast('Gagal memproses chat', 'error');
+    } finally {
+      setIsProcessingChat(false);
     }
   };
 
@@ -159,6 +193,23 @@ export default function QuickEntryModal() {
             </div>
 
             <div className="p-8 lg:p-10 space-y-6 lg:space-y-8">
+              {/* Magic Chat Input */}
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  {isProcessingChat ? <Loader2 size={18} className="text-secondary animate-spin" /> : <Sparkles size={18} className="text-secondary group-focus-within:text-secondary/80 transition-colors" />}
+                </div>
+                <input
+                  type="text"
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  onKeyDown={handleChatEntry}
+                  disabled={isProcessingChat}
+                  placeholder="Ketik lalu Enter (misal: Beli kopi 50rb pake BCA)"
+                  className="w-full bg-secondary/5 border border-secondary/20 hover:border-secondary/40 focus:border-secondary text-on-surface text-sm lg:text-base rounded-2xl py-4 pl-14 pr-6 transition-all outline-none placeholder:text-on-surface/30 focus:bg-secondary/10"
+                />
+                <div className="absolute top-0 right-0 h-full w-full pointer-events-none rounded-2xl shadow-[0_0_15px_rgba(var(--color-secondary),0.1)] opacity-0 group-focus-within:opacity-100 transition-opacity" />
+              </div>
+
               {/* Type Toggle */}
               <div className="flex p-1.5 bg-on-surface/5 rounded-[20px] lg:rounded-[24px] border border-on-surface/5">
                 <button
