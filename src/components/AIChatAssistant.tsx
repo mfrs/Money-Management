@@ -12,7 +12,8 @@ import {
   ArrowRightLeft,
   Wallet,
   Tag,
-  Trash
+  Trash,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -26,6 +27,7 @@ interface ChatMessage {
   timestamp: Date;
   parsedData?: any;
   status?: 'pending' | 'confirmed' | 'cancelled';
+  image?: string;
 }
 
 export default function AIChatAssistant() {
@@ -35,6 +37,116 @@ export default function AIChatAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat(language === 'id' ? 'id-ID' : 'en-US', {
+      style: 'currency',
+      currency: wallets[0]?.user?.currency || 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Convert file to Base64
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const base64Content = dataUrl.split(',')[1];
+      const mimeType = file.type;
+
+      // Add user message with image preview
+      const userMsgId = Math.random().toString();
+      setMessages(prev => [
+        ...prev,
+        {
+          id: userMsgId,
+          sender: 'user',
+          text: language === 'id' ? "Memindai struk pembayaran... 🔍" : "Scanning receipt... 🔍",
+          image: dataUrl,
+          timestamp: new Date()
+        }
+      ]);
+
+      setIsTyping(true);
+
+      try {
+        // 1. Call receipt scanner API
+        addToast(language === 'id' ? 'Memproses struk...' : 'Processing receipt...', 'info');
+        const receipt = await toolsApi.scanReceipt(base64Content, mimeType);
+
+        if (!receipt || (!receipt.merchantName && !receipt.totalAmount)) {
+          throw new Error('Could not read receipt data');
+        }
+
+        // 2. Generate natural language command to call our chatEntry API
+        const dateStr = receipt.date || new Date().toISOString().split('T')[0];
+        const merchant = receipt.merchantName || 'Merchant';
+        const amount = receipt.totalAmount || 0;
+
+        const generatedCommand = language === 'id'
+          ? `Beli ${merchant} sebesar ${amount} tanggal ${dateStr}`
+          : `Bought ${merchant} for ${amount} on ${dateStr}`;
+
+        // 3. Call standard chatEntry to match wallet, category, and limits automatically!
+        const data = await toolsApi.chatEntry(
+          generatedCommand,
+          wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
+          categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
+          goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
+          new Date().toISOString()
+        );
+
+        // Prepend receipt scanning success text
+        let msgText = language === 'id'
+          ? `Struk terdeteksi dari *${merchant}* sebesar *${formatCurrency(amount)}*.\nApakah Anda ingin mencatat pengeluaran ini?`
+          : `Receipt detected from *${merchant}* for *${formatCurrency(amount)}*.\nWould you like to record this expense?`;
+
+        if (data.budgetAlert) {
+          msgText = `${data.budgetAlert}\n\n${msgText}`;
+        }
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: msgText,
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+        addToast(language === 'id' ? 'Struk terpindai!' : 'Receipt scanned!', 'success');
+      } catch (err: any) {
+        console.error('Failed to scan receipt in chat:', err);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
+              : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.",
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Gagal memindai struk' : 'Failed to scan receipt', 'error');
+      } finally {
+        setIsTyping(false);
+        // Clear input value
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.onerror = () => {
+      addToast('Failed to read image file', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Initialize with welcome message
   useEffect(() => {
@@ -284,14 +396,7 @@ export default function AIChatAssistant() {
     ]);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat(language === 'id' ? 'id-ID' : 'en-US', {
-      style: 'currency',
-      currency: language === 'id' ? 'IDR' : 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
+
 
   return (
     <>
@@ -373,6 +478,11 @@ export default function AIChatAssistant() {
                         : "bg-on-surface/5 border border-on-surface/5 text-on-surface rounded-tl-none"
                     )}
                   >
+                    {msg.image && (
+                      <div className="mb-2 max-w-[200px] rounded-lg overflow-hidden border border-white/10">
+                        <img src={msg.image} alt="Receipt Attachment" className="w-full h-auto object-cover" />
+                      </div>
+                    )}
                     {msg.text}
                   </div>
 
@@ -492,7 +602,23 @@ export default function AIChatAssistant() {
             </div>
 
             {/* Input Bar */}
-            <div className="p-4 border-t border-on-surface/5 bg-on-surface/5 flex gap-2">
+            <div className="p-4 border-t border-on-surface/5 bg-on-surface/5 flex gap-2 items-center">
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isTyping}
+                title={language === 'id' ? "Unggah Foto Struk" : "Upload Receipt Image"}
+                className="w-10 h-10 rounded-2xl bg-on-surface/5 border border-on-surface/10 text-on-surface/60 flex items-center justify-center hover:bg-on-surface/10 hover:text-on-surface hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer shrink-0"
+              >
+                <Camera size={18} />
+              </button>
+
               <input
                 type="text"
                 value={input}
@@ -505,7 +631,7 @@ export default function AIChatAssistant() {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
-                className="w-10 h-10 rounded-2xl bg-secondary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer"
+                className="w-10 h-10 rounded-2xl bg-secondary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer shrink-0"
               >
                 <Send size={16} />
               </button>
