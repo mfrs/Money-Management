@@ -297,11 +297,12 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Budget Flow + Distribution */}
+      {/* Budget Flow + Monthly Activity + Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+        {/* Arus Anggaran */}
+        <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col h-full bg-gradient-to-br from-white/[0.02] to-white/[0.01]">
           <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">{t('dash.budgetFlow')}</h3>
-          <div className="space-y-8 lg:space-y-10">
+          <div className="space-y-6 flex-grow flex flex-col justify-center">
             {categorySpending.map((item) => {
               const IconComp = getIcon(item.icon);
               return (
@@ -343,18 +344,88 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Aktifitas Bulanan (Monthly Activity) */}
+        <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col h-full bg-gradient-to-br from-white/[0.02] to-white/[0.01]">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="font-display text-xs lg:text-sm font-bold text-on-surface uppercase tracking-widest">Aktifitas Bulanan</h3>
+              <p className="text-[8px] lg:text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">Pengeluaran Harian</p>
+            </div>
+            <div className="flex items-center gap-2 bg-on-surface/5 px-3 py-1.5 rounded-full border border-on-surface/5 shadow-sm">
+              <button
+                onClick={handlePrevMonth}
+                className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-0.5"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span className="text-[9px] lg:text-[10px] font-bold uppercase tracking-wider text-on-surface min-w-[75px] text-center select-none whitespace-nowrap">
+                {monthNames[selectedMonthDate.getMonth()].substring(0, 3)} {selectedMonthDate.getFullYear()}
+              </span>
+              <button
+                onClick={handleNextMonth}
+                className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-0.5"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center mb-1">
+            {daysOfWeek.map(day => (
+              <div key={day} className="text-[8px] lg:text-[9px] font-bold text-on-surface/30 uppercase tracking-widest py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5 flex-grow items-center justify-center">
+            {calendarCells.map((cell, idx) => {
+              const isToday = cell.isCurrentMonth && 
+                              cell.day === now.getDate() && 
+                              selectedMonthDate.getMonth() === now.getMonth() && 
+                              selectedMonthDate.getFullYear() === now.getFullYear();
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    "aspect-square rounded-xl p-0.5 flex flex-col items-center justify-between transition-all border border-on-surface/5",
+                    cell.isCurrentMonth 
+                      ? (isToday ? "bg-primary/[0.05] border-primary/20 shadow-[0_0_8px_rgba(59,130,246,0.1)]" : "bg-on-surface/[0.01] hover:bg-on-surface/[0.04]") 
+                      : "bg-transparent opacity-10 pointer-events-none border-none"
+                  )}
+                >
+                  <span className={cn(
+                    "text-[10px] lg:text-[11px] font-bold mt-0.5",
+                    isToday ? "text-primary" : "text-on-surface/50"
+                  )}>
+                    {cell.day}
+                  </span>
+                  {cell.isCurrentMonth && cell.expenses > 0 ? (
+                    <span className="text-[7.5px] lg:text-[8.5px] font-mono font-bold text-tertiary tracking-tighter truncate mb-0.5">
+                      -{isSensored ? '••••' : formatCurrencyShort(cell.expenses, isSensored).replace('Rp ', '')}
+                    </span>
+                  ) : (
+                    <span className="h-[10px]" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Distribusi */}
         <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col h-full bg-gradient-to-br from-white/[0.03] to-white/[0.01]">
           <h3 className="font-display text-lg font-bold text-on-surface mb-8 uppercase tracking-widest">{t('dash.distribution')}</h3>
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-grow flex flex-col items-center justify-center">
             {pieData.length > 0 ? (
               <>
-                <div className="relative w-40 h-40 mb-10">
+                <div className="relative w-36 h-36 mb-8">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={pieData}
-                        innerRadius={55}
-                        outerRadius={75}
+                        innerRadius={50}
+                        outerRadius={68}
                         paddingAngle={8}
                         dataKey="value"
                         stroke="none"
@@ -367,18 +438,18 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <div className="text-[8px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Spent</div>
-                    <div className="font-display text-xl font-bold text-on-surface">{formatCurrencyShort(totalExpenses, isSensored)}</div>
+                    <div className="font-display text-lg font-bold text-on-surface">{formatCurrencyShort(totalExpenses, isSensored)}</div>
                   </div>
                 </div>
 
-                <div className="w-full space-y-5">
+                <div className="w-full space-y-4">
                   {pieData.map((item) => (
                     <div key={item.name} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.1)]" style={{ backgroundColor: item.color }}></div>
-                        <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest group-hover:text-on-surface/80 transition-colors">{item.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                        <span className="text-[9px] font-bold text-on-surface/50 uppercase tracking-widest group-hover:text-on-surface/80 transition-colors">{item.name}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-on-surface tabular-nums">
+                      <span className="text-[9px] font-bold text-on-surface tabular-nums">
                         {totalExpenses > 0 ? Math.round((item.value / totalExpenses) * 100) : 0}%
                       </span>
                     </div>
@@ -393,73 +464,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* Monthly Activity Calendar */}
-      <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-2">
-          <div>
-            <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Aktifitas Bulanan</h3>
-            <p className="text-[10px] text-on-surface/30 uppercase tracking-widest mt-1">Total Pengeluaran Harian</p>
-          </div>
-          <div className="flex items-center gap-4 bg-on-surface/5 px-4 py-2 rounded-full border border-on-surface/5 self-start sm:self-auto shadow-sm">
-            <button
-              onClick={handlePrevMonth}
-              className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-1"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-xs font-bold uppercase tracking-wider text-on-surface min-w-[120px] text-center select-none">
-              {monthNames[selectedMonthDate.getMonth()]} {selectedMonthDate.getFullYear()}
-            </span>
-            <button
-              onClick={handleNextMonth}
-              className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-1"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 lg:gap-2 mb-2 text-center">
-          {daysOfWeek.map(day => (
-            <div key={day} className="text-[9px] lg:text-[10px] font-bold text-on-surface/30 uppercase tracking-widest py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 lg:gap-2">
-          {calendarCells.map((cell, idx) => {
-            const isToday = cell.isCurrentMonth && 
-                            cell.day === now.getDate() && 
-                            selectedMonthDate.getMonth() === now.getMonth() && 
-                            selectedMonthDate.getFullYear() === now.getFullYear();
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "min-h-[60px] lg:min-h-[85px] rounded-[14px] lg:rounded-2xl p-2 flex flex-col justify-between transition-all border border-on-surface/5",
-                  cell.isCurrentMonth 
-                    ? (isToday ? "bg-primary/[0.05] border-primary/20 shadow-[0_0_12px_rgba(59,130,246,0.1)]" : "bg-on-surface/[0.01] hover:bg-on-surface/[0.04]") 
-                    : "bg-transparent opacity-10 pointer-events-none border-none"
-                )}
-              >
-                <span className={cn(
-                  "text-[11px] lg:text-xs font-bold",
-                  isToday ? "text-primary" : "text-on-surface/50"
-                )}>
-                  {cell.day}
-                </span>
-                {cell.isCurrentMonth && cell.expenses > 0 && (
-                  <div className="text-[8px] lg:text-[10px] font-mono font-bold text-tertiary text-right tracking-tighter truncate mt-1">
-                    -{formatCurrencyShort(cell.expenses, isSensored)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
       {/* Live Ledger */}
       <section className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
