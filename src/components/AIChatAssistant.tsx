@@ -48,18 +48,20 @@ export default function AIChatAssistant() {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef('');
 
   // Initialize Speech Recognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = false;
+      rec.continuous = true;
+      rec.interimResults = true;
       rec.lang = language === 'id' ? 'id-ID' : 'en-US';
 
       rec.onstart = () => {
         setIsListening(true);
+        finalTranscriptRef.current = '';
       };
 
       rec.onend = () => {
@@ -72,16 +74,31 @@ export default function AIChatAssistant() {
       };
 
       rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInput(transcript);
-          addToast(language === 'id' ? `Terdengar: "${transcript}"` : `Heard: "${transcript}"`, 'info');
+        let interimTranscript = '';
+        let newFinalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcriptSegment = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            newFinalTranscript += transcriptSegment;
+          } else {
+            interimTranscript += transcriptSegment;
+          }
+        }
+
+        if (newFinalTranscript) {
+          finalTranscriptRef.current += newFinalTranscript;
+        }
+
+        const fullText = finalTranscriptRef.current + interimTranscript;
+        if (fullText.trim()) {
+          setInput(fullText);
         }
       };
 
       recognitionRef.current = rec;
     }
-  }, [language, addToast]);
+  }, [language]);
 
   const toggleListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -110,6 +127,8 @@ export default function AIChatAssistant() {
       recognitionRef.current.stop();
     } else {
       try {
+        setInput('');
+        finalTranscriptRef.current = '';
         recognitionRef.current.start();
       } catch (e) {
         console.error(e);
