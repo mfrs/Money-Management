@@ -459,24 +459,51 @@ app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Respon
 
     // Fetch user's recent active transactions to allow deletion matching
     const recentJournals = await prisma.journal.findMany({
-      where: { userId: req.userId!, isReversal: false, reversed: false },
+      where: { userId: req.userId!, isReversed: false },
       orderBy: { date: 'desc' },
       take: 25,
       include: {
-        wallet: true,
-        category: true
+        lines: {
+          include: {
+            wallet: true,
+            category: true
+          }
+        }
       }
     });
 
-    const recentJournalsText = recentJournals.map(j => ({
-      id: j.id,
-      description: j.description,
-      amount: j.amount,
-      type: j.type,
-      date: j.date.toISOString().split('T')[0],
-      walletName: j.wallet.name,
-      categoryName: j.category?.name || 'N/A'
-    }));
+    const recentJournalsText = recentJournals.map(j => {
+      const mainLine = j.lines[0];
+      const amount = mainLine ? mainLine.amount : 0;
+      
+      const walletLines = j.lines.filter(l => l.walletId && l.wallet);
+      const categoryLines = j.lines.filter(l => l.categoryId && l.category);
+      
+      const walletName = walletLines.map(wl => wl.wallet?.name).join(' and ') || 'N/A';
+      const categoryName = categoryLines.map(cl => cl.category?.name).join(', ') || 'N/A';
+
+      let type = 'expense';
+      if (walletLines.length === 2) {
+        type = 'transfer';
+      } else if (walletLines.length === 1 && categoryLines.length === 1) {
+        const wl = walletLines[0];
+        if (wl.type === 'DEBIT') {
+          type = 'income';
+        } else {
+          type = 'expense';
+        }
+      }
+
+      return {
+        id: j.id,
+        description: j.description,
+        amount,
+        type,
+        date: j.date.toISOString().split('T')[0],
+        walletName,
+        categoryName
+      };
+    });
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
