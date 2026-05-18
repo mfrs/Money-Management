@@ -153,17 +153,28 @@ export default function CategoriesView() {
                 </div>
               </div>
 
-              {cat.budgetLimit > 0 && (
-                <div className="mt-auto pt-6 lg:pt-8 border-t border-on-surface/5 relative z-10">
-                  <div className="flex justify-between items-baseline mb-4 lg:mb-5">
-                    <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.2em]">
-                      Spent: {formatCurrency(spent)}
-                    </span>
-                    <span className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter tabular-nums">
-                      {formatCurrency(cat.budgetLimit)}
-                    </span>
+              {cat.budgetLimit > 0 ? (
+                <div className="mt-auto pt-6 lg:pt-8 border-t border-on-surface/5 relative z-10 space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <span className="text-[9px] font-bold text-on-surface/25 uppercase tracking-[0.25em] block mb-1">
+                        Spent
+                      </span>
+                      <span className="font-display text-base lg:text-lg font-extrabold text-on-surface tracking-tight tabular-nums">
+                        {formatCurrency(spent)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-bold text-on-surface/25 uppercase tracking-[0.25em] block mb-1">
+                        Limit
+                      </span>
+                      <span className="font-display text-xs lg:text-sm font-semibold text-on-surface/50 tracking-tight tabular-nums">
+                        {formatCurrency(cat.budgetLimit)}/mo
+                      </span>
+                    </div>
                   </div>
-                  <div className="w-full h-1.5 bg-on-surface/5 rounded-full overflow-hidden">
+                  
+                  <div className="w-full h-2 bg-on-surface/5 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, progress)}%` }}
@@ -171,9 +182,31 @@ export default function CategoriesView() {
                       style={{ backgroundColor: progress > 80 ? '#EF4444' : cat.color }}
                     />
                   </div>
-                  <div className="mt-3 flex justify-between text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
-                    <span className={progress > 80 ? "text-error" : ""}>{progress}%</span>
-                    <span>{formatCurrency(cat.budgetLimit)}/mo</span>
+                  
+                  <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-wider">
+                    <span className={cn(progress > 80 ? "text-error" : "text-on-surface/40")}>
+                      {progress}%
+                    </span>
+                    {spent > cat.budgetLimit ? (
+                      <span className="text-error font-extrabold">
+                        {formatCurrency(spent - cat.budgetLimit)} Over Limit ⚠️
+                      </span>
+                    ) : (
+                      <span className="text-success/75 font-semibold">
+                        {formatCurrency(cat.budgetLimit - spent)} Left
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-auto pt-6 lg:pt-8 border-t border-on-surface/5 relative z-10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold text-on-surface/25 uppercase tracking-[0.25em]">
+                      {cat.type === 'expense' ? 'Total Spent' : 'Total Earned'}
+                    </span>
+                    <span className="font-display text-base lg:text-lg font-extrabold text-on-surface tracking-tight tabular-nums">
+                      {formatCurrency(spent)}
+                    </span>
                   </div>
                 </div>
               )}
