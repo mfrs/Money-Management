@@ -117,3 +117,11 @@ export const adminApi = {
   getUserData: (userId: string) => request<any>(`/admin/users/${userId}/data`),
   deleteUser: (userId: string) => request<any>(`/admin/users/${userId}`, { method: 'DELETE' }),
 };
+
+// ===================== TOOLS =====================
+export const toolsApi = {
+  scanReceipt: (imageBase64: string, mimeType: string) => request<any>('/scan-receipt', {
+    method: 'POST',
+    body: JSON.stringify({ imageBase64, mimeType })
+  }),
+};

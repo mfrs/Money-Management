@@ -7,14 +7,17 @@ import {
   Tag,
   Calendar,
   StickyNote,
-  ChevronDown
+  ChevronDown,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
+import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
-  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal } = useApp();
+  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal, addToast } = useApp();
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
@@ -23,8 +26,47 @@ export default function QuickEntryModal() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
   const [description, setDescription] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const filteredCategories = categories.filter(c => c.type === type);
+
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setIsScanning(true);
+    addToast('Menganalisis struk belanja...', 'info');
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        const [meta, base64Data] = base64String.split(',');
+        const mimeType = meta.split(':')[1].split(';')[0];
+        
+        try {
+          const data = await toolsApi.scanReceipt(base64Data, mimeType);
+          
+          if (data.totalAmount) setAmount(data.totalAmount.toString());
+          if (data.merchantName) setDescription(data.merchantName);
+          if (data.date) setDate(data.date);
+          
+          addToast('Berhasil membaca struk!', 'success');
+        } catch (err: any) {
+          addToast(err.message || 'Gagal membaca struk', 'error');
+        } finally {
+          setIsScanning(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setIsScanning(false);
+      addToast('Gagal memproses gambar', 'error');
+    }
+  };
 
   const handleSubmit = () => {
     const numAmount = parseFloat(amount);
@@ -95,6 +137,17 @@ export default function QuickEntryModal() {
                   {type === 'expense' ? <ArrowUpRight size={20} /> : type === 'transfer' ? <ArrowUpRight className="rotate-45" size={20} /> : <ArrowDownLeft size={20} />}
                 </div>
                 <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">Quick Entry</h3>
+                {type === 'expense' && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanning}
+                    className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-tertiary/10 hover:bg-tertiary/20 text-tertiary border border-tertiary/20 text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50"
+                  >
+                    {isScanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                    <span className="hidden sm:inline">Scan Struk</span>
+                  </button>
+                )}
+                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleScanReceipt} />
               </div>
               <button
                 id="btn-close-quick-entry"

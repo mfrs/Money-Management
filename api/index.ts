@@ -3,6 +3,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { GoogleGenAI } from '@google/genai';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -10,7 +11,7 @@ const PORT = 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'wm_s3cur3_k3y_2026_xK9pLm';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increased limit for base64 image uploads
 
 // ===================== AUTH HELPERS =====================
 interface AuthRequest extends Request {
@@ -397,6 +398,56 @@ app.put('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Response
 app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   await prisma.goal.delete({ where: { id: req.params.id, userId: req.userId! } });
   res.json({ success: true });
+});
+
+// RECEIPT SCANNER (GEMINI AI)
+app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageBase64, mimeType } = req.body;
+    if (!imageBase64 || !mimeType) {
+      return res.status(400).json({ error: 'Image data is required' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Gemini API key is not configured on the server' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    const prompt = `You are an expert accountant. Extract data from this receipt.
+    Return ONLY a valid JSON object with the following keys:
+    - "merchantName": string (The name of the store or merchant)
+    - "date": string (Format: YYYY-MM-DD, e.g., 2024-05-18. If no year, assume current year)
+    - "totalAmount": number (The grand total amount, parsed as a raw number without currency symbols)
+    
+    If you cannot find a value, use null.
+    Important: Do not include markdown code blocks (\`\`\`json) in your response, just the raw JSON object.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { data: imageBase64, mimeType } },
+            { text: prompt }
+          ]
+        }
+      ]
+    });
+
+    let rawText = response.text;
+    // Clean up markdown just in case the model ignored instructions
+    if (rawText && rawText.includes('\`\`\`')) {
+      rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+    }
+
+    const parsedData = JSON.parse(rawText || '{}');
+    res.json(parsedData);
+  } catch (error: any) {
+    console.error('Receipt Scan Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to scan receipt' });
+  }
 });
 
 // RESET DATA (user-scoped)
