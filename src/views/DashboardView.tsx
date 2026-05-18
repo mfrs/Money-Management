@@ -381,7 +381,7 @@ export default function Dashboard() {
                     onClick={() => setIsPickerOpen(false)}
                   />
                   
-                  <div className="absolute right-0 top-full mt-2 w-64 glass border border-on-surface/10 rounded-[20px] p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-surface-dim/95 backdrop-blur-xl border border-on-surface/10 rounded-[20px] p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* Year Selection Header */}
                     <div className="flex justify-between items-center mb-4 border-b border-on-surface/5 pb-2">
                       <button
