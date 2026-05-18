@@ -13,7 +13,11 @@ import {
   Wallet,
   Tag,
   Trash,
-  Camera
+  Camera,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -39,6 +43,97 @@ export default function AIChatAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // AI Voice & Speech Recognition state
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = language === 'id' ? 'id-ID' : 'en-US';
+
+      rec.onstart = () => {
+        setIsListening(true);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error('Speech recognition error', e);
+        setIsListening(false);
+      };
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput(transcript);
+          addToast(language === 'id' ? `Terdengar: "${transcript}"` : `Heard: "${transcript}"`, 'info');
+        }
+      };
+
+      recognitionRef.current = rec;
+    }
+  }, [language, addToast]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      addToast(
+        language === 'id' 
+          ? 'Browser Anda tidak mendukung perekaman suara.' 
+          : 'Your browser does not support speech recognition.', 
+        'warning'
+      );
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // Text-To-Speech function
+  const speakText = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+
+    // Stop current speaking
+    window.speechSynthesis.cancel();
+
+    // Clean up markdown & symbols for natural voice narration
+    const cleanedText = text
+      .replace(/[\*\#\`\_]/g, '')
+      .replace(/Rp\s?([0-9\.\,]+)/g, '$1 Rupiah')
+      .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
+
+    const voices = window.speechSynthesis.getVoices();
+    const voiceLang = language === 'id' ? 'id' : 'en';
+    const matchedVoice = voices.find(v => v.lang.startsWith(voiceLang));
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+    }
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   const formatCurrency = (val: any) => {
     const num = typeof val === 'number' ? val : parseFloat(val);
@@ -129,20 +224,34 @@ export default function AIChatAssistant() {
           }
         ]);
         addToast(language === 'id' ? 'Struk terpindai!' : 'Receipt scanned!', 'success');
+
+        if (isVoiceEnabled) {
+          let spokenAlerts = "";
+          if (data.duplicateAlert) spokenAlerts += data.duplicateAlert + ". ";
+          if (data.budgetAlert) spokenAlerts += data.budgetAlert + ". ";
+          const baseSpoken = language === 'id'
+            ? `Struk terdeteksi dari ${merchant} sebesar ${amount} Rupiah. Apakah Anda ingin mencatat pengeluaran ini?`
+            : `Receipt detected from ${merchant} for ${formatCurrency(amount)}. Would you like to record this expense?`;
+          speakText(spokenAlerts + baseSpoken);
+        }
       } catch (err: any) {
         console.error('Failed to scan receipt in chat:', err);
+        const errText = language === 'id'
+          ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
+          : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.";
         setMessages(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             sender: 'ai',
-            text: language === 'id'
-              ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
-              : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.",
+            text: errText,
             timestamp: new Date()
           }
         ]);
         addToast(language === 'id' ? 'Gagal memindai struk' : 'Failed to scan receipt', 'error');
+        if (isVoiceEnabled) {
+          speakText(errText);
+        }
       } finally {
         setIsTyping(false);
         // Clear input value
@@ -204,7 +313,10 @@ export default function AIChatAssistant() {
         new Date().toISOString()
       );
 
+      let spokenText = "";
+
       if (data.action === 'answer') {
+        spokenText = data.message;
         setMessages(prev => [
           ...prev,
           {
@@ -215,38 +327,56 @@ export default function AIChatAssistant() {
           }
         ]);
       } else if (data.action === 'delete_not_found') {
+        spokenText = data.message || (language === 'id' ? "Transaksi tidak ditemukan." : "Transaction not found.");
         setMessages(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             sender: 'ai',
-            text: data.message || (language === 'id' ? "Transaksi tidak ditemukan." : "Transaction not found."),
+            text: spokenText,
             timestamp: new Date()
           }
         ]);
-      } else if (data.action === 'delete') {
+      } else if (data.action === 'create_category') {
+        spokenText = data.message || (language === 'id' 
+          ? `Kategori "${data.categoryName}" belum terdaftar. Apakah Anda ingin membuatnya?` 
+          : `Category "${data.categoryName}" is not registered. Would you like to create it?`);
         setMessages(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             sender: 'ai',
-            text: language === 'id'
-              ? "Saya menemukan transaksi berikut untuk dihapus/dibatalkan. Apakah Anda yakin ingin membatalkannya?"
-              : "I found the following transaction to cancel/delete. Are you sure you want to cancel it?",
+            text: spokenText,
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      } else if (data.action === 'delete') {
+        spokenText = language === 'id'
+          ? "Saya menemukan transaksi berikut untuk dihapus/dibatalkan. Apakah Anda yakin ingin membatalkannya?"
+          : "I found the following transaction to cancel/delete. Are you sure you want to cancel it?";
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: spokenText,
             timestamp: new Date(),
             parsedData: data,
             status: 'pending'
           }
         ]);
       } else if (data.action === 'allocate_goal') {
+        spokenText = language === 'id'
+          ? "Saya mendeteksi niat menabung. Apakah Anda ingin menyisihkan uang Anda ke sasaran tabungan ini?"
+          : "I detected a savings contribution goal. Would you like to allocate money towards this goal?";
         setMessages(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             sender: 'ai',
-            text: language === 'id'
-              ? "Saya mendeteksi niat menabung. Apakah Anda ingin menyisihkan uang Anda ke sasaran tabungan ini?"
-              : "I detected a savings contribution goal. Would you like to allocate money towards this goal?",
+            text: spokenText,
             timestamp: new Date(),
             parsedData: data,
             status: 'pending'
@@ -258,13 +388,20 @@ export default function AIChatAssistant() {
           ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
           : "I detected the following transaction details. Does this look correct?";
 
+        let spokenAlerts = "";
         if (data.duplicateAlert) {
           msgText = `${data.duplicateAlert}\n\n${msgText}`;
+          spokenAlerts += data.duplicateAlert + ". ";
         }
 
         if (data.budgetAlert) {
           msgText = `${data.budgetAlert}\n\n${msgText}`;
+          spokenAlerts += data.budgetAlert + ". ";
         }
+
+        spokenText = spokenAlerts + (language === 'id'
+          ? `Saya mendeteksi rincian transaksi ${data.description || 'ini'}. Apakah sudah sesuai?`
+          : `I detected transaction details for ${data.description || 'this'}. Is it correct?`);
 
         setMessages(prev => [
           ...prev,
@@ -278,19 +415,28 @@ export default function AIChatAssistant() {
           }
         ]);
       }
+
+      // Vocalize AI response if voice mode is enabled
+      if (isVoiceEnabled && spokenText) {
+        speakText(spokenText);
+      }
     } catch (err: any) {
       console.error('Chat AI Assistant Error:', err);
+      const errText = language === 'id'
+        ? "Maaf, saya kesulitan memahami transaksi tersebut. Bisa tolong ulangi dengan kalimat yang lebih jelas?"
+        : "Sorry, I had trouble parsing that. Could you please rephrase it more clearly?";
       setMessages(prev => [
         ...prev,
         {
           id: Math.random().toString(),
           sender: 'ai',
-          text: language === 'id'
-            ? "Maaf, saya kesulitan memahami transaksi tersebut. Bisa tolong ulangi dengan kalimat yang lebih jelas?"
-            : "Sorry, I had trouble parsing that. Could you please rephrase it more clearly?",
+          text: errText,
           timestamp: new Date()
         }
       ]);
+      if (isVoiceEnabled) {
+        speakText(errText);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -527,12 +673,32 @@ export default function AIChatAssistant() {
                   <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold">Online</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-on-surface/5 rounded-xl transition-all"
-              >
-                <X size={18} className="text-on-surface/40" />
-              </button>
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    const newVoiceState = !isVoiceEnabled;
+                    setIsVoiceEnabled(newVoiceState);
+                    if (newVoiceState) {
+                      speakText(language === 'id' ? "Mode Suara AI diaktifkan" : "AI Voice Mode activated");
+                    } else {
+                      window.speechSynthesis.cancel();
+                    }
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl transition-all mr-1 cursor-pointer",
+                    isVoiceEnabled ? "bg-primary/20 text-primary border border-primary/20" : "text-on-surface/40 hover:bg-on-surface/5"
+                  )}
+                  title={language === 'id' ? "Mode Suara AI" : "AI Voice Mode"}
+                >
+                  {isVoiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-on-surface/5 rounded-xl transition-all"
+                >
+                  <X size={18} className="text-on-surface/40" />
+                </button>
+              </div>
             </div>
 
             {/* Messages Body */}
@@ -546,20 +712,32 @@ export default function AIChatAssistant() {
                   )}
                 >
                   {/* Bubble body */}
-                  <div
-                    className={cn(
-                      "px-4 py-3 rounded-2xl text-xs sm:text-sm whitespace-pre-line leading-relaxed shadow-sm",
-                      msg.sender === 'user'
-                        ? "bg-secondary text-white rounded-tr-none"
-                        : "bg-on-surface/5 border border-on-surface/5 text-on-surface rounded-tl-none"
+                  <div className="relative group/bubble w-full">
+                    <div
+                      className={cn(
+                        "px-4 py-3 rounded-2xl text-xs sm:text-sm whitespace-pre-line leading-relaxed shadow-sm",
+                        msg.sender === 'user'
+                          ? "bg-secondary text-white rounded-tr-none"
+                          : "bg-on-surface/5 border border-on-surface/5 text-on-surface rounded-tl-none"
+                      )}
+                    >
+                      {msg.image && (
+                        <div className="mb-2 max-w-[200px] rounded-lg overflow-hidden border border-white/10">
+                          <img src={msg.image} alt="Receipt Attachment" className="w-full h-auto object-cover" />
+                        </div>
+                      )}
+                      {msg.text}
+                    </div>
+
+                    {msg.sender === 'ai' && (
+                      <button
+                        onClick={() => speakText(msg.text)}
+                        className="absolute -right-7 top-1/2 -translate-y-1/2 text-on-surface/30 hover:text-on-surface/80 p-1 hover:bg-on-surface/5 rounded-lg transition-all opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 cursor-pointer"
+                        title={language === 'id' ? 'Bacakan suara' : 'Speak out loud'}
+                      >
+                        <Volume2 size={13} />
+                      </button>
                     )}
-                  >
-                    {msg.image && (
-                      <div className="mb-2 max-w-[200px] rounded-lg overflow-hidden border border-white/10">
-                        <img src={msg.image} alt="Receipt Attachment" className="w-full h-auto object-cover" />
-                      </div>
-                    )}
-                    {msg.text}
                   </div>
 
                   {/* Parse Data Card Preview */}
@@ -783,6 +961,20 @@ export default function AIChatAssistant() {
                 className="w-10 h-10 rounded-2xl bg-on-surface/5 border border-on-surface/10 text-on-surface/60 flex items-center justify-center hover:bg-on-surface/10 hover:text-on-surface hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer shrink-0"
               >
                 <Camera size={18} />
+              </button>
+
+              <button
+                onClick={toggleListening}
+                disabled={isTyping}
+                title={language === 'id' ? "Perekaman Suara" : "Voice Input"}
+                className={cn(
+                  "w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 border",
+                  isListening 
+                    ? "bg-red-500/20 text-red-500 border-red-500/30 animate-pulse scale-105 shadow-[0_0_15px_rgba(239,68,68,0.25)]" 
+                    : "bg-on-surface/5 border-on-surface/10 text-on-surface/60 hover:bg-on-surface/10 hover:text-on-surface hover:scale-105 active:scale-95"
+                )}
+              >
+                {isListening ? <Mic size={18} className="animate-bounce text-red-500" /> : <MicOff size={18} />}
               </button>
 
               <input
