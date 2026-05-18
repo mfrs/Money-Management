@@ -384,24 +384,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const deleteJournal = useCallback(async (id: string) => {
     try {
-      const journal = journals.find(j => j.id === id);
       await journalApi.delete(id);
-      setJournals(prev => prev.filter(j => j.id !== id));
-      if (journal) {
-        setWallets(prev => prev.map(w => {
-          let newBalance = w.balance;
-          journal.lines.forEach((line: any) => {
-            if (line.walletId === w.id) {
-              // reverse the transaction
-              newBalance -= (line.type === 'DEBIT' ? line.amount : -line.amount);
-            }
-          });
-          return { ...w, balance: newBalance };
-        }));
-      }
-      addToast('Journal deleted', 'info');
-    } catch { addToast('Failed to delete journal', 'error'); }
-  }, [journals, addToast]);
+      await loadAllData();
+      addToast('Journal reversed successfully', 'info');
+    } catch { addToast('Failed to reverse journal', 'error'); }
+  }, [loadAllData, addToast]);
 
   // ===================== BUDGET =====================
   const addIncomeSource = useCallback(async (source: Omit<IncomeSource, 'id'>) => {
