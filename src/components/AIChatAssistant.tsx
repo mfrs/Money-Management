@@ -84,6 +84,18 @@ export default function AIChatAssistant() {
   }, [language, addToast]);
 
   const toggleListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      addToast(
+        language === 'id'
+          ? 'Browser Anda (Firefox/Brave) tidak mendukung fitur ini. Silakan gunakan Google Chrome, Safari, atau Edge.'
+          : 'Your browser (Firefox/Brave) does not support voice input. Please use Google Chrome, Safari, or Edge.',
+        'error'
+      );
+      return;
+    }
+
     if (!recognitionRef.current) {
       addToast(
         language === 'id' 
