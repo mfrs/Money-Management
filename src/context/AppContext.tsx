@@ -41,6 +41,8 @@ interface AppContextType {
   setAppName: (name: string) => void;
   appLogo: string;
   setAppLogo: (logo: string) => void;
+  isSensored: boolean;
+  toggleSensored: () => void;
 
   // Navigation
   currentView: ViewType;
@@ -135,6 +137,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [appName, setAppName] = useState(() => localStorage.getItem('wm_appName') || 'Wealth');
   const [appLogo, setAppLogo] = useState(() => localStorage.getItem('wm_appLogo') || 'CircleGauge');
+
+  // Sensor state
+  const [isSensored, setIsSensored] = useState<boolean>(() => {
+    return localStorage.getItem('wm_is_sensored') === 'true';
+  });
+
+  const toggleSensored = useCallback(() => {
+    setIsSensored(prev => {
+      const next = !prev;
+      localStorage.setItem('wm_is_sensored', String(next));
+      return next;
+    });
+  }, []);
 
   // Navigation
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
@@ -492,6 +507,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, user, login, register, logout, updateProfile, changePassword,
       theme, toggleTheme, language, setLanguage, t,
       appName, setAppName, appLogo, setAppLogo,
+      isSensored, toggleSensored,
       currentView, setCurrentView: handleSetCurrentView,
       isQuickEntryOpen, setIsQuickEntryOpen,
       isMobileSidebarOpen, setIsMobileSidebarOpen,

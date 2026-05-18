@@ -25,7 +25,7 @@ const walletTypes = [
 const walletColors = ['#005AA9', '#00A5CF', '#9CA3AF', '#F2A900', '#22C55E', '#8B5CF6', '#EC4899', '#EF4444'];
 
 export default function WalletsView() {
-  const { wallets, totalBalance, addWallet, updateWallet, deleteWallet, journals } = useApp();
+  const { wallets, totalBalance, addWallet, updateWallet, deleteWallet, journals, isSensored } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export default function WalletsView() {
       
     return {
       name: j.description,
-      change: `${netChange >= 0 ? '+' : ''}${formatCurrency(netChange)}`,
+      change: `${netChange >= 0 ? '+' : ''}${formatCurrency(netChange, isSensored)}`,
       isNegative: netChange < 0,
     };
   };
@@ -133,7 +133,7 @@ export default function WalletsView() {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="space-y-6">
             <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.3em] mb-2">Aggregate Capital</p>
-            <h3 className="font-display text-4xl md:text-5xl lg:text-7xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalBalance)}</h3>
+            <h3 className="font-display text-4xl md:text-5xl lg:text-7xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalBalance, isSensored)}</h3>
             <div className="flex items-center gap-2 text-[10px] font-bold text-primary bg-primary/10 w-fit px-4 py-2 rounded-full border border-primary/20 uppercase tracking-widest">
               <TrendingUp size={14} />
               <span>{wallets.length} Vaults Active</span>
@@ -142,11 +142,11 @@ export default function WalletsView() {
           <div className="flex flex-wrap gap-4 w-full md:w-auto">
             <div className="flex-1 md:flex-none glass-dark rounded-2xl p-6 min-w-[160px] border border-on-surface/5 group-hover:border-on-surface/10 transition-colors">
               <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mb-3">Liquidity</p>
-              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(liquidity)}</p>
+              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(liquidity, isSensored)}</p>
             </div>
             <div className="flex-1 md:flex-none glass-dark rounded-2xl p-6 min-w-[160px] border border-on-surface/5 group-hover:border-on-surface/10 transition-colors">
               <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mb-3">Allocated</p>
-              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(allocated)}</p>
+              <p className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(allocated, isSensored)}</p>
             </div>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default function WalletsView() {
 
               <div className="mb-8 lg:mb-10 relative z-10">
                 <p className="text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] mb-3">{wallet.account}</p>
-                <p className="font-display text-2xl lg:text-3xl font-bold text-on-surface tracking-tighter tabular-nums">{formatCurrency(wallet.balance)}</p>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-on-surface tracking-tighter tabular-nums">{formatCurrency(wallet.balance, isSensored)}</p>
                 {progress !== undefined && (
                   <div className="mt-8 space-y-3">
                     <div className="h-1.5 w-full bg-on-surface/5 rounded-full overflow-hidden">
@@ -220,7 +220,7 @@ export default function WalletsView() {
                     </div>
                     <div className="flex justify-between text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
                       <span>{progress}% goal reached</span>
-                      <span className="text-on-surface/40">{formatCurrencyShort(wallet.goal!)}</span>
+                      <span className="text-on-surface/40">{formatCurrencyShort(wallet.goal!, isSensored)}</span>
                     </div>
                   </div>
                 )}

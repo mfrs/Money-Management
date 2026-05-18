@@ -22,7 +22,7 @@ export default function BudgetView() {
     addIncomeSource, updateIncomeSource, deleteIncomeSource,
     addFixedExpense, updateFixedExpense, deleteFixedExpense,
     addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
-    setCurrentView, addToast, t,
+    setCurrentView, addToast, t, isSensored,
   } = useApp();
 
   // Computed totals
@@ -115,7 +115,7 @@ export default function BudgetView() {
 
             <div className="mt-8 lg:mt-10 pt-8 border-t border-on-surface/5 flex justify-between items-center relative z-10">
               <span className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.totalInflow')}</span>
-              <span className="font-display text-2xl lg:text-3xl font-bold text-primary tracking-tighter">{formatCurrency(totalIncome)}</span>
+              <span className="font-display text-2xl lg:text-3xl font-bold text-primary tracking-tighter">{formatCurrency(totalIncome, isSensored)}</span>
             </div>
           </div>
 
@@ -157,7 +157,7 @@ export default function BudgetView() {
                     </div>
                     <div className="flex items-center gap-6 lg:gap-10">
                       <div className="flex flex-col items-end gap-1.5">
-                        <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount)}</span>
+                        <span className="font-display text-base lg:text-lg font-bold text-on-surface tabular-nums">{formatCurrency(item.amount, isSensored)}</span>
                         {isPaid ? (
                           <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest bg-green-400/10 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <Check size={10} /> {t('budget.paid')}
@@ -202,7 +202,7 @@ export default function BudgetView() {
 
             <div className="mt-8 flex justify-between items-center px-4">
               <span className="text-[10px] font-bold text-on-surface/20 uppercase tracking-widest">{t('budget.fixedTotal')}</span>
-              <span className="text-lg font-bold text-on-surface tracking-tighter">{formatCurrency(totalFixed)}</span>
+              <span className="text-lg font-bold text-on-surface tracking-tighter">{formatCurrency(totalFixed, isSensored)}</span>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function BudgetView() {
                 <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">{t('budget.walletAlloc')}</h4>
               </div>
               <p className="text-sm text-on-surface/40 leading-relaxed font-medium">
-                {t('budget.residualDesc')} <span className="text-on-surface font-bold">{formatCurrency(Math.max(0, residual))}</span> {t('budget.residualInto')}
+                {t('budget.residualDesc')} <span className="text-on-surface font-bold">{formatCurrency(Math.max(0, residual), isSensored)}</span> {t('budget.residualInto')}
               </p>
             </div>
 
@@ -237,7 +237,7 @@ export default function BudgetView() {
                         <span className="text-xs font-bold text-on-surface tracking-widest uppercase">{wallet.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">{formatCurrency(wallet.balance)}</span>
+                        <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">{formatCurrency(wallet.balance, isSensored)}</span>
                         <button onClick={() => deleteWalletAllocation(alloc.id)} className="text-on-surface/10 hover:text-error transition-colors p-1">
                           <Trash2 size={12} />
                         </button>
@@ -250,7 +250,7 @@ export default function BudgetView() {
                           type="number"
                           value={alloc.amount || ''}
                           onChange={(e) => updateWalletAllocation(alloc.id, { amount: parseFloat(e.target.value) || 0 })}
-                          className="w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums"
+                          className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums", isSensored && "blur-[6px] select-none pointer-events-none")}
                         />
                       </div>
                     </div>
@@ -277,17 +277,17 @@ export default function BudgetView() {
           <div className="flex items-center gap-6 lg:gap-10 flex-1">
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.grossFlow')}</p>
-              <p className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalIncome)}</p>
+              <p className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tighter">{formatCurrency(totalIncome, isSensored)}</p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.committed')}</p>
-              <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">{formatCurrency(totalCommitted)}</p>
+              <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">{formatCurrency(totalCommitted, isSensored)}</p>
             </div>
             <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.residual')}</p>
-              <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>{formatCurrency(residual)}</p>
+              <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>{formatCurrency(residual, isSensored)}</p>
             </div>
 
             <div className="flex-1 max-w-sm ml-6 lg:ml-10 hidden lg:block">
@@ -352,6 +352,7 @@ export default function BudgetView() {
 
 // Inline editable row that buffers changes and only calls API on blur
 function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void }) {
+  const { isSensored } = useApp();
   const [localName, setLocalName] = useState(source.name);
   const [localAmount, setLocalAmount] = useState(source.amount?.toString() || '');
 
@@ -376,7 +377,7 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== source.amount) onUpdate(source.id, { amount: v }); }}
-            className="bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-28 lg:w-32 outline-none"
+            className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-28 lg:w-32 outline-none", isSensored && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
       </div>

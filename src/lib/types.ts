@@ -90,7 +90,8 @@ export interface AppData {
   budget: Budget;
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, isSensored?: boolean): string {
+  if (isSensored) return 'Rp ••••••';
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -99,7 +100,8 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function formatCurrencyShort(amount: number): string {
+export function formatCurrencyShort(amount: number, isSensored?: boolean): string {
+  if (isSensored) return 'Rp ••••••';
   if (Math.abs(amount) >= 1_000_000_000) {
     return `Rp ${(amount / 1_000_000_000).toFixed(1)}B`;
   }
@@ -109,7 +111,7 @@ export function formatCurrencyShort(amount: number): string {
   if (Math.abs(amount) >= 1_000) {
     return `Rp ${(amount / 1_000).toFixed(0)}k`;
   }
-  return formatCurrency(amount);
+  return formatCurrency(amount, isSensored);
 }
 
 export function generateId(): string {

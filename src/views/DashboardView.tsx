@@ -24,7 +24,7 @@ export default function Dashboard() {
     wallets, categories, journals,
     totalBalance, totalIncome, totalExpenses,
     getCategorySpent, getCategoryById, getWalletById,
-    setCurrentView, t,
+    setCurrentView, t, isSensored,
   } = useApp();
 
   // Top expense categories with spending data
@@ -124,7 +124,7 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
           <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">
-            {formatCurrency(totalBalance)}
+            {formatCurrency(totalBalance, isSensored)}
           </div>
         </div>
         <div className="flex gap-8 lg:gap-12">
@@ -134,7 +134,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.income')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(totalIncome)}
+              {formatCurrencyShort(totalIncome, isSensored)}
             </div>
           </div>
           <div>
@@ -143,7 +143,7 @@ export default function Dashboard() {
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.expense')}</span>
             </div>
             <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(totalExpenses)}
+              {formatCurrencyShort(totalExpenses, isSensored)}
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
           <div>
             <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.burnRate')}</h3>
             <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
-              {formatCurrencyShort(burnRate)}
+              {formatCurrencyShort(burnRate, isSensored)}
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
           </div>
           <div>
             <h3 className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">{t('dash.bufferFund')}</h3>
-            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(bufferFund)}</div>
+            <div className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">{formatCurrencyShort(bufferFund, isSensored)}</div>
             <div className="w-full bg-on-surface/5 h-1.5 rounded-full mt-4 overflow-hidden">
               <div
                 className="bg-tertiary h-full rounded-full shadow-[0_0_10px_rgba(236,72,153,0.3)] transition-all duration-1000"
@@ -246,7 +246,7 @@ export default function Dashboard() {
                       "text-[10px] font-bold uppercase tracking-widest",
                       item.percentage >= 80 ? "text-tertiary" : "text-on-surface/40"
                     )}>
-                      {formatCurrency(Math.max(0, item.remaining))} left
+                      {formatCurrency(Math.max(0, item.remaining), isSensored)} left
                     </span>
                   </div>
                   <div className="w-full bg-on-surface/5 h-2 rounded-full overflow-hidden">
@@ -296,7 +296,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <div className="text-[8px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Spent</div>
-                    <div className="font-display text-xl font-bold text-on-surface">{formatCurrencyShort(totalExpenses)}</div>
+                    <div className="font-display text-xl font-bold text-on-surface">{formatCurrencyShort(totalExpenses, isSensored)}</div>
                   </div>
                 </div>
 
@@ -358,7 +358,7 @@ export default function Dashboard() {
                   "text-sm font-bold tabular-nums",
                   tx.type === 'income' ? "text-primary" : "text-on-surface"
                 )}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount, isSensored)}
                 </div>
               </div>
             );

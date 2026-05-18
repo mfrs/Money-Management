@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Bell, Plus, Menu, AlertCircle, Calendar } from 'lucide-react';
+import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff } from 'lucide-react';
 import { isExpensePaidForCurrentTerm } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrencyShort } from '../lib/types';
 import { AnimatePresence, motion } from 'motion/react';
 
 export default function TopBar() {
-  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t, budget, goals } = useApp();
+  const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t, budget, goals, isSensored, toggleSensored } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +122,15 @@ export default function TopBar() {
         >
           <Plus size={14} />
           <span className="hidden sm:inline">{t('topbar.quickAdd')}</span>
+        </button>
+
+        <button
+          id="btn-toggle-sensor"
+          onClick={toggleSensored}
+          className="flex items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full relative"
+          title={isSensored ? "Show balances" : "Hide balances"}
+        >
+          {isSensored ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
 
         <div className="relative" ref={notifRef}>
