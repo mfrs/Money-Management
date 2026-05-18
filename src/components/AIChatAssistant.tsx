@@ -29,7 +29,7 @@ interface ChatMessage {
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, addJournal, deleteJournal, addToast, language } = useApp();
+  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addToast, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -79,12 +79,23 @@ export default function AIChatAssistant() {
     try {
       const data = await toolsApi.chatEntry(
         userText,
-        wallets.map(w => ({ id: w.id, name: w.name })),
-        categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
+        wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
+        categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
+        goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
         new Date().toISOString()
       );
 
-      if (data.action === 'delete_not_found') {
+      if (data.action === 'answer') {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: data.message,
+            timestamp: new Date()
+          }
+        ]);
+      } else if (data.action === 'delete_not_found') {
         setMessages(prev => [
           ...prev,
           {
@@ -108,16 +119,36 @@ export default function AIChatAssistant() {
             status: 'pending'
           }
         ]);
-      } else {
-        // Fallback or "create" action
+      } else if (data.action === 'allocate_goal') {
         setMessages(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             sender: 'ai',
-            text: language === 'id' 
-              ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
-              : "I detected the following transaction details. Does this look correct?",
+            text: language === 'id'
+              ? "Saya mendeteksi niat menabung. Apakah Anda ingin menyisihkan uang Anda ke sasaran tabungan ini?"
+              : "I detected a savings contribution goal. Would you like to allocate money towards this goal?",
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      } else {
+        // Fallback or "create" action
+        let msgText = language === 'id'
+          ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
+          : "I detected the following transaction details. Does this look correct?";
+
+        if (data.budgetAlert) {
+          msgText = `${data.budgetAlert}\n\n${msgText}`;
+        }
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: msgText,
             timestamp: new Date(),
             parsedData: data,
             status: 'pending'
@@ -166,6 +197,38 @@ export default function AIChatAssistant() {
           }
         ]);
         addToast(language === 'id' ? 'Transaksi dihapus!' : 'Transaction deleted!', 'success');
+      } else if (parsedData.action === 'allocate_goal') {
+        // Get wallet and goal details
+        const sourceWallet = wallets.find(w => w.id === parsedData.walletId);
+        const targetGoal = goals.find(g => g.id === parsedData.goalId);
+
+        if (!sourceWallet || !targetGoal) {
+          throw new Error('Wallet or Goal not found');
+        }
+
+        // 1. Deduct wallet balance
+        await updateWallet(sourceWallet.id, { balance: sourceWallet.balance - parsedData.amount });
+        // 2. Increase goal current amount
+        await updateGoal(targetGoal.id, { currentAmount: targetGoal.currentAmount + parsedData.amount });
+
+        // Update message status
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        // Push success message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Sip! Berhasil menabung sebesar ${formatCurrency(parsedData.amount)} untuk impian "${parsedData.goalName}" dari dompet ${sourceWallet.name}! 🎯`
+              : `Successfully saved ${formatCurrency(parsedData.amount)} for your dream "${parsedData.goalName}" using your ${sourceWallet.name} wallet! 🎯`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Berhasil menabung!' : 'Savings recorded!', 'success');
       } else {
         // Create transaction
         addJournal({
@@ -320,18 +383,23 @@ export default function AIChatAssistant() {
                       animate={{ opacity: 1, y: 0 }}
                       className={cn(
                         "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border",
-                        msg.parsedData.action === 'delete' ? "border-error/30" : "border-secondary/25"
+                        msg.parsedData.action === 'delete' ? "border-error/30" : msg.parsedData.action === 'allocate_goal' ? "border-success/30" : "border-secondary/25"
                       )}
                     >
                       <div className="flex items-center justify-between border-b border-on-surface/5 pb-2">
                         <span className={cn(
                           "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
-                          msg.parsedData.action === 'delete' ? "text-error" : "text-secondary"
+                          msg.parsedData.action === 'delete' ? "text-error" : msg.parsedData.action === 'allocate_goal' ? "text-success" : "text-secondary"
                         )}>
                           {msg.parsedData.action === 'delete' ? (
                             <>
                               <Trash size={12} />
                               {language === 'id' ? 'BATALKAN TRANSAKSI' : 'REVERSE TRANSACTION'}
+                            </>
+                          ) : msg.parsedData.action === 'allocate_goal' ? (
+                            <>
+                              <Sparkles size={12} className="text-success" />
+                              {language === 'id' ? 'MENABUNG KE GOAL' : 'SAVE TO GOAL'}
                             </>
                           ) : (
                             <>
@@ -346,19 +414,25 @@ export default function AIChatAssistant() {
                       </div>
                       
                       <div className="space-y-1.5 text-xs text-on-surface/70">
-                        <p className="font-semibold text-on-surface">{msg.parsedData.description}</p>
+                        <p className="font-semibold text-on-surface">
+                          {msg.parsedData.action === 'allocate_goal' 
+                            ? `${language === 'id' ? 'Menabung untuk' : 'Saving for'} "${msg.parsedData.goalName}"` 
+                            : msg.parsedData.description}
+                        </p>
                         
                         <div className="flex items-center gap-1 text-[10px] text-on-surface/40 mt-2">
                           <Wallet size={10} />
                           <span>
                             {msg.parsedData.action === 'delete' 
                               ? msg.parsedData.walletName 
+                              : msg.parsedData.action === 'allocate_goal'
+                              ? msg.parsedData.walletName
                               : (wallets.find(w => w.id === msg.parsedData?.walletId)?.name || 'Unknown')}
                             {msg.parsedData.type === 'transfer' && ` → ${wallets.find(w => w.id === msg.parsedData?.toWalletId)?.name || 'Unknown'}`}
                           </span>
                         </div>
 
-                        {msg.parsedData.action !== 'delete' && msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
+                        {msg.parsedData.action !== 'delete' && msg.parsedData.action !== 'allocate_goal' && msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
                           <div className="flex items-center gap-1 text-[10px] text-on-surface/40">
                             <Tag size={10} />
                             <span>{categories.find(c => c.id === msg.parsedData?.categoryId)?.name || 'Unknown'}</span>

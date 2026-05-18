@@ -453,7 +453,7 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
 // AI CHAT ENTRY (GEMINI AI)
 app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { text, wallets, categories, currentDate } = req.body;
+    const { text, wallets, categories, goals, currentDate } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
     if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini API key not configured' });
 
@@ -505,26 +505,89 @@ app.post('/api/chat-entry', authMiddleware, async (req: AuthRequest, res: Respon
       };
     });
 
+    // Calculate current month's spending for each category to support budget alerts
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0,0,0,0);
+
+    const currentMonthJournals = await prisma.journal.findMany({
+      where: { 
+        userId: req.userId!, 
+        isReversed: false,
+        date: { gte: startOfMonth }
+      },
+      include: {
+        lines: {
+          include: {
+            category: true
+          }
+        }
+      }
+    });
+
+    const categorySpending: { [key: string]: number } = {};
+    currentMonthJournals.forEach(j => {
+      j.lines.forEach(l => {
+        if (l.categoryId) {
+          categorySpending[l.categoryId] = (categorySpending[l.categoryId] || 0) + l.amount;
+        }
+      });
+    });
+
+    const categoriesWithSpending = (categories || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      budgetLimit: c.budgetLimit || 0,
+      currentSpending: categorySpending[c.id] || 0
+    }));
+
+    const goalsList = goals || [];
+
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
-    const prompt = `You are a financial assistant parsing a natural language transaction command.
+    const prompt = `You are a world-class personal financial planner and parser assistant.
 User text: "${text}"
 Current Date Context: ${currentDate}
 
 Available Wallets (JSON):
 ${JSON.stringify(wallets)}
 
-Available Categories (JSON):
-${JSON.stringify(categories)}
+Available Categories with monthly spending and budget limits (JSON):
+${JSON.stringify(categoriesWithSpending)}
+
+Available Goals (JSON):
+${JSON.stringify(goalsList)}
 
 Recent Active Transactions (JSON):
 ${JSON.stringify(recentJournalsText)}
 
-Determine the user's intent. 
+Determine the user's intent from the following options. Return ONLY a valid JSON.
 
-1. If the user wants to DELETE, REVERSE, CANCEL, or says something is "tidak jadi" (which means cancelled/not happening) for an existing transaction:
-   - Identify which transaction from the "Recent Active Transactions" list matches the description (e.g. "Americano"), amount, wallet, or date mentioned by the user.
-   - Return ONLY a valid JSON with this structure:
+1. If the user wants to ASK A QUESTION, request financial analysis, ask about balances, or request tips/insights:
+   - Perform the analysis based on the provided wallets, categories (with limits & spending), and recent transactions.
+   - For example: "berapa saldo BCA?", "boros di mana bulan ini?", "total pengeluaran makan?", "analisis pola belanja".
+   - Return ONLY this structure:
+     {
+       "action": "answer",
+       "message": "AI's detailed, beautiful natural language response. You can use markdown bullet points, bold text, and emojis. Answer in the user's language (Indonesian if text is in Indonesian, English if in English)."
+     }
+
+2. If the user wants to SAVE MONEY TOWARDS A SAVINGS GOAL (e.g. "tabung 500rb ke goal Macbook", "alokasikan 200rb ke goal liburan"):
+   - Identify the matching Goal from the Available Goals list, and the source Wallet from the Available Wallets.
+   - Return ONLY this structure:
+     {
+       "action": "allocate_goal",
+       "goalId": "the-matched-goal-uuid",
+       "goalName": "the-matched-goal-name",
+       "amount": 500000, // the parsed amount
+       "walletId": "the-source-wallet-uuid", // default to first wallet if not mentioned
+       "walletName": "the-source-wallet-name"
+     }
+
+3. If the user wants to DELETE, REVERSE, CANCEL, or says "tidak jadi" for an existing transaction:
+   - Identify which transaction from the "Recent Active Transactions" list matches the user's request.
+   - Return ONLY this structure:
      {
        "action": "delete",
        "journalId": "the-matched-journal-id",
@@ -532,24 +595,27 @@ Determine the user's intent.
        "amount": the-matched-journal-amount,
        "walletName": "the-matched-wallet-name"
      }
-   - If they want to delete but no matching transaction is found in the list, return:
+   - If not found:
      {
        "action": "delete_not_found",
        "message": "Transaksi tidak ditemukan di riwayat terbaru."
      }
 
-2. If the user wants to CREATE/ADD a transaction:
-   - Extract the details as usual.
-   - Return ONLY a valid JSON with this structure:
+4. If the user wants to CREATE/ADD a transaction:
+   - If the amount is mentioned in a foreign currency (like $10 or 12 USD or 1000 JPY), automatically convert it to the user's primary currency (IDR, assuming $1 = 16000 IDR, 1 SGD = 12000 IDR, etc.).
+   - Check if this new transaction would exceed the matched category's budgetLimit, or push it above 80% of the limit.
+   - If so, generate a warning message in the "budgetAlert" field. Example: "Awas! Pengeluaran ini membuat kategori Makan kamu melebihi budget Rp 3.000.000 (terpakai Rp 3.150.000)." If not, leave "budgetAlert" as null.
+   - Return ONLY this structure:
      {
        "action": "create",
        "type": "expense", // or "income" or "transfer"
-       "amount": 150000,
+       "amount": 150000, // converted to base currency if foreign currency was used
        "description": "Makan siang solaria",
        "walletId": "uuid-of-wallet",
        "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
        "categoryId": "uuid-of-category", // only if type is expense or income, else null
-       "date": "2024-05-18T12:00:00.000Z" // use ISO string
+       "date": "2024-05-18T12:00:00.000Z", // use ISO string
+       "budgetAlert": "Warning message if budget exceeded/near limit, else null"
      }`;
 
     const response = await ai.models.generateContent({
