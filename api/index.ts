@@ -296,18 +296,41 @@ app.post('/api/journals', authMiddleware, async (req: AuthRequest, res: Response
 app.delete('/api/journals/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   const journal = await prisma.journal.findFirst({ where: { id: req.params.id, userId: req.userId! }, include: { lines: true } });
   if (!journal) return res.status(404).json({ error: 'Not found' });
+  if (journal.isReversed) return res.status(400).json({ error: 'Journal is already reversed' });
 
+  // Update original journal to mark as reversed
+  const markReversed = prisma.journal.update({
+    where: { id: req.params.id },
+    data: { isReversed: true }
+  });
+
+  // Create reversing journal
+  const reversingLines = journal.lines.map(l => ({
+    amount: l.amount,
+    type: l.type === 'DEBIT' ? 'CREDIT' : 'DEBIT',
+    walletId: l.walletId,
+    categoryId: l.categoryId
+  }));
+
+  const reversingJournal = prisma.journal.create({
+    data: {
+      userId: req.userId!,
+      date: new Date(),
+      description: `[REVERSAL] ${journal.description}`,
+      note: `Reversing entry for JRN-${journal.id.substring(journal.id.length - 6).toUpperCase()}`,
+      lines: { create: reversingLines }
+    }
+  });
+
+  // Reverse wallet balances
   const walletUpdates = journal.lines.filter(l => l.walletId).map(l => 
     prisma.wallet.update({
-      where: { id: l.walletId },
+      where: { id: l.walletId! },
       data: { balance: { [l.type === 'DEBIT' ? 'decrement' : 'increment']: l.amount } }
     })
   );
 
-  await prisma.$transaction([
-    prisma.journal.delete({ where: { id: req.params.id } }),
-    ...walletUpdates
-  ]);
+  await prisma.$transaction([markReversed, reversingJournal, ...walletUpdates]);
 
   res.json({ success: true });
 });

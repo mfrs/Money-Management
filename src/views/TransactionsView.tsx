@@ -85,6 +85,7 @@ export default function TransactionsView() {
         categoryId,
         walletId,
         toWalletId,
+        isReversed: j.isReversed,
       };
     });
   }, [journals]);
@@ -307,7 +308,11 @@ export default function TransactionsView() {
                           {tx.type === 'transfer' ? <ArrowUpDown size={16} className="rotate-45" /> : <IconComp size={16} />}
                         </div>
                         <div>
-                          <span className="text-sm font-bold text-on-surface">{tx.description}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("text-sm font-bold text-on-surface", tx.isReversed && "line-through opacity-50")}>{tx.description}</span>
+                            {tx.isReversed && <span className="text-[8px] bg-error/20 text-error px-2 py-0.5 rounded-full uppercase tracking-widest border border-error/20">Reversed</span>}
+                            {tx.description.startsWith('[REVERSAL]') && <span className="text-[8px] bg-secondary/20 text-secondary px-2 py-0.5 rounded-full uppercase tracking-widest border border-secondary/20">Reversal</span>}
+                          </div>
                           <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{tx.type === 'transfer' ? t('common.transfer') : cat?.name}</span>
                         </div>
                       </div>
@@ -327,12 +332,14 @@ export default function TransactionsView() {
                       {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
                     </td>
                     <td className="px-4 lg:px-6 py-5 lg:py-7">
-                      <button
-                        onClick={() => setDeleteId(tx.id)}
-                        className="text-on-surface/10 hover:text-error transition-colors p-1"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {!tx.isReversed && !tx.description.startsWith('[REVERSAL]') && (
+                        <button
+                          onClick={() => setDeleteId(tx.id)}
+                          className="text-on-surface/10 hover:text-error transition-colors p-1"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -449,8 +456,8 @@ export default function TransactionsView() {
 
       <ConfirmDialog
         isOpen={!!deleteId}
-        title="Delete Transaction"
-        message="This will delete this transaction and reverse the wallet balance change."
+        title={t('transactions.deleteConfirmTitle')}
+        message="Menghapus transaksi ini akan membuat Jurnal Pembalik (Reversing Entry) secara otomatis pada General Ledger untuk mengembalikan saldo, sehingga histori finansial tetap utuh."
         onConfirm={() => { if (deleteId) deleteJournal(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />

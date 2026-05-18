@@ -143,7 +143,11 @@ export default function LedgerView() {
                     JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
                   </td>
                   <td className="px-6 lg:px-8 py-4">
-                    <p className="text-xs font-bold text-on-surface">{journal.description}</p>
+                    <div className="flex items-center gap-2">
+                      <p className={cn("text-xs font-bold text-on-surface", journal.isReversed && "line-through opacity-50")}>{journal.description}</p>
+                      {journal.isReversed && <span className="text-[8px] bg-error/20 text-error px-2 py-0.5 rounded-full uppercase tracking-widest border border-error/20">Reversed</span>}
+                      {journal.description.startsWith('[REVERSAL]') && <span className="text-[8px] bg-secondary/20 text-secondary px-2 py-0.5 rounded-full uppercase tracking-widest border border-secondary/20">Reversal</span>}
+                    </div>
                     {journal.note && <p className="text-[9px] text-on-surface/40 mt-1 truncate max-w-sm">{journal.note}</p>}
                   </td>
                   <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap text-on-surface">

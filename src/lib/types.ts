@@ -35,6 +35,7 @@ export interface Journal {
   description: string;
   date: string;
   note: string;
+  isReversed?: boolean;
   lines: JournalLine[];
   createdAt: string;
 }
