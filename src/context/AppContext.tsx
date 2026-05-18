@@ -337,7 +337,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const created = await categoryApi.create(category);
       setCategories(prev => [...prev, created]);
       addToast(`Category "${category.name}" created`);
-    } catch { addToast('Failed to create category', 'error'); }
+      return created;
+    } catch { 
+      addToast('Failed to create category', 'error'); 
+      return null;
+    }
   }, [addToast]);
 
   const updateCategory = useCallback(async (id: string, updates: Partial<Category>) => {

@@ -31,10 +31,11 @@ interface ChatMessage {
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addToast, language } = useApp();
+  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [categoryLimits, setCategoryLimits] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -351,6 +352,71 @@ export default function AIChatAssistant() {
           }
         ]);
         addToast(language === 'id' ? 'Berhasil menabung!' : 'Savings recorded!', 'success');
+      } else if (parsedData.action === 'create_category') {
+        const limitStr = categoryLimits[messageId] || '0';
+        const limitNum = parseFloat(limitStr) || 0;
+
+        // 1. Create the category
+        const newCategory = await addCategory({
+          name: parsedData.categoryName,
+          type: parsedData.type || 'expense',
+          color: parsedData.color || '#3B82F6',
+          icon: parsedData.icon || 'Tag',
+          budgetLimit: limitNum > 0 ? limitNum : undefined
+        });
+
+        if (!newCategory) {
+          throw new Error('Failed to create category');
+        }
+
+        // Update message status
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        // Success message for category creation
+        const limitText = limitNum > 0 ? formatCurrency(limitNum) : (language === 'id' ? 'Tanpa Limit' : 'No Limit');
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Kategori "${parsedData.categoryName}" berhasil dibuat dengan alokasi ${limitText}! 🏷️`
+              : `Category "${parsedData.categoryName}" successfully created with budget of ${limitText}! 🏷️`,
+            timestamp: new Date()
+          }
+        ]);
+
+        // 2. If there is a pending transaction, automatically log it using the new category ID!
+        if (parsedData.pendingTransaction) {
+          const pending = parsedData.pendingTransaction;
+          
+          await addJournal({
+            description: pending.description,
+            amount: pending.amount,
+            type: pending.type || 'expense',
+            categoryId: newCategory.id, // use the newly created category ID!
+            walletId: pending.walletId,
+            date: pending.date,
+            note: `Recorded via AI Assistant (Auto-Created Category)`
+          });
+
+          setMessages(prev => [
+            ...prev,
+            {
+              id: Math.random().toString(),
+              sender: 'ai',
+              text: language === 'id'
+                ? `Mantap! Transaksi "${pending.description}" sebesar ${formatCurrency(pending.amount)} berhasil dicatat di kategori "${parsedData.categoryName}"! 🎉`
+                : `Success! Transaction "${pending.description}" of ${formatCurrency(pending.amount)} has been recorded under "${parsedData.categoryName}"! 🎉`,
+              timestamp: new Date()
+            }
+          ]);
+          addToast(language === 'id' ? 'Transaksi & Kategori dicatat!' : 'Transaction & Category recorded!', 'success');
+        } else {
+          addToast(language === 'id' ? 'Kategori berhasil dibuat!' : 'Category created!', 'success');
+        }
       } else {
         // Create transaction
         addJournal({
@@ -498,93 +564,176 @@ export default function AIChatAssistant() {
 
                   {/* Parse Data Card Preview */}
                   {msg.parsedData && msg.status === 'pending' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={cn(
-                        "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border transition-all",
-                        msg.parsedData.action === 'delete' ? "border-error/30" : 
-                        msg.parsedData.action === 'allocate_goal' ? "border-success/30" : 
-                        msg.parsedData.duplicateAlert ? "border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : 
-                        msg.parsedData.budgetAlert ? "border-error/30" : 
-                        "border-secondary/25"
-                      )}
-                    >
-                      <div className="flex items-center justify-between border-b border-on-surface/5 pb-2">
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
-                          msg.parsedData.action === 'delete' ? "text-error" : 
-                          msg.parsedData.action === 'allocate_goal' ? "text-success" : 
-                          msg.parsedData.duplicateAlert ? "text-amber-500" : 
-                          "text-secondary"
-                        )}>
-                          {msg.parsedData.action === 'delete' ? (
-                            <>
-                              <Trash size={12} />
-                              {language === 'id' ? 'BATALKAN TRANSAKSI' : 'REVERSE TRANSACTION'}
-                            </>
-                          ) : msg.parsedData.action === 'allocate_goal' ? (
-                            <>
-                              <Sparkles size={12} className="text-success" />
-                              {language === 'id' ? 'MENABUNG KE GOAL' : 'SAVE TO GOAL'}
-                            </>
-                          ) : (
-                            <>
-                              {msg.parsedData.type === 'expense' ? <TrendingDown size={12} className="text-error" /> : msg.parsedData.type === 'income' ? <TrendingUp size={12} className="text-success" /> : <ArrowRightLeft size={12} className="text-secondary" />}
-                              {msg.parsedData.type}
-                            </>
-                          )}
-                        </span>
-                        <span className="text-xs font-bold text-on-surface">
-                          {formatCurrency(msg.parsedData.amount)}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1.5 text-xs text-on-surface/70">
-                        <p className="font-semibold text-on-surface">
-                          {msg.parsedData.action === 'allocate_goal' 
-                            ? `${language === 'id' ? 'Menabung untuk' : 'Saving for'} "${msg.parsedData.goalName}"` 
-                            : msg.parsedData.description}
-                        </p>
-                        
-                        <div className="flex items-center gap-1 text-[10px] text-on-surface/40 mt-2">
-                          <Wallet size={10} />
-                          <span>
-                            {msg.parsedData.action === 'delete' 
-                              ? msg.parsedData.walletName 
-                              : msg.parsedData.action === 'allocate_goal'
-                              ? msg.parsedData.walletName
-                              : (wallets.find(w => w.id === msg.parsedData?.walletId)?.name || 'Unknown')}
-                            {msg.parsedData.type === 'transfer' && ` → ${wallets.find(w => w.id === msg.parsedData?.toWalletId)?.name || 'Unknown'}`}
-                          </span>
+                    msg.parsedData.action === 'create_category' ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-4 shadow-md border border-primary/30 transition-all"
+                      >
+                        <div className="flex items-center gap-2 border-b border-on-surface/5 pb-2">
+                          <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30 text-primary">
+                            <Tag size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
+                              {language === 'id' ? 'BUAT KATEGORI BARU' : 'CREATE NEW CATEGORY'}
+                            </span>
+                            <h4 className="text-xs font-bold text-on-surface truncate">
+                              {msg.parsedData.categoryName}
+                            </h4>
+                          </div>
                         </div>
 
-                        {msg.parsedData.action !== 'delete' && msg.parsedData.action !== 'allocate_goal' && msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
-                          <div className="flex items-center gap-1 text-[10px] text-on-surface/40">
-                            <Tag size={10} />
-                            <span>{categories.find(c => c.id === msg.parsedData?.categoryId)?.name || 'Unknown'}</span>
+                        {/* Description message */}
+                        <p className="text-[11px] text-on-surface/75 leading-relaxed">
+                          {language === 'id' 
+                            ? `Kategori "${msg.parsedData.categoryName}" (${msg.parsedData.type === 'expense' ? 'Pengeluaran' : 'Pemasukan'}) belum terdaftar. Silakan tentukan alokasi anggaran bulanan untuk kategori ini:` 
+                            : `Category "${msg.parsedData.categoryName}" (${msg.parsedData.type || 'expense'}) is not registered yet. Please specify the monthly budget limit:`}
+                        </p>
+
+                        {/* Budget Limit Input */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold uppercase tracking-wider text-on-surface/40 flex justify-between">
+                            <span>{language === 'id' ? 'Alokasi Limit Bulanan' : 'Monthly Budget Limit'}</span>
+                            <span className="text-primary font-semibold text-[10px]">
+                              {categoryLimits[msg.id] && parseFloat(categoryLimits[msg.id]) > 0
+                                ? formatCurrency(parseFloat(categoryLimits[msg.id]))
+                                : (language === 'id' ? 'Tanpa Limit (Rp 0)' : 'No Limit ($0)')}
+                            </span>
+                          </label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-3 text-xs font-semibold text-on-surface/40">Rp</div>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder={language === 'id' ? "0 (Tanpa limit)" : "0 (No limit)"}
+                              value={categoryLimits[msg.id] || ''}
+                              onChange={(e) => setCategoryLimits(prev => ({ ...prev, [msg.id]: e.target.value }))}
+                              className="w-full pl-9 pr-4 py-2 text-xs bg-on-surface/5 hover:bg-on-surface/10 focus:bg-on-surface/10 rounded-xl border border-on-surface/5 focus:border-primary/50 text-on-surface font-semibold placeholder:text-on-surface/20 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Pending Transaction preview if present */}
+                        {msg.parsedData.pendingTransaction && (
+                          <div className="p-2.5 rounded-xl bg-on-surface/5 border border-on-surface/5 space-y-1">
+                            <span className="text-[8px] font-bold text-on-surface/30 uppercase tracking-widest">
+                              {language === 'id' ? 'TRANSAKSI TERTUNDA' : 'PENDING TRANSACTION'}
+                            </span>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-semibold text-on-surface/80">{msg.parsedData.pendingTransaction.description}</span>
+                              <span className="font-bold text-on-surface">{formatCurrency(msg.parsedData.pendingTransaction.amount)}</span>
+                            </div>
                           </div>
                         )}
-                      </div>
 
-                      {/* Confirmation Buttons */}
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => handleConfirm(msg.id, msg.parsedData)}
-                          className="flex-1 py-2 rounded-xl bg-success text-white font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                        >
-                          <Check size={12} />
-                          {language === 'id' ? 'Konfirmasi' : 'Confirm'}
-                        </button>
-                        <button
-                          onClick={() => handleCancel(msg.id)}
-                          className="flex-1 py-2 rounded-xl bg-error/15 text-error border border-error/20 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                        >
-                          <Ban size={12} />
-                          {language === 'id' ? 'Batal' : 'Cancel'}
-                        </button>
-                      </div>
-                    </motion.div>
+                        {/* Confirmation Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => handleConfirm(msg.id, msg.parsedData)}
+                            className="flex-1 py-2 rounded-xl bg-success text-white font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                          >
+                            <Check size={12} />
+                            {language === 'id' ? 'Buat Kategori' : 'Create Category'}
+                          </button>
+                          <button
+                            onClick={() => handleCancel(msg.id)}
+                            className="flex-1 py-2 rounded-xl bg-error/15 text-error border border-error/20 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                          >
+                            <Ban size={12} />
+                            {language === 'id' ? 'Batal' : 'Cancel'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={cn(
+                          "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border transition-all",
+                          msg.parsedData.action === 'delete' ? "border-error/30" : 
+                          msg.parsedData.action === 'allocate_goal' ? "border-success/30" : 
+                          msg.parsedData.duplicateAlert ? "border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : 
+                          msg.parsedData.budgetAlert ? "border-error/30" : 
+                          "border-secondary/25"
+                        )}
+                      >
+                        <div className="flex items-center justify-between border-b border-on-surface/5 pb-2">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
+                            msg.parsedData.action === 'delete' ? "text-error" : 
+                            msg.parsedData.action === 'allocate_goal' ? "text-success" : 
+                            msg.parsedData.duplicateAlert ? "text-amber-500" : 
+                            "text-secondary"
+                          )}>
+                            {msg.parsedData.action === 'delete' ? (
+                              <>
+                                <Trash size={12} />
+                                {language === 'id' ? 'BATALKAN TRANSAKSI' : 'REVERSE TRANSACTION'}
+                              </>
+                            ) : msg.parsedData.action === 'allocate_goal' ? (
+                              <>
+                                <Sparkles size={12} className="text-success" />
+                                {language === 'id' ? 'MENABUNG KE GOAL' : 'SAVE TO GOAL'}
+                              </>
+                            ) : (
+                              <>
+                                {msg.parsedData.type === 'expense' ? <TrendingDown size={12} className="text-error" /> : msg.parsedData.type === 'income' ? <TrendingUp size={12} className="text-success" /> : <ArrowRightLeft size={12} className="text-secondary" />}
+                                {msg.parsedData.type}
+                              </>
+                            )}
+                          </span>
+                          <span className="text-xs font-bold text-on-surface">
+                            {formatCurrency(msg.parsedData.amount)}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-1.5 text-xs text-on-surface/70">
+                          <p className="font-semibold text-on-surface">
+                            {msg.parsedData.action === 'allocate_goal' 
+                              ? `${language === 'id' ? 'Menabung untuk' : 'Saving for'} "${msg.parsedData.goalName}"` 
+                              : msg.parsedData.description}
+                          </p>
+                          
+                          <div className="flex items-center gap-1 text-[10px] text-on-surface/40 mt-2">
+                            <Wallet size={10} />
+                            <span>
+                              {msg.parsedData.action === 'delete' 
+                                ? msg.parsedData.walletName 
+                                : msg.parsedData.action === 'allocate_goal'
+                                ? msg.parsedData.walletName
+                                : (wallets.find(w => w.id === msg.parsedData?.walletId)?.name || 'Unknown')}
+                              {msg.parsedData.type === 'transfer' && ` → ${wallets.find(w => w.id === msg.parsedData?.toWalletId)?.name || 'Unknown'}`}
+                            </span>
+                          </div>
+
+                          {msg.parsedData.action !== 'delete' && msg.parsedData.action !== 'allocate_goal' && msg.parsedData.type !== 'transfer' && msg.parsedData.categoryId && (
+                            <div className="flex items-center gap-1 text-[10px] text-on-surface/40">
+                              <Tag size={10} />
+                              <span>{categories.find(c => c.id === msg.parsedData?.categoryId)?.name || 'Unknown'}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Confirmation Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => handleConfirm(msg.id, msg.parsedData)}
+                            className="flex-1 py-2 rounded-xl bg-success text-white font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                          >
+                            <Check size={12} />
+                            {language === 'id' ? 'Konfirmasi' : 'Confirm'}
+                          </button>
+                          <button
+                            onClick={() => handleCancel(msg.id)}
+                            className="flex-1 py-2 rounded-xl bg-error/15 text-error border border-error/20 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                          >
+                            <Ban size={12} />
+                            {language === 'id' ? 'Batal' : 'Cancel'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )
                   )}
 
                   {/* Confirmed / Cancelled status badge */}

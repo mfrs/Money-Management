@@ -611,7 +611,7 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
      * If multiple numbers are mentioned (e.g., "masuk uang 10jt ke bank jago 20jt"), carefully identify the primary transaction amount. In "masuk uang 10jt ke bank jago 20jt", the transaction amount is 10000000, and "20jt" is the final balance.
    - Resolve the wallet and category:
      * Map the mentioned wallet (e.g., "bank jago" or "jago") to its corresponding UUID in Available Wallets.
-     * Map to a suitable Category UUID from Available Categories based on the type (e.g., pick a matching income category if type is 'income', or expense category if type is 'expense'). Never leave categoryId null if the type is 'income' or 'expense'.
+     * Map to a suitable Category UUID from Available Categories based on the type. If the user explicitly mentions a category name that does NOT exist in Available Categories (e.g. "kategori Kopi Baru"), stop and use Option 5 instead. Never leave categoryId null if the type is 'income' or 'expense'.
    - If the amount is mentioned in a foreign currency (like $10 or 12 USD or 1000 JPY), automatically convert it to the user's primary currency (IDR, assuming $1 = 16000 IDR, 1 SGD = 12000 IDR, etc.).
    - Check if this new transaction would exceed the matched category's budgetLimit, or push it above 80% of the limit.
    - If so, generate a warning message in the "budgetAlert" field. Example: "Awas! Pengeluaran ini membuat kategori Makan kamu melebihi budget Rp 3.000.000 (terpakai Rp 3.150.000)." If not, leave "budgetAlert" as null.
@@ -632,6 +632,24 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        "date": "2024-05-18T12:00:00.000Z", // use ISO string
        "budgetAlert": "Warning message if budget exceeded/near limit, else null",
        "duplicateAlert": "Warning message if similar transaction found, else null"
+     }
+
+5. If the user mentions a category name that does NOT exist in the "Available Categories" list (either when explicitly trying to categorize something or when recording a transaction with a new category, e.g. "kategorikan kopi ke Kopi Baru", "catat belanja 200rb ke kategori Bulanan Baru"):
+   - Return ONLY this structure:
+     {
+       "action": "create_category",
+       "categoryName": "The New Category Name", // Capitalized beautiful name, e.g., "Kopi Baru"
+       "type": "expense", // "expense" or "income" based on context (default to "expense")
+       "color": "#3B82F6", // pick a beautiful modern hex color (e.g., #3B82F6, #10B981, #8B5CF6, #F59E0B, #EF4444)
+       "icon": "Tag", // lucide icon name (e.g., Tag, Coffee, ShoppingBag, Utensils, HelpCircle)
+       "message": "Kategori 'Kopi Baru' belum terdaftar. Apakah Anda ingin membuatnya?",
+       "pendingTransaction": { // Include this ONLY if they were trying to log a transaction along with this new category! If just "kategorikan ke Kopi Baru" without transaction amount, set to null.
+         "amount": 200000, // parsed number
+         "type": "expense", // "expense" or "income"
+         "description": "Beli kopi",
+         "walletId": "uuid-of-wallet", // resolved UUID of wallet if mentioned, or default to first wallet UUID
+         "date": "2024-05-18T12:00:00.000Z"
+       }
      }`;
 
     const response = await ai.models.generateContent({
