@@ -20,51 +20,26 @@ export default function LedgerView() {
   const [selectedJournal, setSelectedJournal] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Flatten journals into individual ledger lines
-  const ledgerLines = useMemo(() => {
-    const lines: any[] = [];
-    for (const j of journals) {
-      for (const l of j.lines) {
-        let accountName = 'Unknown Account';
-        let accountType = '';
+  // Map journals into a sortable array with total amount
+  const ledgerJournals = useMemo(() => {
+    return journals.map(j => {
+      const totalAmount = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
+      return {
+        ...j,
+        totalAmount
+      };
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [journals]);
 
-        if (l.walletId) {
-          const w = wallets.find(w => w.id === l.walletId);
-          accountName = w ? w.name : 'Unknown Wallet';
-          accountType = 'Asset';
-        } else if (l.categoryId) {
-          const c = categories.find(c => c.id === l.categoryId);
-          accountName = c ? c.name : 'Unknown Category';
-          accountType = c?.type === 'income' ? 'Revenue' : 'Expense';
-        }
-
-        lines.push({
-          id: l.id,
-          journalId: j.id,
-          date: j.date,
-          description: j.description,
-          note: j.note,
-          accountName,
-          accountType,
-          type: l.type,
-          amount: l.amount,
-          journal: j
-        });
-      }
-    }
-    return lines.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [journals, wallets, categories]);
-
-  // Filter lines based on search
-  const filteredLines = useMemo(() => {
-    if (!searchQuery) return ledgerLines;
+  // Filter journals based on search
+  const filteredJournals = useMemo(() => {
+    if (!searchQuery) return ledgerJournals;
     const lowerQuery = searchQuery.toLowerCase();
-    return ledgerLines.filter(l => 
-      l.description.toLowerCase().includes(lowerQuery) ||
-      l.accountName.toLowerCase().includes(lowerQuery) ||
-      l.journalId.toLowerCase().includes(lowerQuery)
+    return ledgerJournals.filter(j => 
+      j.description.toLowerCase().includes(lowerQuery) ||
+      j.id.toLowerCase().includes(lowerQuery)
     );
-  }, [ledgerLines, searchQuery]);
+  }, [ledgerJournals, searchQuery]);
 
   const exportDetailToPDF = async () => {
     setIsExporting(true);
@@ -127,7 +102,7 @@ export default function LedgerView() {
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Daftar Jurnal</h3>
-              <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">{filteredLines.length} baris pencatatan</p>
+              <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">{filteredJournals.length} pencatatan jurnal</p>
             </div>
           </div>
           
@@ -150,43 +125,35 @@ export default function LedgerView() {
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] bg-on-surface/[0.01]">
                 <th className="px-6 lg:px-8 py-5">Tgl. Posting</th>
                 <th className="px-6 lg:px-8 py-5">No. Jurnal</th>
-                <th className="px-6 lg:px-8 py-5">Account (COA)</th>
                 <th className="px-6 lg:px-8 py-5">Keterangan</th>
-                <th className="px-6 lg:px-8 py-5 text-right">Debet</th>
-                <th className="px-6 lg:px-8 py-5 text-right">Kredit</th>
+                <th className="px-6 lg:px-8 py-5 text-right">Total Transaksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredLines.map((line, idx) => (
+              {filteredJournals.map((journal) => (
                 <tr 
-                  key={line.id} 
-                  onClick={() => setSelectedJournal(line.journal)}
+                  key={journal.id} 
+                  onClick={() => setSelectedJournal(journal)}
                   className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
                 >
                   <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
-                    {new Date(line.date).toLocaleDateString('en-GB')}
+                    {new Date(journal.date).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/60 font-mono tracking-tighter uppercase">
-                    JRN-{line.journalId.substring(line.journalId.length - 6).toUpperCase()}
+                    JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
                   </td>
                   <td className="px-6 lg:px-8 py-4">
-                    <p className="text-xs font-bold text-on-surface tracking-wide uppercase">{line.accountName}</p>
-                    <p className="text-[9px] text-on-surface/30 uppercase tracking-widest mt-0.5">{line.accountType}</p>
+                    <p className="text-xs font-bold text-on-surface">{journal.description}</p>
+                    {journal.note && <p className="text-[9px] text-on-surface/40 mt-1 truncate max-w-sm">{journal.note}</p>}
                   </td>
-                  <td className="px-6 lg:px-8 py-4">
-                    <p className="text-xs font-bold text-on-surface max-w-[200px] truncate">{line.description}</p>
-                  </td>
-                  <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap">
-                    {line.type === 'DEBIT' ? <span className="text-secondary">{formatCurrency(line.amount)}</span> : <span className="text-on-surface/20">-</span>}
-                  </td>
-                  <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap">
-                    {line.type === 'CREDIT' ? <span className="text-primary">{formatCurrency(line.amount)}</span> : <span className="text-on-surface/20">-</span>}
+                  <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap text-on-surface">
+                    {formatCurrency(journal.totalAmount)}
                   </td>
                 </tr>
               ))}
-              {filteredLines.length === 0 && (
+              {filteredJournals.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
+                  <td colSpan={4} className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
                     Tidak ada catatan jurnal ditemukan
                   </td>
                 </tr>
