@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -406,6 +407,19 @@ export default function Dashboard() {
                         <ChevronRight size={14} />
                       </button>
                     </div>
+
+                    {/* Today Shortcut Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedMonthDate(new Date());
+                        setIsPickerOpen(false);
+                      }}
+                      className="w-full py-2 mb-4 text-[10px] font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary border border-primary/20 rounded-xl transition-all uppercase tracking-wider text-center flex items-center justify-center gap-1.5 active:scale-95 duration-150 cursor-pointer shadow-sm hover:shadow-primary/20"
+                    >
+                      <CalendarDays size={12} />
+                      Hari Ini
+                    </button>
 
                     {/* Months Grid */}
                     <div className="grid grid-cols-3 gap-2">
