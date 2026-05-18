@@ -14,6 +14,7 @@ import {
   Moon,
   Target,
   ShieldCheck,
+  Trophy,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -24,13 +25,41 @@ const navItems = [
   { id: 'wallets', labelKey: 'nav.wallets', icon: Wallet },
   { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
   { id: 'goals', labelKey: 'nav.goals', icon: Target },
+  { id: 'achievements', labelKey: 'Achievements', icon: Trophy },
   { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
   { id: 'ledger', labelKey: 'General Ledger', icon: BookOpen },
   { id: 'reports', labelKey: 'nav.reports', icon: BarChart3 },
 ] as const;
 
 export default function Sidebar() {
-  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user, t, appName, appLogo } = useApp();
+  const { currentView, setCurrentView, isMobileSidebarOpen, setIsMobileSidebarOpen, logout, theme, toggleTheme, user, t, appName, appLogo, goals, categories, journals } = useApp();
+
+  // Level and XP calculations
+  const xp = React.useMemo(() => {
+    const journalCount = journals.filter(j => !j.isReversed).length;
+    const goalCount = goals.length;
+    const achievedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
+    const categoryCount = categories.length;
+
+    return (journalCount * 100) + (goalCount * 150) + (achievedGoals * 1000) + (categoryCount * 50);
+  }, [journals, goals, categories]);
+
+  const level = React.useMemo(() => {
+    return Math.floor(Math.sqrt(xp / 100)) + 1;
+  }, [xp]);
+
+  const xpNeededForNextLevel = React.useMemo(() => {
+    const nextLevel = level + 1;
+    return Math.pow(nextLevel - 1, 2) * 100;
+  }, [level]);
+
+  const xpForCurrentLevel = React.useMemo(() => {
+    return Math.pow(level - 1, 2) * 100;
+  }, [level]);
+
+  const xpProgressInLevel = xp - xpForCurrentLevel;
+  const xpNeededInLevel = xpNeededForNextLevel - xpForCurrentLevel;
+  const progressPercentage = Math.min(100, Math.round((xpProgressInLevel / xpNeededInLevel) * 100));
 
   const navContent = (
     <div className="flex flex-col h-full p-6">
@@ -56,7 +85,7 @@ export default function Sidebar() {
 
       {/* User profile mini */}
       {user && (
-        <div className="mb-8 p-4 rounded-2xl glass border border-th-divider">
+        <div className="mb-8 p-4 rounded-2xl glass border border-th-divider space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
               <span className="font-display text-xs font-bold text-primary">
@@ -66,6 +95,23 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-on-surface truncate">{user.name}</p>
               <p className="text-[10px] text-on-surface-variant truncate">{user.email}</p>
+            </div>
+          </div>
+
+          {/* XP & Level progress bar */}
+          <div className="pt-2 border-t border-th-divider space-y-1.5">
+            <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-wider">
+              <span className="text-primary flex items-center gap-1">
+                <Trophy size={10} />
+                Lvl {level}
+              </span>
+              <span className="text-on-surface/40">{xpProgressInLevel} / {xpNeededInLevel} XP</span>
+            </div>
+            <div className="w-full bg-on-surface/5 h-1.5 rounded-full overflow-hidden border border-on-surface/5">
+              <div 
+                className="bg-primary h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                style={{ width: `${progressPercentage}%` }}
+              />
             </div>
           </div>
         </div>

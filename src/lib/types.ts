@@ -81,7 +81,7 @@ export interface Goal {
   createdAt: string;
 }
 
-export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger';
+export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements';
 
 export interface AppData {
   wallets: Wallet[];
