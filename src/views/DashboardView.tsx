@@ -30,6 +30,7 @@ export default function Dashboard() {
   } = useApp();
 
   const [selectedMonthDate, setSelectedMonthDate] = useState(new Date());
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handlePrevMonth = () => {
     setSelectedMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -351,14 +352,17 @@ export default function Dashboard() {
               <h3 className="font-display text-xs lg:text-sm font-bold text-on-surface uppercase tracking-widest">Aktifitas Bulanan</h3>
               <p className="text-[8px] lg:text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">Pengeluaran Harian</p>
             </div>
-            <div className="flex items-center gap-2 bg-on-surface/5 px-3 py-1.5 rounded-full border border-on-surface/5 shadow-sm">
+            <div className="flex items-center gap-2 bg-on-surface/5 px-3 py-1.5 rounded-full border border-on-surface/5 shadow-sm relative">
               <button
                 onClick={handlePrevMonth}
                 className="text-on-surface/60 hover:text-on-surface transition-all active:scale-95 duration-200 p-0.5"
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="text-[9px] lg:text-[10px] font-bold uppercase tracking-wider text-on-surface min-w-[75px] text-center select-none whitespace-nowrap">
+              <span
+                onClick={() => setIsPickerOpen(!isPickerOpen)}
+                className="text-[9px] lg:text-[10px] font-bold uppercase tracking-wider text-on-surface min-w-[75px] text-center cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap"
+              >
                 {monthNames[selectedMonthDate.getMonth()].substring(0, 3)} {selectedMonthDate.getFullYear()}
               </span>
               <button
@@ -367,6 +371,69 @@ export default function Dashboard() {
               >
                 <ChevronRight size={14} />
               </button>
+
+              {/* Month & Year Picker Dropdown */}
+              {isPickerOpen && (
+                <>
+                  {/* Invisible backdrop to close the picker */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsPickerOpen(false)}
+                  />
+                  
+                  <div className="absolute right-0 top-full mt-2 w-64 glass border border-on-surface/10 rounded-[20px] p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* Year Selection Header */}
+                    <div className="flex justify-between items-center mb-4 border-b border-on-surface/5 pb-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMonthDate(prev => new Date(prev.getFullYear() - 1, prev.getMonth(), 1));
+                        }}
+                        className="text-on-surface/60 hover:text-on-surface p-1 transition-colors hover:bg-on-surface/5 rounded-lg"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-xs font-bold text-on-surface tabular-nums select-none">
+                        {selectedMonthDate.getFullYear()}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMonthDate(prev => new Date(prev.getFullYear() + 1, prev.getMonth(), 1));
+                        }}
+                        className="text-on-surface/60 hover:text-on-surface p-1 transition-colors hover:bg-on-surface/5 rounded-lg"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+
+                    {/* Months Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {monthNames.map((mName, mIdx) => {
+                        const isCurrentSelected = selectedMonthDate.getMonth() === mIdx;
+                        return (
+                          <button
+                            key={mIdx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMonthDate(new Date(selectedMonthDate.getFullYear(), mIdx, 1));
+                              setIsPickerOpen(false);
+                            }}
+                            className={cn(
+                              "py-2 text-[10px] font-bold rounded-xl transition-all uppercase tracking-wider text-center",
+                              isCurrentSelected 
+                                ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                                : "text-on-surface/60 hover:text-on-surface hover:bg-on-surface/5"
+                            )}
+                          >
+                            {mName.substring(0, 3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
