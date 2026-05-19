@@ -288,6 +288,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addToast('Signed out successfully', 'info');
   }, [addToast]);
 
+  // Listen for global unauthorized/expired session events
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (isAuthenticated) {
+        logout();
+        addToast('Session expired. Please log in again.', 'error');
+      }
+    };
+    window.addEventListener('auth_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
+  }, [isAuthenticated, logout, addToast]);
+
   const updateProfile = useCallback(async (data: Partial<AuthUser>) => {
     const updated = await authApi.updateProfile(data);
     setUser(updated);

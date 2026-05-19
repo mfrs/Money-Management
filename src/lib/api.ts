@@ -23,6 +23,10 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    if (res.status === 401) {
+      clearToken();
+      window.dispatchEvent(new Event('auth_unauthorized'));
+    }
     const error = await res.json().catch(() => ({ error: 'Network error' }));
     throw new Error(error.error || error.message || `HTTP ${res.status}`);
   }

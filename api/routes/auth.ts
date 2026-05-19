@@ -6,8 +6,10 @@ import { authMiddleware, AuthRequest, JWT_SECRET } from '../middleware.js';
 
 const router = Router();
 
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
+
 function signToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
 }
 
 router.post('/register', async (req: Request, res: Response) => {
