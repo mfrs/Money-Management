@@ -399,7 +399,7 @@ app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Respo
   res.json({ success: true });
 });
 
-// RECEIPT SCANNER (OPENROUTER AI - VISION)
+// RECEIPT SCANNER (OPENROUTER / DIRECT GEMINI DUAL ROUTER)
 app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { imageBase64, mimeType } = req.body;
@@ -421,41 +421,70 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
     If you cannot find a value, use null.
     Important: Do not include markdown code blocks (\`\`\`json) in your response, just the raw JSON object.`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "WealthManager"
-      },
-      body: JSON.stringify({
-        model: process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType};base64,${imageBase64}`
-                }
-              }
-            ]
-          }
-        ]
-      })
-    });
+    let rawText = '';
+    const isGeminiKey = apiKey.startsWith('AIzaSy');
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+    if (isGeminiKey) {
+      // Route directly to Google Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType, data: imageBase64 } }
+              ]
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+      }
+
+      const result = await response.json() as any;
+      rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    } else {
+      const visionModel = process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash";
+      const isLlamaOrQwenOrFree = visionModel.includes('llama') || visionModel.includes('qwen') || visionModel.includes(':free');
+      
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "WealthManager"
+        },
+        body: JSON.stringify({
+          model: visionModel,
+          ...(isLlamaOrQwenOrFree ? {} : { response_format: { type: "json_object" } }),
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+              ]
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+      }
+
+      const result = await response.json() as any;
+      rawText = result.choices?.[0]?.message?.content || '{}';
     }
-
-    const result = await response.json() as any;
-    let rawText = result.choices?.[0]?.message?.content || '{}';
 
     if (rawText && rawText.includes('\`\`\`')) {
       rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
@@ -670,33 +699,70 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        }
      }`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "WealthManager"
-      },
-      body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "user",
-            content: prompt
+    let rawText = '';
+    const isGeminiKey = apiKey.startsWith('AIzaSy');
+
+    if (isGeminiKey) {
+      // Route directly to Google Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json"
           }
-        ]
-      })
-    });
+        })
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+      }
+
+      const result = await response.json() as any;
+      rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    } else {
+      // Route to OpenRouter API
+      const chatModel = process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat";
+      const isLlamaOrQwenOrFree = chatModel.includes('llama') || chatModel.includes('qwen') || chatModel.includes(':free');
+      
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "WealthManager"
+        },
+        body: JSON.stringify({
+          model: chatModel,
+          ...(isLlamaOrQwenOrFree ? {} : { response_format: { type: "json_object" } }),
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+      }
+
+      const result = await response.json() as any;
+      rawText = result.choices?.[0]?.message?.content || '{}';
     }
-
-    const result = await response.json() as any;
-    let rawText = result.choices?.[0]?.message?.content || '{}';
 
     if (rawText && rawText.includes('\`\`\`')) {
       rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
