@@ -33,7 +33,7 @@ export const CATEGORY_IDS = {
   shopping: 'c_shopping',
 };
 
-export const seedData: AppData = {
+export const seedData: any = {
   wallets: [
     {
       id: WALLET_IDS.bca,

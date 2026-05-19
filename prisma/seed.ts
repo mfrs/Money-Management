@@ -7,7 +7,8 @@ async function main() {
   console.log('🌱 Seeding WealthManager database...');
 
   // Clear existing data in correct order
-  await prisma.transaction.deleteMany();
+  await prisma.journalLine.deleteMany();
+  await prisma.journal.deleteMany();
   await prisma.walletAllocation.deleteMany();
   await prisma.fixedExpense.deleteMany();
   await prisma.incomeSource.deleteMany();
@@ -68,24 +69,52 @@ async function main() {
     return date;
   };
 
-  await prisma.transaction.createMany({
-    data: [
-      { description: 'Warung Nasi Padang', amount: 45000, type: 'expense', categoryId: food.id, walletId: gopay.id, date: d(0, 12, 30), note: 'Lunch', userId: uid },
-      { description: 'Salary Deposit', amount: 12500000, type: 'income', categoryId: salary.id, walletId: bca.id, date: d(1, 9, 0), note: 'Monthly salary', userId: uid },
-      { description: 'Pertamina SPBU', amount: 300000, type: 'expense', categoryId: transport.id, walletId: bca.id, date: d(2, 18, 15), note: 'Full tank', userId: uid },
-      { description: 'Cinema XXI', amount: 150000, type: 'expense', categoryId: entertainment.id, walletId: gopay.id, date: d(3, 20, 0), note: 'Movie night', userId: uid },
-      { description: 'Superindo', amount: 850000, type: 'expense', categoryId: groceries.id, walletId: bca.id, date: d(5, 10, 45), note: 'Weekly groceries', userId: uid },
-      { description: 'PLN Token Listrik', amount: 500000, type: 'expense', categoryId: utilities.id, walletId: bca.id, date: d(7, 14, 0), note: 'Electricity', userId: uid },
-      { description: 'Grab Car', amount: 85000, type: 'expense', categoryId: transport.id, walletId: gopay.id, date: d(7, 8, 30), note: 'To office', userId: uid },
-      { description: 'GoFood - McDonalds', amount: 78000, type: 'expense', categoryId: food.id, walletId: gopay.id, date: d(7, 19, 0), note: 'Dinner', userId: uid },
-      { description: 'Freelance Web Design', amount: 3500000, type: 'income', categoryId: freelance.id, walletId: bca.id, date: d(14, 10, 0), note: 'Project Alpha', userId: uid },
-      { description: 'Kost / Rent', amount: 3500000, type: 'expense', categoryId: housing.id, walletId: bca.id, date: d(14, 8, 0), note: 'Monthly rent', userId: uid },
-      { description: 'Apotek K-24', amount: 125000, type: 'expense', categoryId: health.id, walletId: cash.id, date: d(21, 16, 30), note: 'Medicine', userId: uid },
-      { description: 'Uniqlo', amount: 450000, type: 'expense', categoryId: shopping.id, walletId: bca.id, date: d(21, 13, 0), note: 'New shirts', userId: uid },
-      { description: 'Dividen Saham', amount: 750000, type: 'income', categoryId: investment.id, walletId: mandiri.id, date: d(30, 9, 0), note: 'Quarterly dividend', userId: uid },
-      { description: 'Indomaret', amount: 185000, type: 'expense', categoryId: groceries.id, walletId: cash.id, date: d(30, 11, 0), note: 'Snacks & drinks', userId: uid },
-    ],
-  });
+  // Create Transactions via Journal & JournalLines
+  const createJournalEntry = async (
+    description: string,
+    amount: number,
+    type: 'expense' | 'income',
+    categoryId: string,
+    walletId: string,
+    date: Date,
+    note: string
+  ) => {
+    const lines = [];
+    if (type === 'expense') {
+      lines.push({ walletId, amount, type: 'CREDIT' });
+      lines.push({ categoryId, amount, type: 'DEBIT' });
+    } else {
+      lines.push({ walletId, amount, type: 'DEBIT' });
+      lines.push({ categoryId, amount, type: 'CREDIT' });
+    }
+
+    await prisma.journal.create({
+      data: {
+        description,
+        date,
+        note,
+        userId: uid,
+        lines: {
+          create: lines
+        }
+      }
+    });
+  };
+
+  await createJournalEntry('Warung Nasi Padang', 45000, 'expense', food.id, gopay.id, d(0, 12, 30), 'Lunch');
+  await createJournalEntry('Salary Deposit', 12500000, 'income', salary.id, bca.id, d(1, 9, 0), 'Monthly salary');
+  await createJournalEntry('Pertamina SPBU', 300000, 'expense', transport.id, bca.id, d(2, 18, 15), 'Full tank');
+  await createJournalEntry('Cinema XXI', 150000, 'expense', entertainment.id, gopay.id, d(3, 20, 0), 'Movie night');
+  await createJournalEntry('Superindo', 850000, 'expense', groceries.id, bca.id, d(5, 10, 45), 'Weekly groceries');
+  await createJournalEntry('PLN Token Listrik', 500000, 'expense', utilities.id, bca.id, d(7, 14, 0), 'Electricity');
+  await createJournalEntry('Grab Car', 85000, 'expense', transport.id, gopay.id, d(7, 8, 30), 'To office');
+  await createJournalEntry('GoFood - McDonalds', 78000, 'expense', food.id, gopay.id, d(7, 19, 0), 'Dinner');
+  await createJournalEntry('Freelance Web Design', 3500000, 'income', freelance.id, bca.id, d(14, 10, 0), 'Project Alpha');
+  await createJournalEntry('Kost / Rent', 3500000, 'expense', housing.id, bca.id, d(14, 8, 0), 'Monthly rent');
+  await createJournalEntry('Apotek K-24', 125000, 'expense', health.id, cash.id, d(21, 16, 30), 'Medicine');
+  await createJournalEntry('Uniqlo', 450000, 'expense', shopping.id, bca.id, d(21, 13, 0), 'New shirts');
+  await createJournalEntry('Dividen Saham', 750000, 'income', investment.id, mandiri.id, d(30, 9, 0), 'Quarterly dividend');
+  await createJournalEntry('Indomaret', 185000, 'expense', groceries.id, cash.id, d(30, 11, 0), 'Snacks & drinks');
   console.log('  ✅ 14 Transactions created');
 
   // Create Budget data

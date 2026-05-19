@@ -147,7 +147,7 @@ router.get('/backup/json', authMiddleware, adminMiddleware, async (req: AuthRequ
     // 2. Fetch rows for each table
     for (const t of tables) {
       const tableName = t.table_name;
-      const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
+      const rows = (await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`)) as any[];
       backupData[tableName] = rows;
     }
 
