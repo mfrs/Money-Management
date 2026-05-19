@@ -67,6 +67,8 @@
   --th-input-focus: rgba(255, 255, 255, 0.2);
   --th-shadow-color: rgba(0, 0, 0, 0.3);
   --th-accent-glow: 1;
+  --th-liquid-glass-bg: rgba(5, 7, 10, 0.85);
+  --th-liquid-glass-border: rgba(255, 255, 255, 0.08);
 }
 
 /* ===================== LIGHT THEME ===================== */
@@ -96,6 +98,8 @@
   --th-input-focus: rgba(0, 0, 0, 0.15);
   --th-shadow-color: rgba(0, 0, 0, 0.08);
   --th-accent-glow: 0.5;
+  --th-liquid-glass-bg: rgba(245, 247, 250, 0.85);
+  --th-liquid-glass-border: rgba(0, 0, 0, 0.08);
 }
 
 @layer base {
@@ -111,6 +115,14 @@
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--th-glass-border);
+}
+
+.liquid-glass {
+  background: var(--th-liquid-glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--th-liquid-glass-border);
+  box-shadow: 0 10px 40px -10px var(--th-shadow-color);
 }
 
 .glass-dark {

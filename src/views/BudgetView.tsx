@@ -280,7 +280,7 @@ export default function BudgetView() {
       </div>
 
       {/* Bottom Summary Bar */}
-      <div className="fixed bottom-6 left-5 lg:left-[280px] right-5 lg:right-6 glass rounded-[24px] lg:rounded-[32px] shadow-2xl z-[45] p-4 lg:p-5 overflow-hidden border border-on-surface/10">
+      <div className="fixed bottom-6 left-5 lg:left-[280px] right-5 lg:right-6 liquid-glass rounded-[24px] lg:rounded-[32px] shadow-2xl z-[45] p-4 lg:p-5 overflow-hidden">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40" />
         <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-6 lg:gap-10 overflow-x-auto">
           <div className="flex items-center gap-6 lg:gap-10 flex-1">
