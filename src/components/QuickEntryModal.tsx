@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
-import { cn } from '../lib/utils';
+import { cn, compressImage } from '../lib/utils';
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
@@ -41,33 +41,25 @@ export default function QuickEntryModal() {
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     setIsScanning(true);
-    addToast('Menganalisis struk belanja...', 'info');
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        const [meta, base64Data] = base64String.split(',');
-        const mimeType = meta.split(':')[1].split(';')[0];
-        
-        try {
-          const data = await toolsApi.scanReceipt(base64Data, mimeType);
-          
-          if (data.totalAmount) setAmount(data.totalAmount.toString());
-          if (data.merchantName) setDescription(data.merchantName);
-          if (data.date) setDate(data.date);
-          
-          addToast('Berhasil membaca struk!', 'success');
-        } catch (err: any) {
-          addToast(err.message || 'Gagal membaca struk', 'error');
-        } finally {
-          setIsScanning(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+      addToast('Mengompresi gambar...', 'info');
+      const { dataUrl, base64: base64Data } = await compressImage(file);
+      const mimeType = 'image/jpeg'; // always jpeg after canvas export
+
+      addToast('Menganalisis struk belanja...', 'info');
+      const data = await toolsApi.scanReceipt(base64Data, mimeType);
+      
+      if (data.totalAmount) setAmount(data.totalAmount.toString());
+      if (data.merchantName) setDescription(data.merchantName);
+      if (data.date) setDate(data.date);
+      
+      addToast('Berhasil membaca struk!', 'success');
+    } catch (err: any) {
+      console.error('Failed to scan receipt in modal:', err);
+      addToast(err.message || 'Gagal membaca struk', 'error');
+    } finally {
       setIsScanning(false);
-      addToast('Gagal memproses gambar', 'error');
     }
   };
 

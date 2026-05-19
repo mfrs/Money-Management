@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { toolsApi } from '../lib/api';
-import { cn } from '../lib/utils';
+import { cn, compressImage } from '../lib/utils';
 
 interface ChatMessage {
   id: string;
@@ -181,15 +181,16 @@ export default function AIChatAssistant() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Convert file to Base64
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      const base64Content = dataUrl.split(',')[1];
-      const mimeType = file.type;
+    // Add user message with image preview placeholder
+    const userMsgId = Math.random().toString();
+    setIsTyping(true);
 
-      // Add user message with image preview
-      const userMsgId = Math.random().toString();
+    try {
+      // Compress and resize client-side to < 150KB
+      addToast(language === 'id' ? 'Mengompresi gambar...' : 'Compressing image...', 'info');
+      const { dataUrl, base64: base64Content } = await compressImage(file);
+      const mimeType = 'image/jpeg'; // always jpeg after canvas export
+
       setMessages(prev => [
         ...prev,
         {
@@ -201,98 +202,90 @@ export default function AIChatAssistant() {
         }
       ]);
 
-      setIsTyping(true);
+      // 1. Call receipt scanner API
+      addToast(language === 'id' ? 'Memproses struk...' : 'Processing receipt...', 'info');
+      const receipt = await toolsApi.scanReceipt(base64Content, mimeType);
 
-      try {
-        // 1. Call receipt scanner API
-        addToast(language === 'id' ? 'Memproses struk...' : 'Processing receipt...', 'info');
-        const receipt = await toolsApi.scanReceipt(base64Content, mimeType);
-
-        if (!receipt || (!receipt.merchantName && !receipt.totalAmount)) {
-          throw new Error('Could not read receipt data');
-        }
-
-        // 2. Generate natural language command to call our chatEntry API
-        const dateStr = receipt.date || new Date().toISOString().split('T')[0];
-        const merchant = receipt.merchantName || 'Merchant';
-        const amount = receipt.totalAmount || 0;
-
-        const generatedCommand = language === 'id'
-          ? `Beli ${merchant} sebesar ${amount} tanggal ${dateStr}`
-          : `Bought ${merchant} for ${amount} on ${dateStr}`;
-
-        // 3. Call standard chatEntry to match wallet, category, and limits automatically!
-        const data = await toolsApi.chatEntry(
-          generatedCommand,
-          wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
-          categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
-          goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
-          new Date().toISOString()
-        );
-
-        // Prepend receipt scanning success text
-        let msgText = language === 'id'
-          ? `Struk terdeteksi dari *${merchant}* sebesar *${formatCurrency(amount)}*.\nApakah Anda ingin mencatat pengeluaran ini?`
-          : `Receipt detected from *${merchant}* for *${formatCurrency(amount)}*.\nWould you like to record this expense?`;
-
-        if (data.duplicateAlert) {
-          msgText = `${data.duplicateAlert}\n\n${msgText}`;
-        }
-
-        if (data.budgetAlert) {
-          msgText = `${data.budgetAlert}\n\n${msgText}`;
-        }
-
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Math.random().toString(),
-            sender: 'ai',
-            text: msgText,
-            timestamp: new Date(),
-            parsedData: data,
-            status: 'pending'
-          }
-        ]);
-        addToast(language === 'id' ? 'Struk terpindai!' : 'Receipt scanned!', 'success');
-
-        if (isVoiceEnabled) {
-          let spokenAlerts = "";
-          if (data.duplicateAlert) spokenAlerts += data.duplicateAlert + ". ";
-          if (data.budgetAlert) spokenAlerts += data.budgetAlert + ". ";
-          const baseSpoken = language === 'id'
-            ? `Struk terdeteksi dari ${merchant} sebesar ${amount} Rupiah. Apakah Anda ingin mencatat pengeluaran ini?`
-            : `Receipt detected from ${merchant} for ${formatCurrency(amount)}. Would you like to record this expense?`;
-          speakText(spokenAlerts + baseSpoken);
-        }
-      } catch (err: any) {
-        console.error('Failed to scan receipt in chat:', err);
-        const errText = language === 'id'
-          ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
-          : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.";
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Math.random().toString(),
-            sender: 'ai',
-            text: errText,
-            timestamp: new Date()
-          }
-        ]);
-        addToast(language === 'id' ? 'Gagal memindai struk' : 'Failed to scan receipt', 'error');
-        if (isVoiceEnabled) {
-          speakText(errText);
-        }
-      } finally {
-        setIsTyping(false);
-        // Clear input value
-        if (fileInputRef.current) fileInputRef.current.value = '';
+      if (!receipt || (!receipt.merchantName && !receipt.totalAmount)) {
+        throw new Error('Could not read receipt data');
       }
-    };
-    reader.onerror = () => {
-      addToast('Failed to read image file', 'error');
-    };
-    reader.readAsDataURL(file);
+
+      // 2. Generate natural language command to call our chatEntry API
+      const dateStr = receipt.date || new Date().toISOString().split('T')[0];
+      const merchant = receipt.merchantName || 'Merchant';
+      const amount = receipt.totalAmount || 0;
+
+      const generatedCommand = language === 'id'
+        ? `Beli ${merchant} sebesar ${amount} tanggal ${dateStr}`
+        : `Bought ${merchant} for ${amount} on ${dateStr}`;
+
+      // 3. Call standard chatEntry to match wallet, category, and limits automatically!
+      const data = await toolsApi.chatEntry(
+        generatedCommand,
+        wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
+        categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
+        goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
+        new Date().toISOString()
+      );
+
+      // Prepend receipt scanning success text
+      let msgText = language === 'id'
+        ? `Struk terdeteksi dari *${merchant}* sebesar *${formatCurrency(amount)}*.\nApakah Anda ingin mencatat pengeluaran ini?`
+        : `Receipt detected from *${merchant}* for *${formatCurrency(amount)}*.\nWould you like to record this expense?`;
+
+      if (data.duplicateAlert) {
+        msgText = `${data.duplicateAlert}\n\n${msgText}`;
+      }
+
+      if (data.budgetAlert) {
+        msgText = `${data.budgetAlert}\n\n${msgText}`;
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          sender: 'ai',
+          text: msgText,
+          timestamp: new Date(),
+          parsedData: data,
+          status: 'pending'
+        }
+      ]);
+      addToast(language === 'id' ? 'Struk terpindai!' : 'Receipt scanned!', 'success');
+
+      if (isVoiceEnabled) {
+        let spokenAlerts = "";
+        if (data.duplicateAlert) spokenAlerts += data.duplicateAlert + ". ";
+        if (data.budgetAlert) spokenAlerts += data.budgetAlert + ". ";
+        const baseSpoken = language === 'id'
+          ? `Struk terdeteksi dari ${merchant} sebesar ${amount} Rupiah. Apakah Anda ingin mencatat pengeluaran ini?`
+          : `Receipt detected from ${merchant} for ${formatCurrency(amount)}. Would you like to record this expense?`;
+        speakText(spokenAlerts + baseSpoken);
+      }
+    } catch (err: any) {
+      console.error('Failed to scan receipt in chat:', err);
+      const errText = language === 'id'
+        ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
+        : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.";
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          sender: 'ai',
+          text: errText,
+          timestamp: new Date()
+        }
+      ]);
+      addToast(language === 'id' ? 'Gagal memindai struk' : 'Failed to scan receipt', 'error');
+      if (isVoiceEnabled) {
+        speakText(errText);
+      }
+    } finally {
+      setIsTyping(false);
+      // Clear input value
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   // Initialize with welcome message
