@@ -115,7 +115,7 @@ router.get('/pgmonitor', authMiddleware, adminMiddleware, async (req: AuthReques
     const uptime: any[] = await prisma.$queryRawUnsafe(`
       SELECT 
         pg_postmaster_start_time() as start_time,
-        now() - pg_postmaster_start_time() as duration
+        (now() - pg_postmaster_start_time())::text as duration
     `);
 
     res.json({
