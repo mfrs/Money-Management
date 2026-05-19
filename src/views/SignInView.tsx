@@ -14,7 +14,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export default function SignInView() {
-  const { login, register } = useApp();
+  const { login, register, language, setLanguage, t } = useApp();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,12 +31,12 @@ export default function SignInView() {
     setError('');
 
     if (mode === 'register') {
-      if (!name.trim()) return setError('Name is required');
-      if (password.length < 6) return setError('Password must be at least 6 characters');
-      if (password !== confirmPassword) return setError('Passwords do not match');
+      if (!name.trim()) return setError(t('auth.nameRequired'));
+      if (password.length < 6) return setError(t('auth.passwordMin'));
+      if (password !== confirmPassword) return setError(t('auth.passwordMatch'));
     }
 
-    if (!email.trim() || !password.trim()) return setError('Email and password are required');
+    if (!email.trim() || !password.trim()) return setError(t('auth.emailPasswordRequired'));
 
     setLoading(true);
     try {
@@ -72,6 +72,16 @@ export default function SignInView() {
           transition: background-color 5000s ease-in-out 0s;
         }
       `}</style>
+
+      {/* Elegant Floating Language Switcher in the top-right */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}
+          className="glass px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white border border-white/10 hover:bg-white/5 transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          {language === 'en' ? 'Bahasa Indonesia' : 'English'}
+        </button>
+      </div>
 
       {/* Floating Animated Gradient Mesh Spheres */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -129,12 +139,10 @@ export default function SignInView() {
             >
               <div className="mb-8">
                 <h1 className="font-display text-2xl font-bold text-white tracking-tight mb-2">
-                  {mode === 'login' ? 'Sign In' : 'Create Account'}
+                  {mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
                 </h1>
                 <p className="text-xs text-white/40 leading-relaxed font-medium">
-                  {mode === 'login'
-                    ? 'Welcome back. Enter your credentials to access your financial dashboard.'
-                    : 'Get started. Register a new account to begin tracking your wealth.'}
+                  {mode === 'login' ? t('auth.welcomeBack') : t('auth.getStarted')}
                 </p>
               </div>
 
@@ -158,7 +166,9 @@ export default function SignInView() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="space-y-2"
                   >
-                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="name">Full Name</label>
+                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="name">
+                      {t('auth.fullName')}
+                    </label>
                     <div className="relative group">
                       <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white transition-colors" size={16} />
                       <input
@@ -166,7 +176,7 @@ export default function SignInView() {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Your Name"
+                        placeholder={t('auth.yourName')}
                         className="w-full bg-[#0b0d12] border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-sm text-white placeholder:text-white/20 focus:border-white/30 outline-none transition-all"
                       />
                     </div>
@@ -175,7 +185,9 @@ export default function SignInView() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="email">Email Address</label>
+                  <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="email">
+                    {t('auth.emailAddress')}
+                  </label>
                   <div className="relative group">
                     <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white transition-colors" size={16} />
                     <input
@@ -191,7 +203,9 @@ export default function SignInView() {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="password">Password</label>
+                  <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="password">
+                    {t('auth.password')}
+                  </label>
                   <div className="relative group">
                     <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white transition-colors" size={16} />
                     <input
@@ -219,7 +233,9 @@ export default function SignInView() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="space-y-2"
                   >
-                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="confirm">Confirm Password</label>
+                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1" htmlFor="confirm">
+                      {t('auth.confirmPassword')}
+                    </label>
                     <div className="relative group">
                       <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white transition-colors" size={16} />
                       <input
@@ -238,14 +254,14 @@ export default function SignInView() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white hover:bg-white/95 text-black rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg active:scale-[0.98] duration-200 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white hover:bg-white/95 text-black rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg active:scale-[0.98] duration-200 mt-6 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
-                    <><Loader2 size={14} className="animate-spin" /> Processing...</>
+                    <><Loader2 size={14} className="animate-spin" /> {t('auth.processing')}</>
                   ) : mode === 'login' ? (
-                    <>Sign In <ArrowRight size={14} /></>
+                    <>{t('auth.signIn')} <ArrowRight size={14} /></>
                   ) : (
-                    <>Create Account <ArrowRight size={14} /></>
+                    <>{t('auth.createAccount')} <ArrowRight size={14} /></>
                   )}
                 </button>
               </form>
@@ -255,13 +271,13 @@ export default function SignInView() {
           {/* Switch Mode Footer */}
           <div className="mt-8 text-center relative z-10 border-t border-white/5 pt-6">
             <p className="text-xs text-white/30">
-              {mode === 'login' ? "Don't have an account?" : "Already registered?"}
+              {mode === 'login' ? t('auth.noAccount') : t('auth.alreadyRegistered')}
               <button
                 type="button"
                 onClick={switchMode}
-                className="text-white font-semibold ml-2 hover:underline hover:underline-offset-4 transition-all"
+                className="text-white font-semibold ml-2 hover:underline hover:underline-offset-4 transition-all cursor-pointer"
               >
-                {mode === 'login' ? 'Create Account' : 'Sign In'}
+                {mode === 'login' ? t('auth.createAccount') : t('auth.signIn')}
               </button>
             </p>
           </div>
@@ -272,9 +288,9 @@ export default function SignInView() {
               <button
                 type="button"
                 onClick={() => { setEmail('alex@stashly.inf'); setPassword('password123'); }}
-                className="text-[10px] text-white/20 hover:text-white/40 transition-colors underline underline-offset-4 decoration-white/10"
+                className="text-[10px] text-white/20 hover:text-white/40 transition-colors underline underline-offset-4 decoration-white/10 cursor-pointer"
               >
-                Use demo credentials
+                {t('auth.useDemo')}
               </button>
             </div>
           )}

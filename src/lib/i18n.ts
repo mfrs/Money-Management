@@ -140,6 +140,26 @@ export const translations: Record<Language, Dictionary> = {
     // TopBar Notifs
     'notif.title': 'Notifications',
     'notif.empty': 'No new notifications',
+
+    // Auth
+    'auth.signIn': 'Sign In',
+    'auth.signUp': 'Sign Up',
+    'auth.createAccount': 'Create Account',
+    'auth.welcomeBack': 'Welcome back. Enter your credentials to access your financial dashboard.',
+    'auth.getStarted': 'Get started. Register a new account to begin tracking your wealth.',
+    'auth.fullName': 'Full Name',
+    'auth.yourName': 'Your Name',
+    'auth.emailAddress': 'Email Address',
+    'auth.password': 'Password',
+    'auth.confirmPassword': 'Confirm Password',
+    'auth.processing': 'Processing...',
+    'auth.noAccount': "Don't have an account?",
+    'auth.alreadyRegistered': 'Already registered?',
+    'auth.useDemo': 'Use demo credentials',
+    'auth.nameRequired': 'Name is required',
+    'auth.passwordMin': 'Password must be at least 6 characters',
+    'auth.passwordMatch': 'Passwords do not match',
+    'auth.emailPasswordRequired': 'Email and password are required',
   },
   id: {
     // Navigation
@@ -275,5 +295,25 @@ export const translations: Record<Language, Dictionary> = {
     // TopBar Notifs
     'notif.title': 'Notifikasi',
     'notif.empty': 'Tidak ada notifikasi baru',
+
+    // Auth
+    'auth.signIn': 'Masuk',
+    'auth.signUp': 'Daftar',
+    'auth.createAccount': 'Buat Akun',
+    'auth.welcomeBack': 'Selamat datang kembali. Masukkan kredensial Anda untuk mengakses dasbor keuangan.',
+    'auth.getStarted': 'Mulai sekarang. Daftarkan akun baru untuk mulai melacak keuangan Anda.',
+    'auth.fullName': 'Nama Lengkap',
+    'auth.yourName': 'Nama Anda',
+    'auth.emailAddress': 'Alamat Email',
+    'auth.password': 'Kata Sandi',
+    'auth.confirmPassword': 'Konfirmasi Kata Sandi',
+    'auth.processing': 'Memproses...',
+    'auth.noAccount': "Belum punya akun?",
+    'auth.alreadyRegistered': 'Sudah terdaftar?',
+    'auth.useDemo': 'Gunakan akun demo',
+    'auth.nameRequired': 'Nama wajib diisi',
+    'auth.passwordMin': 'Kata sandi minimal 6 karakter',
+    'auth.passwordMatch': 'Kata sandi tidak cocok',
+    'auth.emailPasswordRequired': 'Email dan kata sandi wajib diisi',
   }
 };
