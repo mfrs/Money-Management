@@ -18,7 +18,7 @@ import { cn, compressImage } from '../lib/utils';
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
-  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal, addToast, language } = useApp();
+  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, goals, addJournal, addToast, language } = useApp();
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
@@ -89,6 +89,7 @@ export default function QuickEntryModal() {
         aiInput,
         wallets.map(w => ({ id: w.id, name: w.name })),
         categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
+        goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
         new Date().toISOString()
       );
       
@@ -173,7 +174,7 @@ export default function QuickEntryModal() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-[#0d0f14] w-full max-w-lg rounded-[32px] lg:rounded-[40px] shadow-2xl overflow-hidden relative z-10 border border-on-surface/10 max-h-[90vh] overflow-y-auto"
+            className="bg-surface w-full max-w-lg rounded-[32px] lg:rounded-[40px] shadow-2xl overflow-hidden relative z-10 border border-on-surface/10 max-h-[90vh] overflow-y-auto"
           >
             <div className="px-8 lg:px-10 py-6 lg:py-8 flex items-center justify-between border-b border-on-surface/5">
               <div className="flex items-center gap-4">
@@ -307,7 +308,7 @@ export default function QuickEntryModal() {
                       className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                     >
                       {wallets.map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
+                        <option key={w.id} value={w.id} className="bg-surface text-on-surface">{w.name}</option>
                       ))}
                     </select>
                     <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
@@ -327,7 +328,7 @@ export default function QuickEntryModal() {
                         className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                       >
                         {wallets.map(w => (
-                          <option key={w.id} value={w.id} disabled={w.id === walletId}>{w.name}</option>
+                          <option key={w.id} value={w.id} disabled={w.id === walletId} className="bg-surface text-on-surface">{w.name}</option>
                         ))}
                       </select>
                     ) : (
@@ -338,7 +339,7 @@ export default function QuickEntryModal() {
                         className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                       >
                         {filteredCategories.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id} className="bg-surface text-on-surface">{c.name}</option>
                         ))}
                       </select>
                     )}
