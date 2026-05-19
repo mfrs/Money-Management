@@ -145,8 +145,8 @@ export default function CategoriesView() {
                 </div>
               </div>
 
-              <div className="space-y-4 relative z-10">
-                <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase">{cat.name}</h3>
+              <div className="space-y-4 relative z-10 w-full min-w-0">
+                <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tighter uppercase truncate block w-full" title={cat.name}>{cat.name}</h3>
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: cat.color }} />
                   <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.3em] font-mono">{cat.type} CATEGORY</p>
