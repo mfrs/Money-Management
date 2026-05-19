@@ -299,7 +299,19 @@ export default function TransactionsView() {
               {paged.map((tx) => {
                 const cat = getCategoryById(tx.categoryId);
                 const wallet = getWalletById(tx.walletId);
-                const IconComp = cat ? getIcon(cat.icon) : getIcon('HelpCircle');
+                const isDebtTx = !tx.categoryId && tx.type !== 'transfer';
+                const IconComp = cat 
+                  ? getIcon(cat.icon) 
+                  : isDebtTx 
+                    ? getIcon('Handshake') 
+                    : getIcon('HelpCircle');
+                const categoryName = tx.type === 'transfer' 
+                  ? t('common.transfer') 
+                  : cat 
+                    ? cat.name 
+                    : isDebtTx 
+                      ? t('nav.debts') 
+                      : 'Unknown';
 
                 return (
                   <tr key={tx.id} className="hover:bg-on-surface/[0.04] transition-colors group">
@@ -316,12 +328,12 @@ export default function TransactionsView() {
                         </div>
                         <div>
                           <span className="text-sm font-bold text-on-surface">{tx.description}</span>
-                          <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{tx.type === 'transfer' ? t('common.transfer') : cat?.name}</span>
+                          <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{categoryName}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7 hidden lg:table-cell">
-                      <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">{tx.type === 'transfer' ? t('common.transfer') : (cat?.name || 'Unknown')}</span>
+                      <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">{categoryName}</span>
                     </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7 hidden md:table-cell">
                       <span className="px-3 lg:px-4 py-1.5 glass-dark rounded-lg text-[9px] font-bold text-on-surface/60 border border-on-surface/5 uppercase tracking-[0.2em] inline-flex items-center gap-1.5">

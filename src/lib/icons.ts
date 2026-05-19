@@ -4,7 +4,7 @@ import {
   ShoppingCart, Banknote, Laptop, TrendingUp, TrendingDown,
   Landmark, Smartphone, Wallet, PiggyBank, Building2, Wifi,
   Music, Plane, CreditCard, History, Package, HelpCircle,
-  GraduationCap, Dumbbell, Coffee, Gift, Briefcase, Globe
+  GraduationCap, Dumbbell, Coffee, Gift, Briefcase, Globe, Handshake
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -12,7 +12,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   ShoppingCart, Banknote, Laptop, TrendingUp, TrendingDown,
   Landmark, Smartphone, Wallet, PiggyBank, Building2, Wifi,
   Music, Plane, CreditCard, History, Package, HelpCircle,
-  GraduationCap, Dumbbell, Coffee, Gift, Briefcase, Globe,
+  GraduationCap, Dumbbell, Coffee, Gift, Briefcase, Globe, Handshake,
 };
 
 export function getIcon(name: string): React.ComponentType<any> {

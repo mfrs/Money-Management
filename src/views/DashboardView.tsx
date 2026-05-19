@@ -574,7 +574,18 @@ export default function Dashboard() {
         <div className="space-y-1">
           {recentTransactions.map((tx) => {
             const cat = getCategoryById(tx.categoryId);
-            const IconComp = cat ? getIcon(cat.icon) : TrendingDown;
+            const isDebtTx = !tx.categoryId && tx.type !== 'transfer';
+            const IconComp = cat 
+              ? getIcon(cat.icon) 
+              : isDebtTx 
+                ? getIcon('Handshake') 
+                : TrendingDown;
+            const categoryName = cat 
+              ? cat.name 
+              : isDebtTx 
+                ? t('nav.debts') 
+                : 'Unknown';
+
             return (
               <div key={tx.id} className="flex items-center justify-between py-3 lg:py-4 px-3 lg:px-4 hover:bg-on-surface/[0.04] rounded-2xl transition-all cursor-pointer group">
                 <div className="flex items-center gap-4 lg:gap-5">
@@ -587,7 +598,7 @@ export default function Dashboard() {
                   <div>
                     <div className="text-sm font-bold text-on-surface group-hover:text-on-surface transition-colors">{tx.description}</div>
                     <div className="text-[10px] text-on-surface/30 uppercase tracking-widest mt-1">
-                      {cat?.name || 'Unknown'} • {formatDate(tx.date)}
+                      {categoryName} • {formatDate(tx.date)}
                     </div>
                   </div>
                 </div>
