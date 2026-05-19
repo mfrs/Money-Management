@@ -290,14 +290,14 @@ export default function BudgetView() {
                 <CensoredAmount amount={totalIncome} isSensored={isSensored} />
               </p>
             </div>
-            <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
+            <div className="h-10 w-px bg-on-surface/5 shrink-0" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.committed')}</p>
               <p className="font-display text-lg lg:text-xl font-bold text-primary tracking-tighter">
                 <CensoredAmount amount={totalCommitted} isSensored={isSensored} />
               </p>
             </div>
-            <div className="h-10 w-px bg-on-surface/5 hidden lg:block" />
+            <div className="h-10 w-px bg-on-surface/5 shrink-0" />
             <div className="space-y-1 px-4 whitespace-nowrap">
               <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">{t('budget.residual')}</p>
               <p className={cn("font-display text-lg lg:text-xl font-bold tracking-tighter", residual >= 0 ? "text-secondary" : "text-error")}>
@@ -305,7 +305,8 @@ export default function BudgetView() {
               </p>
             </div>
 
-            <div className="flex-1 max-w-sm ml-6 lg:ml-10 hidden lg:block">
+            <div className="h-10 w-px bg-on-surface/5 shrink-0" />
+            <div className="flex-1 min-w-[180px] max-w-sm ml-6 lg:ml-10 shrink-0">
               <div className="flex justify-between text-[9px] font-bold text-on-surface/20 uppercase tracking-widest mb-2.5">
                 <span>{t('budget.allocation')}</span>
                 <span className="text-primary font-mono tabular-nums">{allocationPercent}%</span>
