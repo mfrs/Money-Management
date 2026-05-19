@@ -151,8 +151,18 @@ export default function LedgerView() {
                   onClick={() => setSelectedJournal(journal)}
                   className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
                 >
-                  <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
-                    {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
+                  <td className="px-6 lg:px-8 py-4 whitespace-nowrap">
+                    <p className="text-[10px] font-bold text-on-surface/75 uppercase tracking-widest">
+                      {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
+                    </p>
+                    {journal.createdAt && (
+                      <p className="text-[8px] font-medium text-on-surface/30 mt-1 uppercase tracking-wider">
+                        {language === 'id' ? 'Diinput: ' : 'Entered: '}
+                        {new Date(journal.createdAt).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {' '}
+                        {new Date(journal.createdAt).toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
                   </td>
                   <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/60 font-mono tracking-tighter uppercase">
                     JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
@@ -236,7 +246,7 @@ export default function LedgerView() {
               {/* Scrollable Content */}
               <div id="journal-detail-content" className="p-8 overflow-y-auto bg-transparent">
                 {/* Header Info */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 p-6 glass-dark rounded-[24px] border border-on-surface/5">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8 p-6 glass-dark rounded-[24px] border border-on-surface/5">
                   <div>
                     <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
                       {t('ledger.currencyLabel')}
@@ -255,6 +265,16 @@ export default function LedgerView() {
                   </div>
                   <div>
                     <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {language === 'id' ? 'TGL. DIINPUT' : 'INSERT DATE'}
+                    </p>
+                    <p className="text-xs font-bold text-on-surface uppercase tracking-widest">
+                      {selectedJournal.createdAt 
+                        ? `${new Date(selectedJournal.createdAt).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} ${new Date(selectedJournal.createdAt).toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                        : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
                       {t('ledger.status')}
                     </p>
                     <p className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-3 py-1 rounded-full uppercase tracking-widest">POSTED</p>
@@ -263,9 +283,9 @@ export default function LedgerView() {
                     <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
                       {t('ledger.voucherCode')}
                     </p>
-                    <p className="text-xs font-bold text-on-surface uppercase tracking-widest font-mono">{selectedJournal.id}</p>
+                    <p className="text-xs font-bold text-on-surface uppercase tracking-widest font-mono truncate">{selectedJournal.id.substring(selectedJournal.id.length - 8).toUpperCase()}</p>
                   </div>
-                  <div className="col-span-2 md:col-span-4 mt-2">
+                  <div className="col-span-2 md:col-span-5 mt-2">
                     <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
                       {t('ledger.description')}
                     </p>
