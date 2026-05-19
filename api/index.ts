@@ -2,15 +2,15 @@ import express from 'express';
 import cors from 'cors';
 
 // Import Feature-based Modular Routers
-import adminRouter from './routes/admin';
-import authRouter from './routes/auth';
-import walletsRouter from './routes/wallets';
-import categoriesRouter from './routes/categories';
-import journalsRouter from './routes/journals';
-import budgetRouter from './routes/budget';
-import goalsRouter from './routes/goals';
-import aiRouter from './routes/ai';
-import commonRouter from './routes/common';
+import adminRouter from './routes/admin.js';
+import authRouter from './routes/auth.js';
+import walletsRouter from './routes/wallets.js';
+import categoriesRouter from './routes/categories.js';
+import journalsRouter from './routes/journals.js';
+import budgetRouter from './routes/budget.js';
+import goalsRouter from './routes/goals.js';
+import aiRouter from './routes/ai.js';
+import commonRouter from './routes/common.js';
 
 const app = express();
 const PORT = 3001;

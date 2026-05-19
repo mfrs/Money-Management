@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from './db';
+import { prisma } from './db.js';
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'wm_s3cur3_k3y_2026_xK9pLm';
 
