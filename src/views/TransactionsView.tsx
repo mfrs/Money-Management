@@ -75,6 +75,11 @@ export default function TransactionsView() {
         type = categoryLine.type === 'CREDIT' ? 'income' : 'expense';
         const wLine = walletLines.find(l => l.walletId);
         if (wLine) walletId = wLine.walletId;
+      } else if (walletLines.length === 1 && !categoryLine) {
+        const wLine = walletLines[0];
+        walletId = wLine.walletId;
+        amount = wLine.amount;
+        type = wLine.type === 'DEBIT' ? 'income' : 'expense';
       }
 
       return {

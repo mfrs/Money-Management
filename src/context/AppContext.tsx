@@ -560,12 +560,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const totalIncome = useMemo(() => monthlyJournals.reduce((sum, j) => {
     const incomeLine = j.lines.find(l => l.categoryId && l.type === 'CREDIT');
-    return sum + (incomeLine ? incomeLine.amount : 0);
+    if (incomeLine) return sum + incomeLine.amount;
+
+    const hasCategory = j.lines.some(l => l.categoryId);
+    const walletLines = j.lines.filter(l => l.walletId);
+    if (!hasCategory && walletLines.length === 1 && walletLines[0].type === 'DEBIT') {
+      return sum + walletLines[0].amount;
+    }
+    return sum;
   }, 0), [monthlyJournals]);
 
   const totalExpenses = useMemo(() => monthlyJournals.reduce((sum, j) => {
     const expenseLine = j.lines.find(l => l.categoryId && l.type === 'DEBIT');
-    return sum + (expenseLine ? expenseLine.amount : 0);
+    if (expenseLine) return sum + expenseLine.amount;
+
+    const hasCategory = j.lines.some(l => l.categoryId);
+    const walletLines = j.lines.filter(l => l.walletId);
+    if (!hasCategory && walletLines.length === 1 && walletLines[0].type === 'CREDIT') {
+      return sum + walletLines[0].amount;
+    }
+    return sum;
   }, 0), [monthlyJournals]);
 
   const getCategorySpent = useCallback((categoryId: string) => {

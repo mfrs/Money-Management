@@ -99,6 +99,10 @@ export default function Dashboard() {
         categoryId = categoryLine.categoryId;
         amount = categoryLine.amount;
         type = categoryLine.type === 'CREDIT' ? 'income' : 'expense';
+      } else if (walletLines.length === 1 && !categoryLine) {
+        const wLine = walletLines[0];
+        amount = wLine.amount;
+        type = wLine.type === 'DEBIT' ? 'income' : 'expense';
       }
 
       return {
