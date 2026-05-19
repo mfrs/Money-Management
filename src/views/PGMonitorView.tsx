@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../lib/api';
 import { useApp } from '../context/AppContext';
+import { cn } from '../lib/utils';
 
 interface DBStats {
   database: {
@@ -57,6 +58,17 @@ interface DBStats {
   };
 }
 
+interface QueryHistoryItem {
+  pid: number;
+  username: string;
+  state: string;
+  application_name: string;
+  duration_seconds: number;
+  query: string;
+  timestamp: Date;
+  isCompleted?: boolean;
+}
+
 export default function PGMonitorView() {
   const { user } = useApp();
   const [stats, setStats] = useState<DBStats | null>(null);
@@ -65,6 +77,7 @@ export default function PGMonitorView() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(5000); // 5 seconds default
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
 
   const fetchStats = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -73,12 +86,83 @@ export default function PGMonitorView() {
       setStats(data);
       setError(null);
       setLastRefreshed(new Date());
+
+      // Update query history list
+      setQueryHistory((prevHistory) => {
+        const nowTime = new Date();
+        const activePids = new Set((data.activeQueries || []).map((q: any) => q.pid));
+
+        // 1. Mark queries that are no longer active as completed
+        let updatedHistory = prevHistory.map((q) => {
+          if (!activePids.has(q.pid) && !q.isCompleted) {
+            return {
+              ...q,
+              state: 'completed',
+              isCompleted: true,
+              timestamp: nowTime, // Mark completion time
+            };
+          }
+          return q;
+        });
+
+        // 2. Add or update currently active queries
+        (data.activeQueries || []).forEach((activeQ: any) => {
+          const existingIndex = updatedHistory.findIndex((h) => h.pid === activeQ.pid && !h.isCompleted);
+          if (existingIndex > -1) {
+            updatedHistory[existingIndex] = {
+              ...updatedHistory[existingIndex],
+              duration_seconds: activeQ.duration_seconds,
+              state: activeQ.state,
+              timestamp: nowTime,
+            };
+          } else {
+            updatedHistory.unshift({
+              pid: activeQ.pid,
+              username: activeQ.username,
+              state: activeQ.state,
+              application_name: activeQ.application_name,
+              duration_seconds: activeQ.duration_seconds,
+              query: activeQ.query,
+              timestamp: nowTime,
+              isCompleted: false,
+            });
+          }
+        });
+
+        // 3. Keep only the last 20 queries, and remove completed queries older than 45 seconds
+        return updatedHistory
+          .filter((q) => {
+            if (q.isCompleted) {
+              const secondsSinceCompletion = (nowTime.getTime() - q.timestamp.getTime()) / 1000;
+              return secondsSinceCompletion < 45;
+            }
+            return true;
+          })
+          .slice(0, 20);
+      });
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to load PostgreSQL stats');
     } finally {
       if (!silent) setLoading(false);
     }
+  }, []);
+
+  // Cleanup completed queries every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setQueryHistory((prevHistory) => {
+        const nowTime = new Date();
+        return prevHistory.filter((q) => {
+          if (q.isCompleted) {
+            const secondsSinceCompletion = (nowTime.getTime() - q.timestamp.getTime()) / 1000;
+            return secondsSinceCompletion < 45;
+          }
+          return true;
+        });
+      });
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -297,29 +381,42 @@ export default function PGMonitorView() {
 
           {/* Active Queries & Table Sizes Details */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Active Queries Section */}
+            {/* Active & Recent Queries Section */}
             <div className="glass border border-th-divider rounded-3xl p-6 flex flex-col min-h-[500px]">
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-2">
                   <Terminal className="text-primary" size={18} />
-                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">Active Queries</h3>
+                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">Active & Recent Queries</h3>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                  {stats.activeQueries.length} running
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-success">
+                    {queryHistory.filter(q => !q.isCompleted).length} active
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-on-surface/5 border border-th-divider text-on-surface-variant">
+                    {queryHistory.filter(q => q.isCompleted).length} recent
+                  </span>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-4 max-h-[550px] [scrollbar-width:thin]">
-                {stats.activeQueries.length === 0 ? (
+                {queryHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12 text-on-surface-variant">
                     <CheckCircle2 className="text-success mb-2" size={24} />
-                    <p className="text-xs font-bold">No other active queries running</p>
+                    <p className="text-xs font-bold">No queries recorded</p>
                     <p className="text-[10px] mt-1">Database is idle and healthy</p>
                   </div>
                 ) : (
-                  stats.activeQueries.map((q) => (
-                    <div key={q.pid} className="p-4 rounded-2xl bg-surface-container border border-th-divider space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-on-surface-variant border-b border-th-divider pb-2">
+                  queryHistory.map((q) => (
+                    <div 
+                      key={`${q.pid}-${q.isCompleted ? 'comp' : 'act'}-${q.query.slice(0, 10)}`} 
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all duration-300 space-y-3",
+                        q.isCompleted 
+                          ? "bg-surface-container/40 border-th-divider/50 opacity-60 hover:opacity-100" 
+                          : "bg-surface-container border-th-divider"
+                      )}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-on-surface-variant border-b border-th-divider/50 pb-2">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-primary">PID: {q.pid}</span>
                           <span className="w-1.5 h-1.5 rounded-full bg-on-surface/20" />
@@ -327,12 +424,20 @@ export default function PGMonitorView() {
                           <span className="w-1.5 h-1.5 rounded-full bg-on-surface/20" />
                           <span>App: <strong className="text-on-surface">{q.application_name || 'n/a'}</strong></span>
                         </div>
-                        <div className={`px-2 py-0.5 rounded font-bold font-sans ${
-                          q.duration_seconds > 5.0 ? 'bg-error/10 text-error border border-error/20' :
-                          q.duration_seconds > 1.0 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-success/10 text-success border border-success/20'
-                        }`}>
-                          {q.duration_seconds.toFixed(2)}s
-                        </div>
+                        {q.isCompleted ? (
+                          <div className="px-2 py-0.5 rounded font-bold font-sans bg-on-surface/5 border border-th-divider text-on-surface-variant flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" />
+                            Completed
+                          </div>
+                        ) : (
+                          <div className={`px-2 py-0.5 rounded font-bold font-sans flex items-center gap-1 ${
+                            q.duration_seconds > 5.0 ? 'bg-error/10 text-error border border-error/20' :
+                            q.duration_seconds > 1.0 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-success/10 text-success border border-success/20'
+                          }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping" />
+                            {q.duration_seconds.toFixed(2)}s
+                          </div>
+                        )}
                       </div>
                       <pre className="text-xs font-mono bg-surface p-3 rounded-xl overflow-x-auto text-on-surface max-h-[150px] [scrollbar-width:thin]">
                         {q.query}
