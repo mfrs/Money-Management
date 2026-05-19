@@ -81,7 +81,21 @@ export interface Goal {
   createdAt: string;
 }
 
-export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements';
+export interface Asset {
+  id: string;
+  name: string;
+  type: 'investment' | 'property' | 'vehicle' | 'gold' | 'other';
+  purchasePrice: number;
+  currentPrice: number;
+  purchaseDate: string;
+  estimatedRate: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements' | 'assets';
 
 export interface AppData {
   wallets: Wallet[];

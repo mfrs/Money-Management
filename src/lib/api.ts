@@ -111,6 +111,28 @@ export const goalsApi = {
   delete: (id: string) => request<any>(`/goals/${id}`, { method: 'DELETE' }),
 };
 
+// ===================== ASSETS =====================
+export interface Asset {
+  id: string;
+  name: string;
+  type: 'investment' | 'property' | 'vehicle' | 'gold' | 'other';
+  purchasePrice: number;
+  currentPrice: number;
+  purchaseDate: string;
+  estimatedRate: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export const assetApi = {
+  getAll: () => request<Asset[]>('/assets'),
+  create: (data: any) => request<Asset>('/assets', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request<Asset>(`/assets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<any>(`/assets/${id}`, { method: 'DELETE' }),
+};
+
 // ===================== ADMIN =====================
 export const adminApi = {
   getUsers: () => request<any[]>('/admin/users'),

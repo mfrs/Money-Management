@@ -35,7 +35,7 @@ interface ChatMessage {
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language } = useApp();
+  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language, user } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -138,7 +138,7 @@ export default function AIChatAssistant() {
 
   // Text-To-Speech function
   const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
+    if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
 
     // Stop current speaking
     window.speechSynthesis.cancel();
@@ -171,7 +171,7 @@ export default function AIChatAssistant() {
     if (isNaN(num)) return language === 'id' ? 'Rp 0' : '$0';
     return new Intl.NumberFormat(language === 'id' ? 'id-ID' : 'en-US', {
       style: 'currency',
-      currency: wallets[0]?.user?.currency || 'IDR',
+      currency: user?.currency || 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(num);

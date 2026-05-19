@@ -15,6 +15,7 @@ export const translations: Record<Language, Dictionary> = {
     'nav.darkMode': 'Dark Mode',
     'nav.lightMode': 'Light Mode',
     'nav.achievements': 'Achievements',
+    'nav.assets': 'Assets',
     'nav.ledger': 'General Ledger',
 
     // TopBar
@@ -194,6 +195,7 @@ export const translations: Record<Language, Dictionary> = {
     'nav.lightMode': 'Mode Terang',
     'nav.goals': 'Target Finansial',
     'nav.achievements': 'Pencapaian',
+    'nav.assets': 'Aset',
     'nav.ledger': 'Jurnal Umum',
 
     // TopBar

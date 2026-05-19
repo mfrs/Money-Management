@@ -13,6 +13,7 @@ import GoalsView from './views/GoalsView';
 import AdminView from './views/AdminView';
 import LedgerView from './views/LedgerView';
 import AchievementsView from './views/AchievementsView';
+import AssetsView from './views/AssetsView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
@@ -63,6 +64,7 @@ function AppContent() {
       case 'admin': return <AdminView />;
       case 'ledger': return <LedgerView />;
       case 'achievements': return <AchievementsView />;
+      case 'assets': return <AssetsView />;
       default: return <DashboardView />;
     }
   };

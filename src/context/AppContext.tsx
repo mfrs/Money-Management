@@ -8,9 +8,10 @@ import type {
   FixedExpense,
   WalletAllocation,
   Goal,
+  Asset,
 } from '../lib/types';
 import { generateId } from '../lib/types';
-import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
 
 export interface Toast {
@@ -75,7 +76,7 @@ interface AppContextType {
   deleteWallet: (id: string) => void;
 
   // Category CRUD
-  addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => void;
+  addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<any>;
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
 
@@ -99,6 +100,12 @@ interface AppContextType {
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
+
+  // Assets CRUD
+  assets: Asset[];
+  addAsset: (asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
+  updateAsset: (id: string, updates: Partial<Asset>) => Promise<void>;
+  deleteAsset: (id: string) => Promise<void>;
 
   // Computed
   totalBalance: number;
@@ -167,6 +174,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
 
   // ===================== THEME & LANGUAGE =====================
   useEffect(() => {
@@ -264,6 +272,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFixedExpenses([]);
     setWalletAllocations([]);
     setGoals([]);
+    setAssets([]);
     setTheme('dark');
     setCurrentView('dashboard');
     addToast('Signed out successfully', 'info');
@@ -285,7 +294,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     try {
       setIsLoading(true);
-      const [w, c, j, is, fe, wa, g] = await Promise.all([
+      const [w, c, j, is, fe, wa, g, ast] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
         journalApi.getAll(),
@@ -293,6 +302,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         budgetApi.getFixedExpenses(),
         budgetApi.getWalletAllocations(),
         goalsApi.getAll(),
+        assetApi.getAll(),
       ]);
       setWallets(w);
       setCategories(c);
@@ -301,6 +311,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setFixedExpenses(fe);
       setWalletAllocations(wa);
       setGoals(g);
+      setAssets(ast);
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('token')) {
         logout();
@@ -466,6 +477,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     catch { addToast('Failed to delete goal', 'error'); }
   }, [addToast]);
 
+  // ===================== ASSETS CRUD =====================
+  const addAsset = useCallback(async (asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    try {
+      const created = await assetApi.create(asset);
+      setAssets(prev => [created, ...prev]);
+      addToast(`Asset "${asset.name}" added`);
+    } catch { addToast('Failed to add asset', 'error'); }
+  }, [addToast]);
+
+  const updateAsset = useCallback(async (id: string, updates: Partial<Asset>) => {
+    try {
+      const updated = await assetApi.update(id, updates);
+      setAssets(prev => prev.map(a => a.id === id ? updated : a));
+      addToast(`Asset updated`);
+    } catch { addToast('Failed to update asset', 'error'); }
+  }, [addToast]);
+
+  const deleteAsset = useCallback(async (id: string) => {
+    try {
+      await assetApi.delete(id);
+      setAssets(prev => prev.filter(a => a.id !== id));
+      addToast('Asset removed', 'info');
+    } catch { addToast('Failed to delete asset', 'error'); }
+  }, [addToast]);
+
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);
   const now = new Date();
@@ -527,6 +563,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addFixedExpense, updateFixedExpense, deleteFixedExpense,
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
       addGoal, updateGoal, deleteGoal,
+      assets, addAsset, updateAsset, deleteAsset,
       totalBalance, totalIncome, totalExpenses,
       getCategorySpent, getWalletById, getCategoryById,
       toasts, addToast, removeToast,

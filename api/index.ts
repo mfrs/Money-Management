@@ -9,6 +9,7 @@ import categoriesRouter from './routes/categories.js';
 import journalsRouter from './routes/journals.js';
 import budgetRouter from './routes/budget.js';
 import goalsRouter from './routes/goals.js';
+import assetsRouter from './routes/assets.js';
 import aiRouter from './routes/ai.js';
 import commonRouter from './routes/common.js';
 
@@ -27,6 +28,7 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/journals', journalsRouter);
 app.use('/api/budget', budgetRouter);
 app.use('/api/goals', goalsRouter);
+app.use('/api/assets', assetsRouter);
 app.use('/api', aiRouter); // Matches /api/scan-receipt and /api/chat-entry
 app.use('/api', commonRouter); // Matches /api/reset and /api/health
 
