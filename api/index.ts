@@ -441,7 +441,7 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
     Return ONLY a valid JSON object with the following keys:
     - "merchantName": string (The name of the store or merchant)
     - "date": string (Format: YYYY-MM-DD, e.g., 2024-05-18. If no year, assume current year)
-    - "totalAmount": number (The grand total amount, parsed as a raw number without currency symbols)
+    - "totalAmount": number (The grand total amount, parsed as a raw integer number. IMPORTANT: Indonesian receipts use dot '.' as thousands separator and comma ',' as decimal separator, e.g., 'Rp47.000' or '47.000' means 47000. Do NOT parse it as 47. You MUST return 47000.)
     
     If you cannot find a value, use null.
     Important: Do not include markdown code blocks (\`\`\`json) in your response, just the raw JSON object.`;
