@@ -399,6 +399,31 @@ app.delete('/api/goals/:id', authMiddleware, async (req: AuthRequest, res: Respo
   res.json({ success: true });
 });
 
+// HELPER TO EXTRACT AND PARSE JSON SAFELY FROM AI RESPONSES
+function cleanAndParseJSON(rawText: string): any {
+  if (!rawText) return {};
+  let cleaned = rawText.trim();
+  
+  // Strip markdown code blocks if present
+  if (cleaned.includes('```')) {
+    cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '').trim();
+  }
+  
+  // Extract content between first '{' and last '}'
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+  
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.error('Failed to parse JSON content:', cleaned, err);
+    throw new Error('Response is not valid JSON');
+  }
+}
+
 // RECEIPT SCANNER (OPENROUTER / DIRECT GEMINI DUAL ROUTER)
 app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -486,11 +511,7 @@ app.post('/api/scan-receipt', authMiddleware, async (req: AuthRequest, res: Resp
       rawText = result.choices?.[0]?.message?.content || '{}';
     }
 
-    if (rawText && rawText.includes('\`\`\`')) {
-      rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
-    }
-
-    const parsedData = JSON.parse(rawText || '{}');
+    const parsedData = cleanAndParseJSON(rawText);
     res.json(parsedData);
   } catch (error: any) {
     console.error('Receipt Scan Error:', error);
@@ -764,11 +785,7 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
       rawText = result.choices?.[0]?.message?.content || '{}';
     }
 
-    if (rawText && rawText.includes('\`\`\`')) {
-      rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
-    }
-
-    const parsedData = JSON.parse(rawText || '{}');
+    const parsedData = cleanAndParseJSON(rawText);
     res.json(parsedData);
   } catch (error: any) {
     console.error('Chat Entry Error:', error);
