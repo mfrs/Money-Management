@@ -177,10 +177,7 @@ export default function AIChatAssistant() {
     }).format(num);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processImageFile = async (file: File) => {
     // Add user message with image preview placeholder
     const userMsgId = Math.random().toString();
     setIsTyping(true);
@@ -285,6 +282,29 @@ export default function AIChatAssistant() {
       setIsTyping(false);
       // Clear input value
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processImageFile(file);
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          await processImageFile(file);
+          break;
+        }
+      }
     }
   };
 
@@ -968,6 +988,7 @@ export default function AIChatAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onPaste={handlePaste}
                 disabled={isTyping}
                 placeholder={language === 'id' ? "Ketik pesan Anda..." : "Type your message..."}
                 className="flex-1 bg-surface border border-on-surface/10 rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none text-on-surface placeholder:text-on-surface/30 focus:border-secondary transition-colors"
