@@ -15,7 +15,7 @@ import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 export default function LedgerView() {
-  const { journals, wallets, categories, t, addToast } = useApp();
+  const { journals, wallets, categories, t, addToast, language } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournal, setSelectedJournal] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -43,7 +43,10 @@ export default function LedgerView() {
 
   const exportDetailToPDF = async () => {
     setIsExporting(true);
-    addToast('Memproses PDF, mohon tunggu...', 'info');
+    addToast(
+      language === 'id' ? 'Memproses PDF, mohon tunggu...' : 'Processing PDF, please wait...',
+      'info'
+    );
     
     try {
       const element = document.getElementById('journal-detail-content');
@@ -68,10 +71,16 @@ export default function LedgerView() {
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Journal_Detail_${selectedJournal.id.substring(0,8)}.pdf`);
       
-      addToast('Berhasil mengunduh PDF!', 'success');
+      addToast(
+        language === 'id' ? 'Berhasil mengunduh PDF!' : 'PDF downloaded successfully!',
+        'success'
+      );
     } catch (error: any) {
       console.error('Error generating PDF:', error);
-      addToast('Gagal mengekspor PDF', 'error');
+      addToast(
+        language === 'id' ? 'Gagal mengekspor PDF' : 'Failed to export PDF',
+        'error'
+      );
     } finally {
       setIsExporting(false);
     }
@@ -85,9 +94,11 @@ export default function LedgerView() {
     >
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase">Jurnal Umum</h2>
-          <p className="text-sm text-on-surface/40 mt-3 max-w-lg leading-relaxed uppercase tracking-widest font-medium">
-            General Ledger - Catatan seluruh mutasi debet dan kredit sistem.
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase">
+            {t('ledger.title')}
+          </h2>
+          <p className="text-xs text-on-surface/40 mt-3 max-w-lg leading-relaxed uppercase tracking-widest font-medium">
+            {t('ledger.subtitle')}
           </p>
         </div>
       </header>
@@ -101,8 +112,12 @@ export default function LedgerView() {
               <BookOpen size={20} />
             </div>
             <div>
-              <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">Daftar Jurnal</h3>
-              <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">{filteredJournals.length} pencatatan jurnal</p>
+              <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">
+                {t('ledger.list')}
+              </h3>
+              <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">
+                {filteredJournals.length} {t('ledger.entriesCount')}
+              </p>
             </div>
           </div>
           
@@ -110,7 +125,7 @@ export default function LedgerView() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 group-focus-within:text-primary transition-colors" size={16} />
             <input
               type="text"
-              placeholder="Cari keterangan, akun, atau no. jurnal..."
+              placeholder={t('ledger.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-4 py-3 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20 uppercase tracking-widest"
@@ -123,10 +138,10 @@ export default function LedgerView() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] bg-on-surface/[0.01]">
-                <th className="px-6 lg:px-8 py-5">Tgl. Posting</th>
-                <th className="px-6 lg:px-8 py-5">No. Jurnal</th>
-                <th className="px-6 lg:px-8 py-5">Keterangan</th>
-                <th className="px-6 lg:px-8 py-5 text-right">Total Transaksi</th>
+                <th className="px-6 lg:px-8 py-5">{t('ledger.postDate')}</th>
+                <th className="px-6 lg:px-8 py-5">{t('ledger.journalNo')}</th>
+                <th className="px-6 lg:px-8 py-5">{t('ledger.description')}</th>
+                <th className="px-6 lg:px-8 py-5 text-right">{t('ledger.totalAmount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -137,7 +152,7 @@ export default function LedgerView() {
                   className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
                 >
                   <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
-                    {new Date(journal.date).toLocaleDateString('en-GB')}
+                    {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
                   </td>
                   <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/60 font-mono tracking-tighter uppercase">
                     JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
@@ -158,7 +173,7 @@ export default function LedgerView() {
               {filteredJournals.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
-                    Tidak ada catatan jurnal ditemukan
+                    {t('ledger.noEntries')}
                   </td>
                 </tr>
               )}
@@ -192,7 +207,9 @@ export default function LedgerView() {
                     <FileText size={20} />
                   </div>
                   <div>
-                    <h3 className="font-display text-xl font-bold text-on-surface uppercase tracking-widest">Detail Jurnal</h3>
+                    <h3 className="font-display text-xl font-bold text-on-surface uppercase tracking-widest">
+                      {t('ledger.detailTitle')}
+                    </h3>
                     <p className="text-[10px] text-on-surface/40 uppercase tracking-widest mt-1">
                       No. Doc: JRN-{selectedJournal.id.substring(selectedJournal.id.length - 6).toUpperCase()}
                     </p>
@@ -221,25 +238,37 @@ export default function LedgerView() {
                 {/* Header Info */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 p-6 glass-dark rounded-[24px] border border-on-surface/5">
                   <div>
-                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">Mata Uang</p>
-                    <p className="text-xs font-bold text-on-surface uppercase tracking-widest">IDR (Rupiah)</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">Tgl. Doc</p>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {t('ledger.currencyLabel')}
+                    </p>
                     <p className="text-xs font-bold text-on-surface uppercase tracking-widest">
-                      {new Date(selectedJournal.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {t('ledger.currencyVal')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">Status</p>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {t('ledger.docDate')}
+                    </p>
+                    <p className="text-xs font-bold text-on-surface uppercase tracking-widest">
+                      {new Date(selectedJournal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {t('ledger.status')}
+                    </p>
                     <p className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-3 py-1 rounded-full uppercase tracking-widest">POSTED</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">Kode Voucher</p>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {t('ledger.voucherCode')}
+                    </p>
                     <p className="text-xs font-bold text-on-surface uppercase tracking-widest font-mono">{selectedJournal.id}</p>
                   </div>
                   <div className="col-span-2 md:col-span-4 mt-2">
-                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">Keterangan</p>
+                    <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-1">
+                      {t('ledger.description')}
+                    </p>
                     <p className="text-sm font-bold text-on-surface">{selectedJournal.description}</p>
                     {selectedJournal.note && (
                       <p className="text-xs text-on-surface/50 mt-1">{selectedJournal.note}</p>

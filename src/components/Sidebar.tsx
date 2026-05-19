@@ -25,9 +25,9 @@ const navItems = [
   { id: 'wallets', labelKey: 'nav.wallets', icon: Wallet },
   { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
   { id: 'goals', labelKey: 'nav.goals', icon: Target },
-  { id: 'achievements', labelKey: 'Achievements', icon: Trophy },
+  { id: 'achievements', labelKey: 'nav.achievements', icon: Trophy },
   { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
-  { id: 'ledger', labelKey: 'General Ledger', icon: BookOpen },
+  { id: 'ledger', labelKey: 'nav.ledger', icon: BookOpen },
   { id: 'reports', labelKey: 'nav.reports', icon: BarChart3 },
 ] as const;
 

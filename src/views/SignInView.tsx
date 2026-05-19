@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Lock,
@@ -25,6 +25,16 @@ export default function SignInView() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    // Force dark theme on mount for sleek login aesthetic
+    document.documentElement.setAttribute('data-theme', 'dark');
+    return () => {
+      // Restore the stored theme on unmount
+      const savedTheme = localStorage.getItem('wm_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

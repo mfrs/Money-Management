@@ -27,7 +27,7 @@ import { jsPDF } from 'jspdf';
 import * as htmlToImage from 'html-to-image';
 
 export default function ReportsView() {
-  const { journals, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t } = useApp();
+  const { journals, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t, language } = useApp();
   const [timePeriod, setTimePeriod] = useState<'3M' | '6M' | '1Y'>('6M');
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'journal'>('analytics');
@@ -35,11 +35,18 @@ export default function ReportsView() {
 
   const exportToPDF = async () => {
     setIsExporting(true);
-    addToast('Memproses PDF, mohon tunggu...', 'info');
+    addToast(
+      language === 'id' ? 'Memproses PDF, mohon tunggu...' : 'Processing PDF, please wait...',
+      'info'
+    );
     
     try {
       const element = document.getElementById('report-content');
-      if (!element) throw new Error('Elemen laporan tidak ditemukan');
+      if (!element) {
+        throw new Error(
+          language === 'id' ? 'Elemen laporan tidak ditemukan' : 'Report element not found'
+        );
+      }
       
       // Tunggu sebentar untuk memastikan semua animasi dan chart render selesai
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -69,10 +76,18 @@ export default function ReportsView() {
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Stashly_Report_${new Date().toISOString().split('T')[0]}.pdf`);
       
-      addToast('Berhasil mengunduh PDF!', 'success');
+      addToast(
+        language === 'id' ? 'Berhasil mengunduh PDF!' : 'PDF downloaded successfully!',
+        'success'
+      );
     } catch (error: any) {
       console.error('Error generating PDF:', error);
-      addToast('Gagal mengekspor PDF: ' + (error.message || 'Silakan coba lagi'), 'error');
+      addToast(
+        language === 'id'
+          ? 'Gagal mengekspor PDF: ' + (error.message || 'Silakan coba lagi')
+          : 'Failed to export PDF: ' + (error.message || 'Please try again'),
+        'error'
+      );
     } finally {
       setIsExporting(false);
     }

@@ -14,6 +14,8 @@ export const translations: Record<Language, Dictionary> = {
     'nav.signOut': 'Sign Out',
     'nav.darkMode': 'Dark Mode',
     'nav.lightMode': 'Light Mode',
+    'nav.achievements': 'Achievements',
+    'nav.ledger': 'General Ledger',
 
     // TopBar
     'topbar.search': 'Search transactions...',
@@ -160,6 +162,24 @@ export const translations: Record<Language, Dictionary> = {
     'auth.passwordMin': 'Password must be at least 6 characters',
     'auth.passwordMatch': 'Passwords do not match',
     'auth.emailPasswordRequired': 'Email and password are required',
+
+    // Ledger
+    'ledger.title': 'General Ledger',
+    'ledger.subtitle': 'General Ledger - A complete record of all debit and credit journal entries in the system.',
+    'ledger.list': 'Journal List',
+    'ledger.entriesCount': 'journal entries',
+    'ledger.searchPlaceholder': 'Search description, account, or journal no...',
+    'ledger.postDate': 'Post Date',
+    'ledger.journalNo': 'Journal No',
+    'ledger.description': 'Description',
+    'ledger.totalAmount': 'Total Transaction',
+    'ledger.noEntries': 'No journal entries found',
+    'ledger.detailTitle': 'Journal Detail',
+    'ledger.currencyLabel': 'Currency',
+    'ledger.docDate': 'Doc Date',
+    'ledger.status': 'Status',
+    'ledger.voucherCode': 'Voucher Code',
+    'ledger.currencyVal': 'IDR (Rupiah)',
   },
   id: {
     // Navigation
@@ -173,6 +193,8 @@ export const translations: Record<Language, Dictionary> = {
     'nav.darkMode': 'Mode Gelap',
     'nav.lightMode': 'Mode Terang',
     'nav.goals': 'Target Finansial',
+    'nav.achievements': 'Pencapaian',
+    'nav.ledger': 'Jurnal Umum',
 
     // TopBar
     'topbar.search': 'Cari transaksi...',
@@ -315,5 +337,23 @@ export const translations: Record<Language, Dictionary> = {
     'auth.passwordMin': 'Kata sandi minimal 6 karakter',
     'auth.passwordMatch': 'Kata sandi tidak cocok',
     'auth.emailPasswordRequired': 'Email dan kata sandi wajib diisi',
+
+    // Ledger
+    'ledger.title': 'Jurnal Umum',
+    'ledger.subtitle': 'General Ledger - Catatan seluruh mutasi debet dan kredit sistem.',
+    'ledger.list': 'Daftar Jurnal',
+    'ledger.entriesCount': 'pencatatan jurnal',
+    'ledger.searchPlaceholder': 'Cari keterangan, akun, atau no. jurnal...',
+    'ledger.postDate': 'Tgl. Posting',
+    'ledger.journalNo': 'No. Jurnal',
+    'ledger.description': 'Keterangan',
+    'ledger.totalAmount': 'Total Transaksi',
+    'ledger.noEntries': 'Tidak ada catatan jurnal ditemukan',
+    'ledger.detailTitle': 'Detail Jurnal',
+    'ledger.currencyLabel': 'Mata Uang',
+    'ledger.docDate': 'Tgl. Doc',
+    'ledger.status': 'Status',
+    'ledger.voucherCode': 'Kode Voucher',
+    'ledger.currencyVal': 'IDR (Rupiah)',
   }
 };

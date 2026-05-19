@@ -264,6 +264,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFixedExpenses([]);
     setWalletAllocations([]);
     setGoals([]);
+    setTheme('dark');
     setCurrentView('dashboard');
     addToast('Signed out successfully', 'info');
   }, [addToast]);
