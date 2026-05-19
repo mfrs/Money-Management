@@ -133,4 +133,93 @@ router.get('/pgmonitor', authMiddleware, adminMiddleware, async (req: AuthReques
   }
 });
 
+router.get('/backup/json', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    // 1. Get all public user tables
+    const tables: any[] = await prisma.$queryRawUnsafe(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT LIKE '_prisma%'
+    `);
+
+    const backupData: Record<string, any[]> = {};
+
+    // 2. Fetch rows for each table
+    for (const t of tables) {
+      const tableName = t.table_name;
+      const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
+      backupData[tableName] = rows;
+    }
+
+    const payload = {
+      metadata: {
+        database: 'neondb',
+        timestamp: new Date().toISOString(),
+        backup_version: '1.0.0',
+        total_tables: tables.length,
+      },
+      tables: backupData
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="wealthmanager_backup_${new Date().toISOString().split('T')[0]}.json"`);
+    res.json(payload);
+  } catch (err: any) {
+    console.error('Error generating JSON backup:', err);
+    res.status(500).json({ error: 'Failed to generate backup: ' + err.message });
+  }
+});
+
+router.get('/backup/csv', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const tableName = req.query.table as string;
+    if (!tableName) {
+      return res.status(400).json({ error: 'Table name is required' });
+    }
+
+    // Fetch valid user tables list to prevent SQL injection
+    const tables: any[] = await prisma.$queryRawUnsafe(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    `);
+    const validTableNames = tables.map((t: any) => t.table_name);
+    
+    if (!validTableNames.includes(tableName)) {
+      return res.status(404).json({ error: 'Table not found or invalid' });
+    }
+
+    const rows: any[] = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
+
+    let csvContent = '';
+    if (rows.length > 0) {
+      const headers = Object.keys(rows[0]);
+      csvContent = [
+        headers.join(','),
+        ...rows.map(row => 
+          headers.map(header => {
+            let val = row[header];
+            if (val === null || val === undefined) return '';
+            if (val instanceof Date) return val.toISOString();
+            let valStr = String(val).replace(/"/g, '""');
+            if (valStr.includes(',') || valStr.includes('\n') || valStr.includes('"')) {
+              valStr = `"${valStr}"`;
+            }
+            return valStr;
+          }).join(',')
+        )
+      ].join('\n');
+    } else {
+      csvContent = 'No data available';
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="wealthmanager_${tableName}_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csvContent);
+  } catch (err: any) {
+    console.error('Error generating CSV export:', err);
+    res.status(500).json({ error: 'Failed to export table: ' + err.message });
+  }
+});
+
 export default router;

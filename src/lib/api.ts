@@ -166,6 +166,42 @@ export const adminApi = {
   getUserData: (userId: string) => request<any>(`/admin/users/${userId}/data`),
   deleteUser: (userId: string) => request<any>(`/admin/users/${userId}`, { method: 'DELETE' }),
   getPGMonitorStats: () => request<any>('/admin/pgmonitor'),
+  downloadBackupJSON: async () => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/admin/backup/json`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wealthmanager_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  downloadTableCSV: async (tableName: string) => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/admin/backup/csv?table=${tableName}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wealthmanager_${tableName}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
 };
 
 // ===================== TOOLS =====================

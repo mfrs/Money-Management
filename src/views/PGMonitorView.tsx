@@ -11,7 +11,8 @@ import {
   Server, 
   Play,
   Terminal,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { adminApi } from '../lib/api';
 import { useApp } from '../context/AppContext';
@@ -78,6 +79,28 @@ export default function PGMonitorView() {
   const [refreshInterval, setRefreshInterval] = useState(5000); // 5 seconds default
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportBackup = async () => {
+    setExporting(true);
+    try {
+      await adminApi.downloadBackupJSON();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to download database backup: ' + err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportCSV = async (tableName: string) => {
+    try {
+      await adminApi.downloadTableCSV(tableName);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to export ${tableName} as CSV: ` + err.message);
+    }
+  };
 
   const fetchStats = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -258,6 +281,15 @@ export default function PGMonitorView() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
+          </button>
+
+          <button
+            onClick={handleExportBackup}
+            disabled={exporting}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/95 text-on-primary px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            <Download className={`w-3.5 h-3.5 ${exporting ? 'animate-pulse' : ''}`} />
+            Backup Database (JSON)
           </button>
         </div>
       </div>
@@ -463,7 +495,8 @@ export default function PGMonitorView() {
                       <th className="pb-3 px-2 text-right">Rows</th>
                       <th className="pb-3 px-2 text-right">Table Size</th>
                       <th className="pb-3 px-2 text-right">Index Size</th>
-                      <th className="pb-3 pl-2 text-right">Total Size</th>
+                      <th className="pb-3 px-2 text-right">Total Size</th>
+                      <th className="pb-3 pl-2 text-right">Export</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-th-divider/50 text-xs">
@@ -473,7 +506,16 @@ export default function PGMonitorView() {
                         <td className="py-3 px-2 text-right font-mono text-on-surface-variant">{t.row_count.toLocaleString('id-ID')}</td>
                         <td className="py-3 px-2 text-right font-mono text-on-surface-variant">{t.table_size}</td>
                         <td className="py-3 px-2 text-right font-mono text-on-surface-variant">{t.index_size}</td>
-                        <td className="py-3 pl-2 text-right font-bold font-mono text-primary">{t.total_size}</td>
+                        <td className="py-3 px-2 text-right font-bold font-mono text-primary">{t.total_size}</td>
+                        <td className="py-3 pl-2 text-right">
+                          <button
+                            onClick={() => handleExportCSV(t.table_name)}
+                            className="p-1.5 rounded-lg hover:bg-primary/10 text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                            title={`Export ${t.table_name} as CSV`}
+                          >
+                            <Download size={14} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
