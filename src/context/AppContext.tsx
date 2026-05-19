@@ -300,10 +300,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [addToast]);
 
   // ===================== LOAD DATA =====================
-  const loadAllData = useCallback(async () => {
+  const loadAllData = useCallback(async (silent: boolean = false) => {
     if (!isAuthenticated) return;
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [w, c, j, is, fe, wa, g, ast, dbt] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
@@ -331,7 +331,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addToast('Failed to load data from server', 'error');
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [isAuthenticated, addToast, logout]);
 
@@ -421,14 +421,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateJournal = useCallback(async (_id: string, _updates: Partial<Journal>) => {
     try {
       addToast('Journal updated');
-      await loadAllData();
+      await loadAllData(true);
     } catch { addToast('Failed to update journal', 'error'); }
   }, [addToast, loadAllData]);
 
   const deleteJournal = useCallback(async (id: string) => {
     try {
       await journalApi.delete(id);
-      await loadAllData();
+      await loadAllData(true);
       addToast('Journal reversed successfully', 'info');
     } catch { addToast('Failed to reverse journal', 'error'); }
   }, [loadAllData, addToast]);
@@ -518,7 +518,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addDebt = useCallback(async (debt: any) => {
     try {
       await debtApi.create(debt);
-      await loadAllData(); // Reload to refresh wallet balance and journal entries as well
+      await loadAllData(true); // Reload to refresh wallet balance and journal entries as well
       addToast(`Record "${debt.title}" created`);
     } catch { addToast('Failed to create debt/receivable', 'error'); }
   }, [loadAllData, addToast]);
@@ -542,7 +542,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const payDebt = useCallback(async (id: string, payment: any) => {
     try {
       await debtApi.pay(id, payment);
-      await loadAllData(); // Reload to update debt balance, wallet balance, and journal entries
+      await loadAllData(true); // Reload to update debt balance, wallet balance, and journal entries
       addToast('Instalment payment recorded!');
     } catch { addToast('Failed to record payment', 'error'); }
   }, [loadAllData, addToast]);
