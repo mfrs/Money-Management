@@ -51,16 +51,16 @@
   --th-container-high: rgba(255, 255, 255, 0.1);
   --th-container-highest: rgba(255, 255, 255, 0.15);
   --th-on-surface: #ffffff;
-  --th-on-surface-variant: rgba(255, 255, 255, 0.6);
+  --th-on-surface-variant: rgba(255, 255, 255, 0.75);
 
   --th-glass-bg: rgba(255, 255, 255, 0.04);
   --th-glass-border: rgba(255, 255, 255, 0.1);
   --th-glass-dark-bg: rgba(0, 0, 0, 0.2);
   --th-glass-dark-border: rgba(255, 255, 255, 0.05);
   --th-text-primary: #ffffff;
-  --th-text-secondary: rgba(255, 255, 255, 0.6);
-  --th-text-tertiary: rgba(255, 255, 255, 0.3);
-  --th-text-muted: rgba(255, 255, 255, 0.1);
+  --th-text-secondary: rgba(255, 255, 255, 0.8);
+  --th-text-tertiary: rgba(255, 255, 255, 0.55);
+  --th-text-muted: rgba(255, 255, 255, 0.25);
   --th-divider: rgba(255, 255, 255, 0.05);
   --th-input-bg: rgba(255, 255, 255, 0.05);
   --th-input-border: rgba(255, 255, 255, 0.05);
@@ -82,16 +82,16 @@
   --th-container-high: rgba(0, 0, 0, 0.08);
   --th-container-highest: rgba(0, 0, 0, 0.12);
   --th-on-surface: #1a1a2e;
-  --th-on-surface-variant: rgba(26, 26, 46, 0.65);
+  --th-on-surface-variant: rgba(26, 26, 46, 0.8);
 
   --th-glass-bg: rgba(255, 255, 255, 0.7);
   --th-glass-border: rgba(0, 0, 0, 0.08);
   --th-glass-dark-bg: rgba(255, 255, 255, 0.5);
   --th-glass-dark-border: rgba(0, 0, 0, 0.06);
   --th-text-primary: #1a1a2e;
-  --th-text-secondary: rgba(26, 26, 46, 0.65);
-  --th-text-tertiary: rgba(26, 26, 46, 0.4);
-  --th-text-muted: rgba(26, 26, 46, 0.08);
+  --th-text-secondary: rgba(26, 26, 46, 0.8);
+  --th-text-tertiary: rgba(26, 26, 46, 0.55);
+  --th-text-muted: rgba(26, 26, 46, 0.2);
   --th-divider: rgba(0, 0, 0, 0.06);
   --th-input-bg: rgba(0, 0, 0, 0.03);
   --th-input-border: rgba(0, 0, 0, 0.08);
@@ -161,4 +161,28 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-surface-container-highest;
+}
+
+/* ===================== CONTRAST & ACCESSIBILITY BOOST ===================== */
+/* Boost standard low-opacity tailwind classes globally for perfect readability */
+.text-on-surface\/10, .text-on-surface-variant\/10 {
+  color: color-mix(in srgb, var(--color-on-surface) 35%, transparent) !important;
+}
+.text-on-surface\/15, .text-on-surface-variant\/15 {
+  color: color-mix(in srgb, var(--color-on-surface) 40%, transparent) !important;
+}
+.text-on-surface\/20, .text-on-surface-variant\/20 {
+  color: color-mix(in srgb, var(--color-on-surface) 45%, transparent) !important;
+}
+.text-on-surface\/25, .text-on-surface-variant\/25 {
+  color: color-mix(in srgb, var(--color-on-surface) 50%, transparent) !important;
+}
+.text-on-surface\/30, .text-on-surface-variant\/30 {
+  color: color-mix(in srgb, var(--color-on-surface) 60%, transparent) !important;
+}
+.text-on-surface\/40, .text-on-surface-variant\/40 {
+  color: color-mix(in srgb, var(--color-on-surface) 70%, transparent) !important;
+}
+.text-on-surface\/50, .text-on-surface-variant\/50 {
+  color: color-mix(in srgb, var(--color-on-surface) 80%, transparent) !important;
 }
