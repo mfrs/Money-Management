@@ -16,12 +16,15 @@ import {
   EyeOff,
   Loader2,
   AlertCircle,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import CategoriesView from './CategoriesView';
 import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { authApi } from '../lib/api';
 
 export default function SettingsView() {
   const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme, language, setLanguage, t, appName, setAppName, appLogo, setAppLogo } = useApp();
@@ -42,6 +45,65 @@ export default function SettingsView() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const [backupExporting, setBackupExporting] = useState(false);
+  const [restoreImporting, setRestoreImporting] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [pendingBackupData, setPendingBackupData] = useState<any>(null);
+
+  const handleExportBackup = async () => {
+    setBackupExporting(true);
+    try {
+      await authApi.downloadUserBackup();
+      addToast('Backup exported successfully', 'success');
+    } catch (err: any) {
+      console.error(err);
+      addToast('Failed to export backup: ' + err.message, 'error');
+    } finally {
+      setBackupExporting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (!json || !json.data || typeof json.data !== 'object') {
+          addToast('Invalid backup file structure', 'error');
+          return;
+        }
+        setPendingBackupData(json);
+        setShowRestoreConfirm(true);
+      } catch (err) {
+        addToast('Failed to parse backup file', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleConfirmRestore = async () => {
+    if (!pendingBackupData) return;
+    setRestoreImporting(true);
+    setShowRestoreConfirm(false);
+    try {
+      await authApi.restoreUserBackup(pendingBackupData);
+      addToast('Data restored successfully! Reloading...', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      addToast('Failed to restore data: ' + err.message, 'error');
+    } finally {
+      setRestoreImporting(false);
+      setPendingBackupData(null);
+    }
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -82,6 +144,7 @@ export default function SettingsView() {
     { id: 'security', label: t('settings.security'), icon: Lock },
     { id: 'categories', label: 'Categories', icon: Database },
     { id: 'appearance', label: t('settings.preferences'), icon: Sun },
+    { id: 'backup', label: 'Backup & Restore', icon: RotateCcw },
   ];
 
   return (
@@ -369,6 +432,60 @@ export default function SettingsView() {
               </div>
             </div>
 
+          /* BACKUP TAB */
+          ) : activeTab === 'backup' ? (
+            <div className="glass rounded-[28px] lg:rounded-[40px] p-8 lg:p-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface mb-8 lg:mb-10 tracking-tight uppercase">Backup & Restore</h3>
+
+              <div className="space-y-8 divide-y divide-th-divider/50">
+                {/* Export Section */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest">Backup Data</h4>
+                  <p className="text-xs text-on-surface-variant leading-relaxed max-w-xl">
+                    Download a complete copy of your financial data, including wallets, transactions, categories, budgets, assets, and debts. This file is saved in JSON format and can be used to restore your account data at any time.
+                  </p>
+                  <button
+                    onClick={handleExportBackup}
+                    disabled={backupExporting}
+                    className="flex items-center gap-3 px-6 py-3.5 rounded-xl bg-on-surface text-surface hover:opacity-90 text-xs font-bold uppercase tracking-widest transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {backupExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    Export Backup (JSON)
+                  </button>
+                </div>
+
+                {/* Import Section */}
+                <div className="space-y-4 pt-8">
+                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest">Restore Data</h4>
+                  <p className="text-xs text-on-surface-variant leading-relaxed max-w-xl">
+                    Upload a previously exported JSON backup file to restore your account state. <strong className="text-error font-bold">Warning:</strong> This will completely overwrite and replace all your current wallets, categories, transactions, goals, assets, and debts.
+                  </p>
+                  
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id="backup-upload"
+                      accept=".json"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      disabled={restoreImporting}
+                    />
+                    <label
+                      htmlFor="backup-upload"
+                      className={cn(
+                        "flex items-center gap-3 px-6 py-3.5 rounded-xl border border-dashed border-th-divider hover:border-primary/50 text-on-surface hover:bg-primary/5 text-xs font-bold uppercase tracking-widest transition-all duration-200 cursor-pointer active:scale-95 w-fit",
+                        restoreImporting && "opacity-50 pointer-events-none"
+                      )}
+                    >
+                      {restoreImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                      {restoreImporting ? 'Restoring data...' : 'Upload Backup File'}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           /* FALLBACK */
           ) : null}
         </main>
@@ -381,6 +498,15 @@ export default function SettingsView() {
         confirmLabel="Reset Everything"
         onConfirm={() => { resetAllData(); setShowResetConfirm(false); }}
         onCancel={() => setShowResetConfirm(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showRestoreConfirm}
+        title="Restore Data from Backup"
+        message="This will permanently overwrite all your current wallets, categories, transactions, goals, assets, and debts with the backup data. This action cannot be undone."
+        confirmLabel="Overwrite and Restore"
+        onConfirm={handleConfirmRestore}
+        onCancel={() => { setShowRestoreConfirm(false); setPendingBackupData(null); }}
       />
     </motion.div>
   );

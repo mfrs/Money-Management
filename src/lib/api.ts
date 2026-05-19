@@ -54,6 +54,29 @@ export const authApi = {
     request<AuthUser>('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     request<{ success: boolean }>('/auth/password', { method: 'PUT', body: JSON.stringify(data) }),
+  downloadUserBackup: async () => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/auth/backup`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stashly_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  restoreUserBackup: (backupData: any) =>
+    request<{ success: boolean; message: string }>('/auth/restore', {
+      method: 'POST',
+      body: JSON.stringify({ backupData })
+    }),
 };
 
 // ===================== WALLETS =====================

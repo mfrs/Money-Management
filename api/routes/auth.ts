@@ -147,4 +147,287 @@ router.put('/password', authMiddleware, async (req: AuthRequest, res: Response) 
   }
 });
 
+router.get('/backup', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    // Fetch all user-scoped data
+    const wallets = await prisma.wallet.findMany({ where: { userId } });
+    const categories = await prisma.category.findMany({ where: { userId } });
+    const journals = await prisma.journal.findMany({ where: { userId } });
+    
+    // Fetch journal lines belonging to this user's journals
+    const journalLines = await prisma.journalLine.findMany({
+      where: {
+        journal: {
+          userId
+        }
+      }
+    });
+
+    const incomeSources = await prisma.incomeSource.findMany({ where: { userId } });
+    const fixedExpenses = await prisma.fixedExpense.findMany({ where: { userId } });
+    const walletAllocations = await prisma.walletAllocation.findMany({ where: { userId } });
+    const goals = await prisma.goal.findMany({ where: { userId } });
+    const assets = await prisma.asset.findMany({ where: { userId } });
+    const debts = await prisma.debt.findMany({ where: { userId } });
+
+    const backupPayload = {
+      metadata: {
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        userId
+      },
+      data: {
+        wallets,
+        categories,
+        journals,
+        journalLines,
+        incomeSources,
+        fixedExpenses,
+        walletAllocations,
+        goals,
+        assets,
+        debts
+      }
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="stashly_backup_${new Date().toISOString().split('T')[0]}.json"`);
+    res.json(backupPayload);
+  } catch (err: any) {
+    console.error('Error generating user backup:', err);
+    res.status(500).json({ error: 'Failed to generate user backup: ' + err.message });
+  }
+});
+
+router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { backupData } = req.body;
+
+    if (!backupData || !backupData.data) {
+      return res.status(400).json({ error: 'Invalid backup file content' });
+    }
+
+    const {
+      wallets,
+      categories,
+      journals,
+      journalLines,
+      incomeSources,
+      fixedExpenses,
+      walletAllocations,
+      goals,
+      assets,
+      debts
+    } = backupData.data;
+
+    // Use a transaction to ensure database atomicity
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete all existing user-scoped records
+      await tx.journalLine.deleteMany({
+        where: { journal: { userId } }
+      });
+      await tx.journal.deleteMany({ where: { userId } });
+      await tx.walletAllocation.deleteMany({ where: { userId } });
+      await tx.wallet.deleteMany({ where: { userId } });
+      await tx.category.deleteMany({ where: { userId } });
+      await tx.incomeSource.deleteMany({ where: { userId } });
+      await tx.fixedExpense.deleteMany({ where: { userId } });
+      await tx.goal.deleteMany({ where: { userId } });
+      await tx.asset.deleteMany({ where: { userId } });
+      await tx.debt.deleteMany({ where: { userId } });
+
+      // 2. Re-create wallets
+      if (wallets && Array.isArray(wallets)) {
+        for (const w of wallets) {
+          await tx.wallet.create({
+            data: {
+              id: w.id,
+              name: w.name,
+              type: w.type,
+              account: w.account,
+              balance: w.balance,
+              icon: w.icon,
+              color: w.color,
+              goal: w.goal,
+              createdAt: w.createdAt ? new Date(w.createdAt) : undefined,
+              updatedAt: w.updatedAt ? new Date(w.updatedAt) : undefined,
+              userId
+            }
+          });
+        }
+      }
+
+      // 3. Re-create categories
+      if (categories && Array.isArray(categories)) {
+        for (const c of categories) {
+          await tx.category.create({
+            data: {
+              id: c.id,
+              name: c.name,
+              type: c.type,
+              icon: c.icon,
+              color: c.color,
+              budgetLimit: c.budgetLimit,
+              createdAt: c.createdAt ? new Date(c.createdAt) : undefined,
+              updatedAt: c.updatedAt ? new Date(c.updatedAt) : undefined,
+              userId
+            }
+          });
+        }
+      }
+
+      // 4. Re-create journals
+      if (journals && Array.isArray(journals)) {
+        for (const j of journals) {
+          await tx.journal.create({
+            data: {
+              id: j.id,
+              date: new Date(j.date),
+              description: j.description,
+              note: j.note,
+              isReversed: j.isReversed,
+              createdAt: j.createdAt ? new Date(j.createdAt) : undefined,
+              updatedAt: j.updatedAt ? new Date(j.updatedAt) : undefined,
+              userId
+            }
+          });
+        }
+      }
+
+      // 5. Re-create journal lines
+      if (journalLines && Array.isArray(journalLines)) {
+        for (const l of journalLines) {
+          await tx.journalLine.create({
+            data: {
+              id: l.id,
+              journalId: l.journalId,
+              walletId: l.walletId,
+              categoryId: l.categoryId,
+              amount: l.amount,
+              type: l.type,
+              createdAt: l.createdAt ? new Date(l.createdAt) : undefined
+            }
+          });
+        }
+      }
+
+      // 6. Re-create other lists
+      if (incomeSources && Array.isArray(incomeSources)) {
+        for (const i of incomeSources) {
+          await tx.incomeSource.create({
+            data: {
+              id: i.id,
+              name: i.name,
+              amount: i.amount,
+              userId
+            }
+          });
+        }
+      }
+
+      if (fixedExpenses && Array.isArray(fixedExpenses)) {
+        for (const f of fixedExpenses) {
+          await tx.fixedExpense.create({
+            data: {
+              id: f.id,
+              name: f.name,
+              amount: f.amount,
+              term: f.term,
+              icon: f.icon,
+              autoPay: f.autoPay,
+              dueDate: f.dueDate,
+              lastPaid: f.lastPaid ? new Date(f.lastPaid) : null,
+              status: f.status,
+              userId
+            }
+          });
+        }
+      }
+
+      if (walletAllocations && Array.isArray(walletAllocations)) {
+        for (const a of walletAllocations) {
+          await tx.walletAllocation.create({
+            data: {
+              id: a.id,
+              amount: a.amount,
+              walletId: a.walletId,
+              userId
+            }
+          });
+        }
+      }
+
+      if (goals && Array.isArray(goals)) {
+        for (const g of goals) {
+          await tx.goal.create({
+            data: {
+              id: g.id,
+              name: g.name,
+              targetAmount: g.targetAmount,
+              currentAmount: g.currentAmount,
+              deadline: g.deadline ? new Date(g.deadline) : null,
+              icon: g.icon,
+              color: g.color,
+              createdAt: g.createdAt ? new Date(g.createdAt) : undefined,
+              updatedAt: g.updatedAt ? new Date(g.updatedAt) : undefined,
+              userId
+            }
+          });
+        }
+      }
+
+      if (assets && Array.isArray(assets)) {
+        for (const ast of assets) {
+          await tx.asset.create({
+            data: {
+              id: ast.id,
+              name: ast.name,
+              type: ast.type,
+              purchasePrice: ast.purchasePrice,
+              currentPrice: ast.currentPrice,
+              purchaseDate: new Date(ast.purchaseDate),
+              estimatedRate: ast.estimatedRate,
+              notes: ast.notes,
+              createdAt: ast.createdAt ? new Date(ast.createdAt) : undefined,
+              updatedAt: ast.updatedAt ? new Date(ast.updatedAt) : undefined,
+              userId
+            }
+          });
+        }
+      }
+
+      if (debts && Array.isArray(debts)) {
+        for (const d of debts) {
+          await tx.debt.create({
+            data: {
+              id: d.id,
+              title: d.title,
+              type: d.type,
+              contact: d.contact,
+              amount: d.amount,
+              remainingAmount: d.remainingAmount,
+              dueDate: d.dueDate ? new Date(d.dueDate) : null,
+              interestRate: d.interestRate,
+              notes: d.notes,
+              status: d.status,
+              createdAt: d.createdAt ? new Date(d.createdAt) : undefined,
+              updatedAt: d.updatedAt ? new Date(d.updatedAt) : undefined,
+              userId,
+              walletId: d.walletId
+            }
+          });
+        }
+      }
+    });
+
+    res.json({ success: true, message: 'Restore completed successfully' });
+  } catch (err: any) {
+    console.error('Error during data restore:', err);
+    res.status(500).json({ error: 'Failed to restore database: ' + err.message });
+  }
+});
+
 export default router;
