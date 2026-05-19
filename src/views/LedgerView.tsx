@@ -198,7 +198,7 @@ export default function LedgerView() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#0f0f19] w-full max-w-4xl rounded-[32px] shadow-2xl relative z-10 border border-on-surface/10 flex flex-col max-h-[90vh] overflow-hidden"
+              className="bg-surface-dim w-full max-w-4xl rounded-[32px] shadow-2xl relative z-10 border border-on-surface/10 flex flex-col max-h-[90vh] overflow-hidden"
             >
               {/* Toolbar */}
               <div className="px-8 py-6 flex items-center justify-between border-b border-on-surface/5 bg-on-surface/[0.02]">
@@ -234,7 +234,7 @@ export default function LedgerView() {
               </div>
 
               {/* Scrollable Content */}
-              <div id="journal-detail-content" className="p-8 overflow-y-auto bg-[#0f0f19]">
+              <div id="journal-detail-content" className="p-8 overflow-y-auto bg-transparent">
                 {/* Header Info */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 p-6 glass-dark rounded-[24px] border border-on-surface/5">
                   <div>
