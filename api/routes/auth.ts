@@ -223,6 +223,39 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       debts
     } = backupData.data;
 
+    // Map old IDs to newly generated IDs to prevent unique constraint/ID conflicts with other users or self
+    const walletIdMap: { [oldId: string]: string } = {};
+    const categoryIdMap: { [oldId: string]: string } = {};
+    const journalIdMap: { [oldId: string]: string } = {};
+
+    const generateId = () => {
+      const timestamp = Date.now().toString(36);
+      const random1 = Math.random().toString(36).substring(2, 10);
+      const random2 = Math.random().toString(36).substring(2, 10);
+      return `c${timestamp}${random1}${random2}`.substring(0, 25);
+    };
+
+    // Pre-populate walletIdMap
+    if (wallets && Array.isArray(wallets)) {
+      for (const w of wallets) {
+        walletIdMap[w.id] = generateId();
+      }
+    }
+
+    // Pre-populate categoryIdMap
+    if (categories && Array.isArray(categories)) {
+      for (const c of categories) {
+        categoryIdMap[c.id] = generateId();
+      }
+    }
+
+    // Pre-populate journalIdMap
+    if (journals && Array.isArray(journals)) {
+      for (const j of journals) {
+        journalIdMap[j.id] = generateId();
+      }
+    }
+
     // Use a transaction to ensure database atomicity
     await prisma.$transaction(async (tx) => {
       // 1. Delete all existing user-scoped records
@@ -242,9 +275,10 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       // 2. Re-create wallets
       if (wallets && Array.isArray(wallets)) {
         for (const w of wallets) {
+          const newWalletId = walletIdMap[w.id];
           await tx.wallet.create({
             data: {
-              id: w.id,
+              id: newWalletId,
               name: w.name,
               type: w.type,
               account: w.account,
@@ -263,9 +297,10 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       // 3. Re-create categories
       if (categories && Array.isArray(categories)) {
         for (const c of categories) {
+          const newCategoryId = categoryIdMap[c.id];
           await tx.category.create({
             data: {
-              id: c.id,
+              id: newCategoryId,
               name: c.name,
               type: c.type,
               icon: c.icon,
@@ -282,9 +317,10 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       // 4. Re-create journals
       if (journals && Array.isArray(journals)) {
         for (const j of journals) {
+          const newJournalId = journalIdMap[j.id];
           await tx.journal.create({
             data: {
-              id: j.id,
+              id: newJournalId,
               date: new Date(j.date),
               description: j.description,
               note: j.note,
@@ -300,12 +336,18 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       // 5. Re-create journal lines
       if (journalLines && Array.isArray(journalLines)) {
         for (const l of journalLines) {
+          const newJournalId = journalIdMap[l.journalId];
+          const newWalletId = l.walletId ? walletIdMap[l.walletId] : null;
+          const newCategoryId = l.categoryId ? categoryIdMap[l.categoryId] : null;
+
+          if (!newJournalId) continue;
+
           await tx.journalLine.create({
             data: {
-              id: l.id,
-              journalId: l.journalId,
-              walletId: l.walletId,
-              categoryId: l.categoryId,
+              id: generateId(),
+              journalId: newJournalId,
+              walletId: newWalletId,
+              categoryId: newCategoryId,
               amount: l.amount,
               type: l.type,
               createdAt: l.createdAt ? new Date(l.createdAt) : undefined
@@ -319,7 +361,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
         for (const i of incomeSources) {
           await tx.incomeSource.create({
             data: {
-              id: i.id,
+              id: generateId(),
               name: i.name,
               amount: i.amount,
               userId
@@ -332,7 +374,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
         for (const f of fixedExpenses) {
           await tx.fixedExpense.create({
             data: {
-              id: f.id,
+              id: generateId(),
               name: f.name,
               amount: f.amount,
               term: f.term,
@@ -349,11 +391,14 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
 
       if (walletAllocations && Array.isArray(walletAllocations)) {
         for (const a of walletAllocations) {
+          const newWalletId = walletIdMap[a.walletId];
+          if (!newWalletId) continue;
+
           await tx.walletAllocation.create({
             data: {
-              id: a.id,
+              id: generateId(),
               amount: a.amount,
-              walletId: a.walletId,
+              walletId: newWalletId,
               userId
             }
           });
@@ -364,7 +409,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
         for (const g of goals) {
           await tx.goal.create({
             data: {
-              id: g.id,
+              id: generateId(),
               name: g.name,
               targetAmount: g.targetAmount,
               currentAmount: g.currentAmount,
@@ -383,7 +428,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
         for (const ast of assets) {
           await tx.asset.create({
             data: {
-              id: ast.id,
+              id: generateId(),
               name: ast.name,
               type: ast.type,
               purchasePrice: ast.purchasePrice,
@@ -401,9 +446,10 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
 
       if (debts && Array.isArray(debts)) {
         for (const d of debts) {
+          const newWalletId = d.walletId ? walletIdMap[d.walletId] : null;
           await tx.debt.create({
             data: {
-              id: d.id,
+              id: generateId(),
               title: d.title,
               type: d.type,
               contact: d.contact,
@@ -416,7 +462,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
               createdAt: d.createdAt ? new Date(d.createdAt) : undefined,
               updatedAt: d.updatedAt ? new Date(d.updatedAt) : undefined,
               userId,
-              walletId: d.walletId
+              walletId: newWalletId
             }
           });
         }
