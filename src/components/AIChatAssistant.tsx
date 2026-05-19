@@ -693,7 +693,7 @@ export default function AIChatAssistant() {
                   <Sparkles size={18} className="animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="font-display text-sm font-bold text-on-surface tracking-tight">Wealth AI Assistant</h4>
+                  <h4 className="font-display text-sm font-bold text-on-surface tracking-tight">Stashly AI Assistant</h4>
                   <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold">Online</p>
                 </div>
               </div>

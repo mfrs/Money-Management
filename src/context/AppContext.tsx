@@ -135,7 +135,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('wm_language') as Language | null;
     return saved || 'en';
   });
-  const [appName, setAppName] = useState(() => localStorage.getItem('wm_appName') || 'Wealth');
+  const [appName, setAppName] = useState(() => localStorage.getItem('wm_appName') || 'Stashly');
   const [appLogo, setAppLogo] = useState(() => localStorage.getItem('wm_appLogo') || 'CircleGauge');
 
   // Sensor state

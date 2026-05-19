@@ -107,7 +107,7 @@ export default function SignInView() {
           <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-lg mb-4 backdrop-blur-xl">
             <CircleGauge className="text-white" size={24} />
           </div>
-          <span className="font-display text-sm font-bold text-white/40 tracking-[0.25em] uppercase">Logic Wealth</span>
+          <span className="font-display text-sm font-bold text-white/40 tracking-[0.25em] uppercase">Stashly</span>
         </div>
 
         {/* Auth Card */}
@@ -271,7 +271,7 @@ export default function SignInView() {
             <div className="mt-4 text-center relative z-10">
               <button
                 type="button"
-                onClick={() => { setEmail('alex@logic.inf'); setPassword('password123'); }}
+                onClick={() => { setEmail('alex@stashly.inf'); setPassword('password123'); }}
                 className="text-[10px] text-white/20 hover:text-white/40 transition-colors underline underline-offset-4 decoration-white/10"
               >
                 Use demo credentials

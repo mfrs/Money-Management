@@ -67,7 +67,7 @@ export default function ReportsView() {
       const pdfHeight = (img.height * pdfWidth) / img.width;
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`WealthManager_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      pdf.save(`Stashly_Report_${new Date().toISOString().split('T')[0]}.pdf`);
       
       addToast('Berhasil mengunduh PDF!', 'success');
     } catch (error: any) {
