@@ -62,7 +62,7 @@ export default function Sidebar() {
   const progressPercentage = Math.min(100, Math.round((xpProgressInLevel / xpNeededInLevel) * 100));
 
   const navContent = (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col h-full p-6 overflow-y-auto min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* Logo */}
       <div className="flex items-center justify-between mb-12">
         <div className="flex items-center gap-4">
@@ -214,14 +214,14 @@ export default function Sidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+              className="fixed inset-0 bg-black/50 z-[90] lg:hidden backdrop-blur-sm"
             />
             <motion.aside
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-[280px] glass-dark z-50 lg:hidden border-r border-th-divider"
+              className="fixed top-0 left-0 bottom-0 w-[280px] glass-dark z-[100] lg:hidden border-r border-th-divider"
             >
               {navContent}
             </motion.aside>
