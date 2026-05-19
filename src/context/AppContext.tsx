@@ -487,10 +487,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return sum + (expenseLine ? expenseLine.amount : 0);
   }, 0), [monthlyJournals]);
 
-  const getCategorySpent = useCallback((categoryId: string) => monthlyJournals.reduce((sum, j) => {
-    const expenseLine = j.lines.find(l => l.categoryId === categoryId && l.type === 'DEBIT');
-    return sum + (expenseLine ? expenseLine.amount : 0);
-  }, 0), [monthlyJournals]);
+  const getCategorySpent = useCallback((categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    const expectedType = category?.type === 'income' ? 'CREDIT' : 'DEBIT';
+    return monthlyJournals.reduce((sum, j) => {
+      const line = j.lines.find(l => l.categoryId === categoryId && l.type === expectedType);
+      return sum + (line ? line.amount : 0);
+    }, 0);
+  }, [monthlyJournals, categories]);
 
   const getWalletById = useCallback((id: string) => wallets.find(w => w.id === id), [wallets]);
   const getCategoryById = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
