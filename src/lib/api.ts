@@ -133,6 +133,33 @@ export const assetApi = {
   delete: (id: string) => request<any>(`/assets/${id}`, { method: 'DELETE' }),
 };
 
+// ===================== DEBTS =====================
+export interface Debt {
+  id: string;
+  title: string;
+  type: 'DEBT' | 'RECEIVABLE';
+  contact: string;
+  amount: number;
+  remainingAmount: number;
+  dueDate?: string;
+  interestRate: number;
+  notes: string;
+  status: 'ACTIVE' | 'PAID';
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  walletId?: string;
+}
+
+export const debtApi = {
+  getAll: () => request<Debt[]>('/debts'),
+  create: (data: any) => request<Debt>('/debts', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request<Debt>(`/debts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<any>(`/debts/${id}`, { method: 'DELETE' }),
+  pay: (id: string, data: { walletId: string; amount: number; note?: string; date?: string }) =>
+    request<Debt>(`/debts/${id}/payments`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // ===================== ADMIN =====================
 export const adminApi = {
   getUsers: () => request<any[]>('/admin/users'),

@@ -9,9 +9,10 @@ import type {
   WalletAllocation,
   Goal,
   Asset,
+  Debt,
 } from '../lib/types';
 import { generateId } from '../lib/types';
-import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, debtApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
 
 export interface Toast {
@@ -107,6 +108,13 @@ interface AppContextType {
   updateAsset: (id: string, updates: Partial<Asset>) => Promise<void>;
   deleteAsset: (id: string) => Promise<void>;
 
+  // Debts CRUD
+  debts: Debt[];
+  addDebt: (debt: Omit<Debt, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'remainingAmount' | 'status'> & { walletId?: string }) => Promise<void>;
+  updateDebt: (id: string, updates: Partial<Debt>) => Promise<void>;
+  deleteDebt: (id: string) => Promise<void>;
+  payDebt: (id: string, payment: { walletId: string; amount: number; note?: string; date?: string }) => Promise<void>;
+
   // Computed
   totalBalance: number;
   totalIncome: number;
@@ -175,6 +183,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
 
   // ===================== THEME & LANGUAGE =====================
   useEffect(() => {
@@ -273,6 +282,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setWalletAllocations([]);
     setGoals([]);
     setAssets([]);
+    setDebts([]);
     setTheme('dark');
     setCurrentView('dashboard');
     addToast('Signed out successfully', 'info');
@@ -294,7 +304,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     try {
       setIsLoading(true);
-      const [w, c, j, is, fe, wa, g, ast] = await Promise.all([
+      const [w, c, j, is, fe, wa, g, ast, dbt] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
         journalApi.getAll(),
@@ -303,6 +313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         budgetApi.getWalletAllocations(),
         goalsApi.getAll(),
         assetApi.getAll(),
+        debtApi.getAll(),
       ]);
       setWallets(w);
       setCategories(c);
@@ -312,6 +323,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setWalletAllocations(wa);
       setGoals(g);
       setAssets(ast);
+      setDebts(dbt);
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('token')) {
         logout();
@@ -502,6 +514,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { addToast('Failed to delete asset', 'error'); }
   }, [addToast]);
 
+  // ===================== DEBTS CRUD =====================
+  const addDebt = useCallback(async (debt: any) => {
+    try {
+      await debtApi.create(debt);
+      await loadAllData(); // Reload to refresh wallet balance and journal entries as well
+      addToast(`Record "${debt.title}" created`);
+    } catch { addToast('Failed to create debt/receivable', 'error'); }
+  }, [loadAllData, addToast]);
+
+  const updateDebt = useCallback(async (id: string, updates: Partial<Debt>) => {
+    try {
+      const updated = await debtApi.update(id, updates);
+      setDebts(prev => prev.map(d => d.id === id ? updated : d));
+      addToast('Record updated');
+    } catch { addToast('Failed to update record', 'error'); }
+  }, [addToast]);
+
+  const deleteDebt = useCallback(async (id: string) => {
+    try {
+      await debtApi.delete(id);
+      setDebts(prev => prev.filter(d => d.id !== id));
+      addToast('Record removed', 'info');
+    } catch { addToast('Failed to delete record', 'error'); }
+  }, [addToast]);
+
+  const payDebt = useCallback(async (id: string, payment: any) => {
+    try {
+      await debtApi.pay(id, payment);
+      await loadAllData(); // Reload to update debt balance, wallet balance, and journal entries
+      addToast('Instalment payment recorded!');
+    } catch { addToast('Failed to record payment', 'error'); }
+  }, [loadAllData, addToast]);
+
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);
   const now = new Date();
@@ -564,6 +609,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
       addGoal, updateGoal, deleteGoal,
       assets, addAsset, updateAsset, deleteAsset,
+      debts, addDebt, updateDebt, deleteDebt, payDebt,
       totalBalance, totalIncome, totalExpenses,
       getCategorySpent, getWalletById, getCategoryById,
       toasts, addToast, removeToast,

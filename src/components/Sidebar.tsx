@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Trophy,
   Coins,
+  Handshake,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -27,6 +28,7 @@ const navItems = [
   { id: 'budget', labelKey: 'nav.budget', icon: CreditCard },
   { id: 'goals', labelKey: 'nav.goals', icon: Target },
   { id: 'assets', labelKey: 'nav.assets', icon: Coins },
+  { id: 'debts', labelKey: 'nav.debts', icon: Handshake },
   { id: 'achievements', labelKey: 'nav.achievements', icon: Trophy },
   { id: 'transactions', labelKey: 'nav.transactions', icon: Receipt },
   { id: 'ledger', labelKey: 'nav.ledger', icon: BookOpen },

@@ -26,6 +26,7 @@ model User {
   walletAllocations WalletAllocation[]
   goals            Goal[]
   assets           Asset[]
+  debts            Debt[]
 
   @@map("users")
 }
@@ -179,4 +180,27 @@ model Asset {
 
   @@map("assets")
 }
+
+model Debt {
+  id              String    @id @default(cuid())
+  title           String
+  type            String    // DEBT or RECEIVABLE
+  contact         String
+  amount          Float
+  remainingAmount Float
+  dueDate         DateTime?
+  interestRate    Float     @default(0)
+  notes           String    @default("")
+  status          String    @default("ACTIVE") // ACTIVE or PAID
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  walletId        String?
+
+  @@map("debts")
+}
+
 

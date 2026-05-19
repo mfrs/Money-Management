@@ -95,7 +95,24 @@ export interface Asset {
   userId: string;
 }
 
-export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements' | 'assets';
+export interface Debt {
+  id: string;
+  title: string;
+  type: 'DEBT' | 'RECEIVABLE';
+  contact: string;
+  amount: number;
+  remainingAmount: number;
+  dueDate?: string;
+  interestRate: number;
+  notes: string;
+  status: 'ACTIVE' | 'PAID';
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  walletId?: string;
+}
+
+export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements' | 'assets' | 'debts';
 
 export interface AppData {
   wallets: Wallet[];
