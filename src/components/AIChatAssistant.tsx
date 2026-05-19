@@ -649,7 +649,7 @@ export default function AIChatAssistant() {
       {/* Floating Chat Bubble Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 z-[80] w-14 h-14 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-white shadow-[0_8px_30px_rgb(139,92,246,0.3)] hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+        className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-[80] w-14 h-14 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-white shadow-[0_8px_30px_rgb(139,92,246,0.3)] hover:scale-110 active:scale-95 transition-all cursor-pointer group"
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
@@ -684,7 +684,7 @@ export default function AIChatAssistant() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-24 right-6 lg:bottom-28 lg:right-8 z-[80] w-[360px] sm:w-[400px] h-[550px] rounded-[30px] border border-on-surface/10 flex flex-col overflow-hidden shadow-2xl bg-surface/95 backdrop-blur-2xl"
+            className="fixed bottom-[164px] right-6 lg:bottom-28 lg:right-8 z-[80] w-[360px] sm:w-[400px] h-[550px] rounded-[30px] border border-on-surface/10 flex flex-col overflow-hidden shadow-2xl bg-surface/95 backdrop-blur-2xl"
           >
             {/* Header */}
             <div className="px-6 py-5 flex items-center justify-between border-b border-on-surface/5 bg-on-surface/5">
