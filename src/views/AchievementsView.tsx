@@ -255,7 +255,7 @@ export default function AchievementsView() {
         <div className="glass rounded-[24px] p-6 flex items-center justify-between group hover:bg-on-surface/[0.04] transition-all duration-300">
           <div className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
-              {language === 'id' ? 'MODIFIER LEVEL' : 'BONUS MULTIFIER'}
+              {language === 'id' ? 'MODIFIER LEVEL' : 'BONUS MULTIPLIER'}
             </span>
             <div className="font-display text-2xl lg:text-3xl font-bold text-on-surface flex items-center gap-2">
               <Zap size={28} className="text-secondary animate-pulse" />
@@ -272,7 +272,7 @@ export default function AchievementsView() {
       <div className="space-y-6">
         <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
           <Award size={18} />
-          {language === 'id' ? 'Galeri Lencana Kehormatan' : 'Lencana Kehormatan'}
+          {language === 'id' ? 'Galeri Lencana Kehormatan' : 'Badges of Honor'}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

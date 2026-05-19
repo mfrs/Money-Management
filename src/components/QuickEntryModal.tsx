@@ -18,7 +18,7 @@ import { cn, compressImage } from '../lib/utils';
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
-  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal, addToast } = useApp();
+  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, addJournal, addToast, language } = useApp();
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
@@ -43,21 +43,33 @@ export default function QuickEntryModal() {
     setIsScanning(true);
 
     try {
-      addToast('Mengompresi gambar...', 'info');
+      addToast(
+        language === 'id' ? 'Mengompresi gambar...' : 'Compressing image...',
+        'info'
+      );
       const { dataUrl, base64: base64Data } = await compressImage(file);
       const mimeType = 'image/jpeg'; // always jpeg after canvas export
 
-      addToast('Menganalisis struk belanja...', 'info');
+      addToast(
+        language === 'id' ? 'Menganalisis struk belanja...' : 'Analyzing receipt...',
+        'info'
+      );
       const data = await toolsApi.scanReceipt(base64Data, mimeType);
       
       if (data.totalAmount) setAmount(data.totalAmount.toString());
       if (data.merchantName) setDescription(data.merchantName);
       if (data.date) setDate(data.date);
       
-      addToast('Berhasil membaca struk!', 'success');
+      addToast(
+        language === 'id' ? 'Berhasil membaca struk!' : 'Receipt scanned successfully!',
+        'success'
+      );
     } catch (err: any) {
       console.error('Failed to scan receipt in modal:', err);
-      addToast(err.message || 'Gagal membaca struk', 'error');
+      addToast(
+        err.message || (language === 'id' ? 'Gagal membaca struk' : 'Failed to scan receipt'),
+        'error'
+      );
     } finally {
       setIsScanning(false);
     }
@@ -67,7 +79,10 @@ export default function QuickEntryModal() {
     if (e.key !== 'Enter' || !aiInput.trim() || isProcessingChat) return;
     
     setIsProcessingChat(true);
-    addToast('Menganalisis chat...', 'info');
+    addToast(
+      language === 'id' ? 'Menganalisis chat...' : 'Analyzing chat...',
+      'info'
+    );
     
     try {
       const data = await toolsApi.chatEntry(
@@ -86,9 +101,15 @@ export default function QuickEntryModal() {
       if (data.toWalletId) setToWalletId(data.toWalletId);
       
       setAiInput('');
-      addToast('Berhasil mengisi dari chat!', 'success');
+      addToast(
+        language === 'id' ? 'Berhasil mengisi dari chat!' : 'Successfully filled from chat!',
+        'success'
+      );
     } catch (err: any) {
-      addToast('Gagal memproses chat', 'error');
+      addToast(
+        language === 'id' ? 'Gagal memproses chat' : 'Failed to process chat',
+        'error'
+      );
     } finally {
       setIsProcessingChat(false);
     }
