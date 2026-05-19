@@ -699,24 +699,6 @@ export default function AIChatAssistant() {
               </div>
               <div className="flex items-center">
                 <button
-                  onClick={() => {
-                    const newVoiceState = !isVoiceEnabled;
-                    setIsVoiceEnabled(newVoiceState);
-                    if (newVoiceState) {
-                      speakText(language === 'id' ? "Mode Suara AI diaktifkan" : "AI Voice Mode activated");
-                    } else {
-                      window.speechSynthesis.cancel();
-                    }
-                  }}
-                  className={cn(
-                    "p-2 rounded-xl transition-all mr-1 cursor-pointer",
-                    isVoiceEnabled ? "bg-primary/20 text-primary border border-primary/20" : "text-on-surface/40 hover:bg-on-surface/5"
-                  )}
-                  title={language === 'id' ? "Mode Suara AI" : "AI Voice Mode"}
-                >
-                  {isVoiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                </button>
-                <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-on-surface/5 rounded-xl transition-all"
                 >
@@ -753,15 +735,7 @@ export default function AIChatAssistant() {
                       {msg.text}
                     </div>
 
-                    {msg.sender === 'ai' && (
-                      <button
-                        onClick={() => speakText(msg.text)}
-                        className="absolute -right-7 top-1/2 -translate-y-1/2 text-on-surface/30 hover:text-on-surface/80 p-1 hover:bg-on-surface/5 rounded-lg transition-all opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 cursor-pointer"
-                        title={language === 'id' ? 'Bacakan suara' : 'Speak out loud'}
-                      >
-                        <Volume2 size={13} />
-                      </button>
-                    )}
+
                   </div>
 
                   {/* Parse Data Card Preview */}
@@ -987,19 +961,7 @@ export default function AIChatAssistant() {
                 <Camera size={18} />
               </button>
 
-              <button
-                onClick={toggleListening}
-                disabled={isTyping}
-                title={language === 'id' ? "Perekaman Suara" : "Voice Input"}
-                className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 border",
-                  isListening 
-                    ? "bg-red-500/20 text-red-500 border-red-500/30 animate-pulse scale-105 shadow-[0_0_15px_rgba(239,68,68,0.25)]" 
-                    : "bg-on-surface/5 border-on-surface/10 text-on-surface/60 hover:bg-on-surface/10 hover:text-on-surface hover:scale-105 active:scale-95"
-                )}
-              >
-                {isListening ? <Mic size={18} className="animate-bounce text-red-500" /> : <MicOff size={18} />}
-              </button>
+
 
               <input
                 type="text"
