@@ -105,6 +105,7 @@ export default function ReportsView() {
       let walletId = walletLines[0]?.walletId || '';
       let toWalletId = undefined;
       let amount = 0;
+      let debtType: 'DEBT' | 'RECEIVABLE' | undefined = undefined;
 
       if (walletLines.length === 2 && !categoryLine) {
         type = 'transfer';
@@ -128,6 +129,11 @@ export default function ReportsView() {
         walletId = wLine.walletId;
         amount = wLine.amount;
         type = wLine.type === 'DEBIT' ? 'income' : 'expense';
+        if (j.description.includes('[Hutang]') || j.description.includes('[Bayar Hutang]')) {
+          debtType = 'DEBT';
+        } else if (j.description.includes('[Piutang]') || j.description.includes('[Terima Piutang]')) {
+          debtType = 'RECEIVABLE';
+        }
       }
 
       return {
@@ -139,6 +145,7 @@ export default function ReportsView() {
         categoryId,
         walletId,
         toWalletId,
+        debtType,
       };
     });
   }, [journals]);

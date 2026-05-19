@@ -33,6 +33,8 @@ export const translations: Record<Language, Dictionary> = {
     'common.expense': 'Expense',
     'common.transfer': 'Transfer',
     'common.totalBalance': 'Total Balance',
+    'common.debt': 'Debt',
+    'common.receivable': 'Receivable',
 
     // Dashboard
     'dash.burnRate': 'Burn Rate',
@@ -214,6 +216,8 @@ export const translations: Record<Language, Dictionary> = {
     'common.expense': 'Pengeluaran',
     'common.transfer': 'Transfer',
     'common.totalBalance': 'Total Saldo',
+    'common.debt': 'Hutang',
+    'common.receivable': 'Piutang',
 
     // Dashboard
     'dash.burnRate': 'Tingkat Konsumsi',
