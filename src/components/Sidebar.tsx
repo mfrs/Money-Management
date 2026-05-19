@@ -66,9 +66,9 @@ export default function Sidebar() {
   const progressPercentage = Math.min(100, Math.round((xpProgressInLevel / xpNeededInLevel) * 100));
 
   const navContent = (
-    <div className="flex flex-col h-full p-6 overflow-y-auto min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col h-full p-6">
       {/* Logo */}
-      <div className="flex items-center justify-between mb-12">
+      <div className="flex items-center justify-between mb-8 shrink-0">
         <div className="flex items-center gap-4">
           {appLogo === 'CircleGauge' ? (
             <CircleGauge className="text-on-surface shrink-0" size={24} />
@@ -89,7 +89,7 @@ export default function Sidebar() {
 
       {/* User profile mini */}
       {user && (
-        <div className="mb-8 p-4 rounded-2xl glass border border-th-divider space-y-3">
+        <div className="mb-6 p-4 rounded-2xl glass border border-th-divider space-y-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
               <span className="font-display text-xs font-bold text-primary">
@@ -122,7 +122,7 @@ export default function Sidebar() {
       )}
 
       {/* Nav */}
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mb-4">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -162,7 +162,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="space-y-2 pt-6 border-t border-th-divider">
+      <div className="space-y-2 pt-6 border-t border-th-divider shrink-0">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
