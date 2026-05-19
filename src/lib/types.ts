@@ -112,7 +112,7 @@ export interface Debt {
   walletId?: string;
 }
 
-export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements' | 'assets' | 'debts';
+export type ViewType = 'dashboard' | 'wallets' | 'budget' | 'transactions' | 'reports' | 'settings' | 'goals' | 'admin' | 'ledger' | 'achievements' | 'assets' | 'debts' | 'pgmonitor';
 
 export interface AppData {
   wallets: Wallet[];

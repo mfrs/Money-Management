@@ -17,6 +17,7 @@ import {
   Trophy,
   Coins,
   Handshake,
+  Database,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -143,21 +144,41 @@ export default function Sidebar() {
         ))}
 
         {user?.isAdmin && (
-          <button
-            onClick={() => setCurrentView('admin' as any)}
-            className={cn(
-              "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group mt-4 border border-primary/20",
-              currentView === 'admin'
-                ? "bg-primary/20 text-primary shadow-xl"
-                : "text-primary/50 hover:text-primary hover:bg-primary/10"
-            )}
-          >
-            <ShieldCheck size={18} className={cn(
-              "transition-colors",
-              currentView === 'admin' ? "text-primary" : "text-primary/50 group-hover:text-primary"
-            )} />
-            Admin Panel
-          </button>
+          <div className="space-y-1 mt-3 pt-3 border-t border-th-divider/30">
+            <button
+              onClick={() => setCurrentView('admin' as any)}
+              className={cn(
+                "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group",
+                currentView === 'admin'
+                  ? "bg-primary/25 text-primary border border-primary/20"
+                  : "text-primary/60 hover:text-primary hover:bg-primary/10 border border-transparent"
+              )}
+            >
+              <ShieldCheck size={18} className={cn(
+                "transition-colors",
+                currentView === 'admin' ? "text-primary" : "text-primary/50 group-hover:text-primary"
+              )} />
+              Admin Panel
+            </button>
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/pgmonitor');
+                setCurrentView('pgmonitor' as any);
+              }}
+              className={cn(
+                "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group",
+                currentView === 'pgmonitor'
+                  ? "bg-primary/25 text-primary border border-primary/20"
+                  : "text-primary/60 hover:text-primary hover:bg-primary/10 border border-transparent"
+              )}
+            >
+              <Database size={18} className={cn(
+                "transition-colors",
+                currentView === 'pgmonitor' ? "text-primary" : "text-primary/50 group-hover:text-primary"
+              )} />
+              PGMonitor
+            </button>
+          </div>
         )}
       </nav>
 

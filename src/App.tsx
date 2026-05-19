@@ -15,13 +15,29 @@ import LedgerView from './views/LedgerView';
 import AchievementsView from './views/AchievementsView';
 import AssetsView from './views/AssetsView';
 import DebtsView from './views/DebtsView';
+import PGMonitorView from './views/PGMonitorView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
 import { AnimatePresence } from 'motion/react';
+import { ShieldAlert } from 'lucide-react';
 
 function AppContent() {
-  const { currentView, isAuthenticated, isLoading, authLoading } = useApp();
+  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading } = useApp();
+
+  // Sync /pgmonitor pathname to view state
+  React.useEffect(() => {
+    if (window.location.pathname === '/pgmonitor') {
+      setCurrentView('pgmonitor');
+    }
+  }, [setCurrentView]);
+
+  // Sync URL state when navigating away from pgmonitor
+  React.useEffect(() => {
+    if (currentView !== 'pgmonitor' && window.location.pathname === '/pgmonitor') {
+      window.history.pushState({}, '', '/');
+    }
+  }, [currentView]);
 
   // Show nothing while checking if user has a saved session
   if (authLoading) {
@@ -37,6 +53,34 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <SignInView />;
+  }
+
+  // Admin access check for PGMonitor URL
+  if (window.location.pathname === '/pgmonitor' && user && !user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+        <div className="max-w-md w-full glass p-8 rounded-3xl border border-error/20 text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center border border-error/20 mx-auto">
+            <ShieldAlert className="text-error" size={32} />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-on-surface">Access Denied</h1>
+            <p className="text-sm text-on-surface-variant">
+              You do not have the required permissions to view the PostgreSQL monitor dashboard.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/');
+              setCurrentView('dashboard');
+            }}
+            className="w-full py-3.5 bg-primary hover:bg-primary/95 text-on-primary rounded-2xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (isLoading) {
@@ -67,6 +111,7 @@ function AppContent() {
       case 'achievements': return <AchievementsView />;
       case 'assets': return <AssetsView />;
       case 'debts': return <DebtsView />;
+      case 'pgmonitor': return <PGMonitorView />;
       default: return <DashboardView />;
     }
   };
