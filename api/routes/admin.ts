@@ -63,7 +63,7 @@ router.get('/pgmonitor', authMiddleware, adminMiddleware, async (req: AuthReques
       SELECT 
         current_database() AS db_name,
         pg_size_pretty(pg_database_size(current_database())) AS db_size,
-        pg_database_size(current_database()) AS db_size_bytes,
+        pg_database_size(current_database())::text AS db_size_bytes,
         version() AS pg_version
     `);
 
@@ -93,9 +93,9 @@ router.get('/pgmonitor', authMiddleware, adminMiddleware, async (req: AuthReques
         pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
         pg_size_pretty(pg_relation_size(relid)) AS table_size,
         pg_size_pretty(pg_indexes_size(relid)) AS index_size,
-        pg_total_relation_size(relid)::bigint AS total_size_bytes
+        pg_total_relation_size(relid)::text AS total_size_bytes
       FROM pg_stat_user_tables
-      ORDER BY total_size_bytes DESC
+      ORDER BY pg_total_relation_size(relid) DESC
     `);
 
     const activeQueries: any[] = await prisma.$queryRawUnsafe(`
