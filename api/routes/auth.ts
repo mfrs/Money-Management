@@ -274,76 +274,64 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
 
       // 2. Re-create wallets
       if (wallets && Array.isArray(wallets)) {
-        for (const w of wallets) {
-          const newWalletId = walletIdMap[w.id];
-          await tx.wallet.create({
-            data: {
-              id: newWalletId,
-              name: w.name,
-              type: w.type,
-              account: w.account,
-              balance: w.balance,
-              icon: w.icon,
-              color: w.color,
-              goal: w.goal,
-              createdAt: w.createdAt ? new Date(w.createdAt) : undefined,
-              updatedAt: w.updatedAt ? new Date(w.updatedAt) : undefined,
-              userId
-            }
-          });
-        }
+        const walletsData = wallets.map((w) => ({
+          id: walletIdMap[w.id],
+          name: w.name,
+          type: w.type,
+          account: w.account,
+          balance: w.balance,
+          icon: w.icon,
+          color: w.color,
+          goal: w.goal,
+          createdAt: w.createdAt ? new Date(w.createdAt) : undefined,
+          updatedAt: w.updatedAt ? new Date(w.updatedAt) : undefined,
+          userId
+        }));
+        await tx.wallet.createMany({ data: walletsData });
       }
 
       // 3. Re-create categories
       if (categories && Array.isArray(categories)) {
-        for (const c of categories) {
-          const newCategoryId = categoryIdMap[c.id];
-          await tx.category.create({
-            data: {
-              id: newCategoryId,
-              name: c.name,
-              type: c.type,
-              icon: c.icon,
-              color: c.color,
-              budgetLimit: c.budgetLimit,
-              createdAt: c.createdAt ? new Date(c.createdAt) : undefined,
-              updatedAt: c.updatedAt ? new Date(c.updatedAt) : undefined,
-              userId
-            }
-          });
-        }
+        const categoriesData = categories.map((c) => ({
+          id: categoryIdMap[c.id],
+          name: c.name,
+          type: c.type,
+          icon: c.icon,
+          color: c.color,
+          budgetLimit: c.budgetLimit,
+          createdAt: c.createdAt ? new Date(c.createdAt) : undefined,
+          updatedAt: c.updatedAt ? new Date(c.updatedAt) : undefined,
+          userId
+        }));
+        await tx.category.createMany({ data: categoriesData });
       }
 
       // 4. Re-create journals
       if (journals && Array.isArray(journals)) {
-        for (const j of journals) {
-          const newJournalId = journalIdMap[j.id];
-          await tx.journal.create({
-            data: {
-              id: newJournalId,
-              date: new Date(j.date),
-              description: j.description,
-              note: j.note,
-              isReversed: j.isReversed,
-              createdAt: j.createdAt ? new Date(j.createdAt) : undefined,
-              updatedAt: j.updatedAt ? new Date(j.updatedAt) : undefined,
-              userId
-            }
-          });
-        }
+        const journalsData = journals.map((j) => ({
+          id: journalIdMap[j.id],
+          date: new Date(j.date),
+          description: j.description,
+          note: j.note,
+          isReversed: j.isReversed,
+          createdAt: j.createdAt ? new Date(j.createdAt) : undefined,
+          updatedAt: j.updatedAt ? new Date(j.updatedAt) : undefined,
+          userId
+        }));
+        await tx.journal.createMany({ data: journalsData });
       }
 
       // 5. Re-create journal lines
       if (journalLines && Array.isArray(journalLines)) {
-        for (const l of journalLines) {
-          const newJournalId = journalIdMap[l.journalId];
-          const newWalletId = l.walletId ? walletIdMap[l.walletId] : null;
-          const newCategoryId = l.categoryId ? categoryIdMap[l.categoryId] : null;
+        const linesData = journalLines
+          .map((l) => {
+            const newJournalId = journalIdMap[l.journalId];
+            const newWalletId = l.walletId ? walletIdMap[l.walletId] : null;
+            const newCategoryId = l.categoryId ? categoryIdMap[l.categoryId] : null;
 
-          if (!newJournalId) continue;
+            if (!newJournalId) return null;
 
-          await tx.journalLine.create({
-            data: {
+            return {
               id: generateId(),
               journalId: newJournalId,
               walletId: newWalletId,
@@ -351,122 +339,120 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
               amount: l.amount,
               type: l.type,
               createdAt: l.createdAt ? new Date(l.createdAt) : undefined
-            }
-          });
+            };
+          })
+          .filter(Boolean) as any[];
+
+        if (linesData.length > 0) {
+          await tx.journalLine.createMany({ data: linesData });
         }
       }
 
       // 6. Re-create other lists
       if (incomeSources && Array.isArray(incomeSources)) {
-        for (const i of incomeSources) {
-          await tx.incomeSource.create({
-            data: {
-              id: generateId(),
-              name: i.name,
-              amount: i.amount,
-              userId
-            }
-          });
-        }
+        const incomeSourcesData = incomeSources.map((i) => ({
+          id: generateId(),
+          name: i.name,
+          amount: i.amount,
+          userId
+        }));
+        await tx.incomeSource.createMany({ data: incomeSourcesData });
       }
 
       if (fixedExpenses && Array.isArray(fixedExpenses)) {
-        for (const f of fixedExpenses) {
-          await tx.fixedExpense.create({
-            data: {
-              id: generateId(),
-              name: f.name,
-              amount: f.amount,
-              term: f.term,
-              icon: f.icon,
-              autoPay: f.autoPay,
-              dueDate: f.dueDate,
-              lastPaid: f.lastPaid ? new Date(f.lastPaid) : null,
-              status: f.status,
-              userId
-            }
-          });
-        }
+        const fixedExpensesData = fixedExpenses.map((f) => ({
+          id: generateId(),
+          name: f.name,
+          amount: f.amount,
+          term: f.term,
+          icon: f.icon,
+          autoPay: f.autoPay,
+          dueDate: f.dueDate,
+          lastPaid: f.lastPaid ? new Date(f.lastPaid) : null,
+          status: f.status,
+          userId
+        }));
+        await tx.fixedExpense.createMany({ data: fixedExpensesData });
       }
 
       if (walletAllocations && Array.isArray(walletAllocations)) {
-        for (const a of walletAllocations) {
-          const newWalletId = walletIdMap[a.walletId];
-          if (!newWalletId) continue;
+        const allocationsData = walletAllocations
+          .map((a) => {
+            const newWalletId = walletIdMap[a.walletId];
+            if (!newWalletId) return null;
 
-          await tx.walletAllocation.create({
-            data: {
+            return {
               id: generateId(),
               amount: a.amount,
               walletId: newWalletId,
               userId
-            }
-          });
+            };
+          })
+          .filter(Boolean) as any[];
+
+        if (allocationsData.length > 0) {
+          await tx.walletAllocation.createMany({ data: allocationsData });
         }
       }
 
       if (goals && Array.isArray(goals)) {
-        for (const g of goals) {
-          await tx.goal.create({
-            data: {
-              id: generateId(),
-              name: g.name,
-              targetAmount: g.targetAmount,
-              currentAmount: g.currentAmount,
-              deadline: g.deadline ? new Date(g.deadline) : null,
-              icon: g.icon,
-              color: g.color,
-              createdAt: g.createdAt ? new Date(g.createdAt) : undefined,
-              updatedAt: g.updatedAt ? new Date(g.updatedAt) : undefined,
-              userId
-            }
-          });
-        }
+        const goalsData = goals.map((g) => ({
+          id: generateId(),
+          name: g.name,
+          targetAmount: g.targetAmount,
+          currentAmount: g.currentAmount,
+          deadline: g.deadline ? new Date(g.deadline) : null,
+          icon: g.icon,
+          color: g.color,
+          createdAt: g.createdAt ? new Date(g.createdAt) : undefined,
+          updatedAt: g.updatedAt ? new Date(g.updatedAt) : undefined,
+          userId
+        }));
+        await tx.goal.createMany({ data: goalsData });
       }
 
       if (assets && Array.isArray(assets)) {
-        for (const ast of assets) {
-          await tx.asset.create({
-            data: {
-              id: generateId(),
-              name: ast.name,
-              type: ast.type,
-              purchasePrice: ast.purchasePrice,
-              currentPrice: ast.currentPrice,
-              purchaseDate: new Date(ast.purchaseDate),
-              estimatedRate: ast.estimatedRate,
-              notes: ast.notes,
-              createdAt: ast.createdAt ? new Date(ast.createdAt) : undefined,
-              updatedAt: ast.updatedAt ? new Date(ast.updatedAt) : undefined,
-              userId
-            }
-          });
-        }
+        const assetsData = assets.map((ast) => ({
+          id: generateId(),
+          name: ast.name,
+          type: ast.type,
+          purchasePrice: ast.purchasePrice,
+          currentPrice: ast.currentPrice,
+          purchaseDate: new Date(ast.purchaseDate),
+          estimatedRate: ast.estimatedRate,
+          notes: ast.notes,
+          createdAt: ast.createdAt ? new Date(ast.createdAt) : undefined,
+          updatedAt: ast.updatedAt ? new Date(ast.updatedAt) : undefined,
+          userId
+        }));
+        await tx.asset.createMany({ data: assetsData });
       }
 
       if (debts && Array.isArray(debts)) {
-        for (const d of debts) {
+        const debtsData = debts.map((d) => {
           const newWalletId = d.walletId ? walletIdMap[d.walletId] : null;
-          await tx.debt.create({
-            data: {
-              id: generateId(),
-              title: d.title,
-              type: d.type,
-              contact: d.contact,
-              amount: d.amount,
-              remainingAmount: d.remainingAmount,
-              dueDate: d.dueDate ? new Date(d.dueDate) : null,
-              interestRate: d.interestRate,
-              notes: d.notes,
-              status: d.status,
-              createdAt: d.createdAt ? new Date(d.createdAt) : undefined,
-              updatedAt: d.updatedAt ? new Date(d.updatedAt) : undefined,
-              userId,
-              walletId: newWalletId
-            }
-          });
-        }
+          return {
+            id: generateId(),
+            title: d.title,
+            type: d.type,
+            contact: d.contact,
+            amount: d.amount,
+            remainingAmount: d.remainingAmount,
+            dueDate: d.dueDate ? new Date(d.dueDate) : null,
+            interestRate: d.interestRate,
+            notes: d.notes,
+            status: d.status,
+            createdAt: d.createdAt ? new Date(d.createdAt) : undefined,
+            updatedAt: d.updatedAt ? new Date(d.updatedAt) : undefined,
+            userId,
+            walletId: newWalletId
+          };
+        });
+        await tx.debt.createMany({ data: debtsData });
       }
+    }, {
+      maxWait: 20000,
+      timeout: 60000
     });
 
     res.json({ success: true, message: 'Restore completed successfully' });
