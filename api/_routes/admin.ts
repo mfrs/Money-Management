@@ -14,7 +14,7 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthRequest, r
         isAdmin: true,
         createdAt: true,
         _count: {
-          select: { wallets: true, journals: true, categories: true }
+          select: { wallets: true, journals: true, categories: true, goals: true, assets: true, debts: true }
         }
       },
       orderBy: { createdAt: 'desc' }

@@ -27,6 +27,9 @@ interface AdminUser extends AuthUser {
     wallets: number;
     journals: number;
     categories: number;
+    goals?: number;
+    assets?: number;
+    debts?: number;
   };
 }
 
@@ -388,13 +391,17 @@ export default function AdminView() {
                       <tr className="border-b border-on-surface/5 text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">
                         <th className="py-4 px-4">User</th>
                         <th className="py-4 px-4">Status</th>
+                        <th className="py-4 px-4 text-center">Level</th>
                         <th className="py-4 px-4 text-center">Wallets</th>
                         <th className="py-4 px-4 text-center">Journals</th>
                         <th className="py-4 px-4 text-right">Joined</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-on-surface/5">
-                      {users.map((user) => (
+                      {users.map((user) => {
+                        const xp = (user._count.journals * 100) + ((user._count.goals || 0) * 150) + (user._count.categories * 50);
+                        const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+                        return (
                         <tr 
                           key={user.id} 
                           onClick={() => handleUserClick(user)}
@@ -418,13 +425,19 @@ export default function AdminView() {
                               <span className="text-[9px] font-bold text-on-surface/40 bg-on-surface/5 px-3 py-1 rounded-full uppercase tracking-widest border border-on-surface/5">User</span>
                             )}
                           </td>
+                          <td className="py-4 px-4 text-center">
+                            <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-2.5 py-1 rounded-full uppercase tracking-wider border border-secondary/20">
+                              Lvl {level}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.wallets}</td>
                           <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.journals}</td>
                           <td className="py-4 px-4 text-right text-xs font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
-                      ))}
+                      );
+                    })}
                     </tbody>
                   </table>
                 </div>
