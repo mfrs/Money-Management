@@ -18,10 +18,10 @@
   --color-on-surface: var(--th-on-surface);
   --color-on-surface-variant: var(--th-on-surface-variant);
 
-  --color-primary: #3b82f6;
+  --color-primary: var(--th-primary);
   --color-on-primary: #ffffff;
-  --color-primary-container: rgba(59, 130, 246, 0.2);
-  --color-primary-fixed-dim: #93c5fd;
+  --color-primary-container: var(--th-primary-container);
+  --color-primary-fixed-dim: var(--th-primary);
 
   --color-secondary: #8b5cf6;
   --color-on-secondary: #ffffff;
@@ -32,11 +32,13 @@
   --color-tertiary: #ec4899;
   --color-tertiary-container: rgba(236, 72, 153, 0.2);
 
-  --color-error: #ef4444;
+  --color-error: var(--th-error);
   --color-error-container: rgba(239, 68, 68, 0.2);
 
-  --color-success: #10b981;
+  --color-success: var(--th-success);
   --color-success-container: rgba(16, 185, 129, 0.2);
+
+  --color-warning: var(--th-warning);
 
   --radius-xl: 1.5rem;
   --radius-lg: 1rem;
@@ -45,23 +47,31 @@
 /* ===================== DARK THEME (default) ===================== */
 :root,
 [data-theme="dark"] {
-  --th-surface: #05070a;
-  --th-surface-dim: #0a0c10;
-  --th-surface-bright: #ffffff;
+  --th-primary: #4090FF;
+  --th-primary-container: #1E2030;
+  
+  --th-surface: #0D1117;
+  --th-surface-dim: #1A1B20;
+  --th-surface-bright: #1E2030;
   --th-container-lowest: rgba(255, 255, 255, 0.02);
   --th-container-low: rgba(255, 255, 255, 0.04);
   --th-container: rgba(255, 255, 255, 0.06);
   --th-container-high: rgba(255, 255, 255, 0.1);
   --th-container-highest: rgba(255, 255, 255, 0.15);
-  --th-on-surface: #ffffff;
-  --th-on-surface-variant: rgba(255, 255, 255, 0.75);
+  
+  --th-on-surface: #FFFFFF;
+  --th-on-surface-variant: #8B949E;
+  
+  --th-success: #34D399;
+  --th-warning: #FBBF24;
+  --th-error: #F87171;
 
-  --th-glass-bg: rgba(255, 255, 255, 0.04);
+  --th-glass-bg: rgba(30, 32, 48, 0.4);
   --th-glass-border: rgba(255, 255, 255, 0.1);
   --th-glass-dark-bg: rgba(0, 0, 0, 0.2);
   --th-glass-dark-border: rgba(255, 255, 255, 0.05);
-  --th-text-primary: #ffffff;
-  --th-text-secondary: rgba(255, 255, 255, 0.8);
+  --th-text-primary: #FFFFFF;
+  --th-text-secondary: #8B949E;
   --th-text-tertiary: rgba(255, 255, 255, 0.55);
   --th-text-muted: rgba(255, 255, 255, 0.25);
   --th-divider: rgba(255, 255, 255, 0.05);
@@ -70,29 +80,37 @@
   --th-input-focus: rgba(255, 255, 255, 0.2);
   --th-shadow-color: rgba(0, 0, 0, 0.3);
   --th-accent-glow: 1;
-  --th-liquid-glass-bg: rgba(5, 7, 10, 0.85);
+  --th-liquid-glass-bg: rgba(13, 17, 23, 0.85);
   --th-liquid-glass-border: rgba(255, 255, 255, 0.08);
 }
 
 /* ===================== LIGHT THEME ===================== */
 [data-theme="light"] {
-  --th-surface: #f5f7fa;
-  --th-surface-dim: #ebedf2;
-  --th-surface-bright: #000000;
+  --th-primary: #007AFF;
+  --th-primary-container: #D9E7FF;
+  
+  --th-surface: #F5F6F9;
+  --th-surface-dim: #FFFFFF;
+  --th-surface-bright: #FFFFFF;
   --th-container-lowest: rgba(0, 0, 0, 0.02);
   --th-container-low: rgba(0, 0, 0, 0.04);
   --th-container: rgba(0, 0, 0, 0.06);
   --th-container-high: rgba(0, 0, 0, 0.08);
   --th-container-highest: rgba(0, 0, 0, 0.12);
-  --th-on-surface: #1a1a2e;
-  --th-on-surface-variant: rgba(26, 26, 46, 0.8);
+  
+  --th-on-surface: #1A1B20;
+  --th-on-surface-variant: #6A707E;
+  
+  --th-success: #28A745;
+  --th-warning: #FFC107;
+  --th-error: #DC3545;
 
   --th-glass-bg: rgba(255, 255, 255, 0.7);
   --th-glass-border: rgba(0, 0, 0, 0.08);
   --th-glass-dark-bg: rgba(255, 255, 255, 0.5);
   --th-glass-dark-border: rgba(0, 0, 0, 0.06);
-  --th-text-primary: #1a1a2e;
-  --th-text-secondary: rgba(26, 26, 46, 0.8);
+  --th-text-primary: #1A1B20;
+  --th-text-secondary: #6A707E;
   --th-text-tertiary: rgba(26, 26, 46, 0.55);
   --th-text-muted: rgba(26, 26, 46, 0.2);
   --th-divider: rgba(0, 0, 0, 0.06);
@@ -101,7 +119,7 @@
   --th-input-focus: rgba(0, 0, 0, 0.15);
   --th-shadow-color: rgba(0, 0, 0, 0.08);
   --th-accent-glow: 0.5;
-  --th-liquid-glass-bg: rgba(245, 247, 250, 0.85);
+  --th-liquid-glass-bg: rgba(245, 246, 249, 0.85);
   --th-liquid-glass-border: rgba(0, 0, 0, 0.08);
 }
 
