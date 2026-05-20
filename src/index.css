@@ -66,9 +66,9 @@
   --th-warning: #FBBF24;
   --th-error: #F87171;
 
-  --th-glass-bg: rgba(30, 32, 48, 0.4);
-  --th-glass-border: rgba(255, 255, 255, 0.1);
-  --th-glass-dark-bg: rgba(0, 0, 0, 0.2);
+  --th-glass-bg: rgba(26, 27, 32, 0.95);
+  --th-glass-border: rgba(255, 255, 255, 0.05);
+  --th-glass-dark-bg: rgba(26, 27, 32, 0.95);
   --th-glass-dark-border: rgba(255, 255, 255, 0.05);
   --th-text-primary: #FFFFFF;
   --th-text-secondary: #8B949E;
@@ -77,10 +77,10 @@
   --th-divider: rgba(255, 255, 255, 0.05);
   --th-input-bg: rgba(255, 255, 255, 0.05);
   --th-input-border: rgba(255, 255, 255, 0.05);
-  --th-input-focus: rgba(255, 255, 255, 0.2);
+  --th-input-focus: rgba(64, 144, 255, 0.2);
   --th-shadow-color: rgba(0, 0, 0, 0.3);
   --th-accent-glow: 1;
-  --th-liquid-glass-bg: rgba(13, 17, 23, 0.85);
+  --th-liquid-glass-bg: rgba(26, 27, 32, 0.95);
   --th-liquid-glass-border: rgba(255, 255, 255, 0.08);
 }
 
@@ -105,9 +105,9 @@
   --th-warning: #FFC107;
   --th-error: #DC3545;
 
-  --th-glass-bg: rgba(255, 255, 255, 0.7);
+  --th-glass-bg: rgba(255, 255, 255, 0.95);
   --th-glass-border: rgba(0, 0, 0, 0.08);
-  --th-glass-dark-bg: rgba(255, 255, 255, 0.5);
+  --th-glass-dark-bg: rgba(255, 255, 255, 0.95);
   --th-glass-dark-border: rgba(0, 0, 0, 0.06);
   --th-text-primary: #1A1B20;
   --th-text-secondary: #6A707E;

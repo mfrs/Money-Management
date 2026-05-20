@@ -131,13 +131,13 @@ export default function Sidebar() {
             className={cn(
               "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group",
               currentView === item.id
-                ? "bg-on-surface text-surface shadow-xl"
+                ? "bg-primary-container text-primary shadow-[0_4px_20px_-10px_var(--color-primary)]"
                 : "text-on-surface/30 hover:text-on-surface hover:bg-surface-container"
             )}
           >
             <item.icon size={18} className={cn(
               "transition-colors",
-              currentView === item.id ? "text-surface" : "text-on-surface/20 group-hover:text-on-surface"
+              currentView === item.id ? "text-primary" : "text-on-surface/20 group-hover:text-on-surface"
             )} />
             {item.labelKey.startsWith('nav.') ? t(item.labelKey) : item.labelKey}
           </button>
