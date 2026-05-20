@@ -13,6 +13,7 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthRequest, r
         email: true,
         isAdmin: true,
         createdAt: true,
+        lastOnline: true,
         _count: {
           select: { wallets: true, journals: true, categories: true, goals: true, assets: true, debts: true }
         }

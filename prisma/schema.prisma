@@ -17,6 +17,7 @@ model User {
   theme     String   @default("dark")  // dark, light
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  lastOnline DateTime? @default(now())
 
   wallets          Wallet[]
   categories       Category[]

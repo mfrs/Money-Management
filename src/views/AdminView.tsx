@@ -23,6 +23,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 interface AdminUser extends AuthUser {
   createdAt: string;
+  lastOnline?: string | null;
   _count: {
     wallets: number;
     journals: number;
@@ -31,6 +32,46 @@ interface AdminUser extends AuthUser {
     assets?: number;
     debts?: number;
   };
+}
+
+function formatLastActive(lastOnlineStr?: string | null) {
+  if (!lastOnlineStr) {
+    return <span className="text-on-surface/30 text-xs font-bold uppercase tracking-widest">Never</span>;
+  }
+  const lastOnline = new Date(lastOnlineStr);
+  const now = new Date();
+  const diffMs = now.getTime() - lastOnline.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 5) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/20">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        Online
+      </span>
+    );
+  }
+  
+  let timeStr = '';
+  if (diffMins < 60) {
+    timeStr = `${diffMins}m ago`;
+  } else {
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) {
+      timeStr = `${diffHours}h ago`;
+    } else {
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) timeStr = 'Yesterday';
+      else if (diffDays < 7) timeStr = `${diffDays}d ago`;
+      else timeStr = lastOnline.toLocaleDateString();
+    }
+  }
+  
+  return (
+    <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">
+      {timeStr}
+    </span>
+  );
 }
 
 export default function AdminView() {
@@ -394,6 +435,7 @@ export default function AdminView() {
                         <th className="py-4 px-4 text-center">Level</th>
                         <th className="py-4 px-4 text-center">Wallets</th>
                         <th className="py-4 px-4 text-center">Journals</th>
+                        <th className="py-4 px-4 text-center">Last Active</th>
                         <th className="py-4 px-4 text-right">Joined</th>
                       </tr>
                     </thead>
@@ -403,9 +445,9 @@ export default function AdminView() {
                         const level = Math.floor(Math.sqrt(xp / 100)) + 1;
                         return (
                         <tr 
-                          key={user.id} 
-                          onClick={() => handleUserClick(user)}
-                          className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
+                           key={user.id} 
+                           onClick={() => handleUserClick(user)}
+                           className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
                         >
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-4">
@@ -432,6 +474,9 @@ export default function AdminView() {
                           </td>
                           <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.wallets}</td>
                           <td className="py-4 px-4 text-center text-sm font-bold text-on-surface tabular-nums">{user._count.journals}</td>
+                          <td className="py-4 px-4 text-center whitespace-nowrap">
+                            {formatLastActive(user.lastOnline)}
+                          </td>
                           <td className="py-4 px-4 text-right text-xs font-bold text-on-surface/40 uppercase tracking-widest whitespace-nowrap">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
@@ -462,7 +507,20 @@ export default function AdminView() {
                 </button>
                 <div>
                   <h3 className="font-display text-2xl font-bold text-on-surface">Data Overview: {selectedUser.name}</h3>
-                  <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">{selectedUser.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium">{selectedUser.email}</p>
+                    <span className="text-on-surface/20">•</span>
+                    <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium">Joined: {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                    {selectedUser.lastOnline && (
+                      <>
+                        <span className="text-on-surface/20">•</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-on-surface/40 uppercase tracking-widest font-medium">Last Active:</span>
+                          {formatLastActive(selectedUser.lastOnline)}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
