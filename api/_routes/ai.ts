@@ -126,7 +126,7 @@ router.post('/scan-receipt', authMiddleware, async (req: AuthRequest, res: Respo
 // AI CHAT ENTRY
 router.post('/chat-entry', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { text, wallets, categories, goals, currentDate } = req.body;
+    const { text, wallets, categories, goals, currentDate, assets: clientAssets, debts: clientDebts, fixedExpenses, incomeSources } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
     const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
@@ -218,27 +218,110 @@ router.post('/chat-entry', authMiddleware, async (req: AuthRequest, res: Respons
 
     const goalsList = goals || [];
 
-    const prompt = `You are a world-class personal financial planner and parser assistant.
+    // Fetch assets & debts from DB for richer context
+    const [dbAssets, dbDebts] = await Promise.all([
+      prisma.asset.findMany({ where: { userId: req.userId! } }),
+      prisma.debt.findMany({ where: { userId: req.userId!, status: 'ACTIVE' } })
+    ]);
+
+    const assetsList = dbAssets.map(a => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      purchasePrice: a.purchasePrice,
+      currentPrice: a.currentPrice,
+      capitalGain: a.currentPrice - a.purchasePrice,
+      capitalGainPercent: a.purchasePrice > 0 ? (((a.currentPrice - a.purchasePrice) / a.purchasePrice) * 100).toFixed(1) + '%' : '0%',
+      purchaseDate: a.purchaseDate.toISOString().split('T')[0]
+    }));
+
+    const debtsList = dbDebts.map(d => ({
+      id: d.id,
+      title: d.title,
+      type: d.type,
+      contact: d.contact,
+      totalAmount: d.amount,
+      remainingAmount: d.remainingAmount,
+      paidAmount: d.amount - d.remainingAmount,
+      interestRate: d.interestRate,
+      dueDate: d.dueDate ? d.dueDate.toISOString().split('T')[0] : null,
+      walletId: d.walletId
+    }));
+
+    const fixedExpensesList = (fixedExpenses || []).map((fe: any) => ({
+      name: fe.name,
+      amount: fe.amount,
+      dueDate: fe.dueDate,
+      status: fe.status,
+      lastPaid: fe.lastPaid
+    }));
+
+    const incomeSourcesList = (incomeSources || []).map((is: any) => ({
+      name: is.name,
+      amount: is.amount
+    }));
+
+    // Calculate Net Worth
+    const totalWalletBalance = (wallets || []).reduce((sum: number, w: any) => sum + (w.balance || 0), 0);
+    const totalGoalSavings = goalsList.reduce((sum: number, g: any) => sum + (g.currentAmount || 0), 0);
+    const totalAssetValue = dbAssets.reduce((sum, a) => sum + a.currentPrice, 0);
+    const totalAssetPurchaseValue = dbAssets.reduce((sum, a) => sum + a.purchasePrice, 0);
+    const totalDebtRemaining = dbDebts.filter(d => d.type === 'DEBT').reduce((sum, d) => sum + d.remainingAmount, 0);
+    const totalReceivableRemaining = dbDebts.filter(d => d.type === 'RECEIVABLE').reduce((sum, d) => sum + d.remainingAmount, 0);
+    const netWorth = totalWalletBalance + totalGoalSavings + totalAssetValue + totalReceivableRemaining - totalDebtRemaining;
+    const totalMonthlyIncome = incomeSourcesList.reduce((sum: number, is: any) => sum + (is.amount || 0), 0);
+    const totalMonthlyFixedExpenses = fixedExpensesList.reduce((sum: number, fe: any) => sum + (fe.amount || 0), 0);
+
+    const prompt = `You are a world-class personal financial planner and parser assistant. You have FULL access to the user's financial data.
 User text: "${text}"
 Current Date Context: ${currentDate}
 
-Available Wallets (JSON):
+=== FINANCIAL SNAPSHOT ===
+Net Worth: ${netWorth}
+Total Wallet Balance: ${totalWalletBalance}
+Total Goal Savings: ${totalGoalSavings}
+Total Asset Value (Current): ${totalAssetValue}
+Total Asset Purchase Value: ${totalAssetPurchaseValue}
+Total Capital Gain/Loss: ${totalAssetValue - totalAssetPurchaseValue}
+Total Debts Remaining: ${totalDebtRemaining}
+Total Receivables (Piutang): ${totalReceivableRemaining}
+Monthly Income (Projected): ${totalMonthlyIncome}
+Monthly Fixed Expenses: ${totalMonthlyFixedExpenses}
+Monthly Disposable (Income - Fixed): ${totalMonthlyIncome - totalMonthlyFixedExpenses}
+
+=== WALLETS ===
 ${JSON.stringify(wallets)}
 
-Available Categories with monthly spending and budget limits (JSON):
+=== CATEGORIES (with monthly spending & budget limits) ===
 ${JSON.stringify(categoriesWithSpending)}
 
-Available Goals (JSON):
+=== GOALS ===
 ${JSON.stringify(goalsList)}
 
-Recent Active Transactions (JSON):
+=== ASSETS (Investments, Property, Gold, Vehicles, etc.) ===
+${JSON.stringify(assetsList)}
+
+=== ACTIVE DEBTS & RECEIVABLES ===
+${JSON.stringify(debtsList)}
+
+=== FIXED EXPENSES (Monthly Bills) ===
+${JSON.stringify(fixedExpensesList)}
+
+=== INCOME SOURCES ===
+${JSON.stringify(incomeSourcesList)}
+
+=== RECENT ACTIVE TRANSACTIONS ===
 ${JSON.stringify(recentJournalsText)}
 
 Determine the user's intent from the following options. Return ONLY a valid JSON.
 
-1. If the user wants to ASK A QUESTION, request financial analysis, ask about balances, or request tips/insights:
-   - Perform the analysis based on the provided wallets, categories (with limits & spending), and recent transactions.
-   - For example: "berapa saldo BCA?", "boros di mana bulan ini?", "total pengeluaran makan?", "analisis pola belanja".
+1. If the user wants to ASK A QUESTION, request financial analysis, ask about balances, net worth, assets, debts, fixed expenses, income, or request tips/insights:
+   - Perform the analysis based on ALL provided data: wallets, categories, goals, assets, debts, fixed expenses, income sources, recent transactions, and the Financial Snapshot.
+   - You can answer questions like: "berapa net worth saya?", "capital gain aset saya?", "utang saya yang paling dekat jatuh tempo?", "total tagihan bulan ini?", "saldo BCA?", "boros di mana bulan ini?", "total pengeluaran makan?", "analisis pola belanja", "kapan utang saya lunas?", "berapa disposable income saya?", "aset mana yang paling untung?", "siapa yang masih utang ke saya?"
+   - For net worth questions, break it down: Wallets + Goal Savings + Assets + Receivables - Debts.
+   - For asset questions, include capital gain/loss percentages.
+   - For debt questions, include due dates and remaining amounts.
+   - For budget questions, compare income vs fixed expenses vs actual spending.
    - Return ONLY this structure:
      {
        "action": "answer",
@@ -322,6 +405,39 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
          "walletId": "uuid-of-wallet", // resolved UUID of wallet if mentioned, or default to first wallet UUID
          "date": "2024-05-18T12:00:00.000Z"
        }
+     }
+
+6. If the user wants to CREATE A NEW DEBT or RECEIVABLE (e.g., "pinjam uang 500rb ke Andi", "Budi utang 1jt ke saya", "catat utang 2jt dari Bank", "saya pinjamkan 300rb ke Siti"):
+   - Determine type: "DEBT" if the user borrows money, "RECEIVABLE" if the user lends money to someone.
+   - Return ONLY this structure:
+     {
+       "action": "create_debt",
+       "title": "Descriptive title, e.g. Pinjaman dari Andi",
+       "type": "DEBT", // or "RECEIVABLE"
+       "contact": "Andi", // the other party's name
+       "amount": 500000, // the total debt amount as positive number
+       "dueDate": "2024-06-18T00:00:00.000Z", // ISO string if mentioned, else null
+       "interestRate": 0, // annual interest rate if mentioned, else 0
+       "notes": "Via AI Chat",
+       "walletId": "uuid-of-wallet" // resolved wallet UUID if user mentions where the money comes from/goes to, else null
+     }
+
+7. If the user wants to PAY/CICIL an existing debt or receive payment on a receivable (e.g., "bayar utang Andi 200rb dari BCA", "Budi bayar piutang 500rb", "cicil utang bank 1jt"):
+   - Match the debt from the "Active Debts & Receivables" list.
+   - Return ONLY this structure:
+     {
+       "action": "pay_debt",
+       "debtId": "the-matched-debt-uuid",
+       "debtTitle": "the-matched-debt-title",
+       "contact": "the contact name",
+       "amount": 200000, // the payment amount
+       "walletId": "uuid-of-wallet", // resolved wallet UUID for payment source/destination
+       "walletName": "wallet name"
+     }
+   - If debt not found:
+     {
+       "action": "debt_not_found",
+       "message": "Hutang/piutang tidak ditemukan di daftar aktif."
      }`;
 
     let rawText = '';

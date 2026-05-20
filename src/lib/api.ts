@@ -244,8 +244,8 @@ export const toolsApi = {
     method: 'POST',
     body: JSON.stringify({ imageBase64, mimeType })
   }),
-  chatEntry: (text: string, wallets: any[], categories: any[], goals: any[], currentDate: string) => request<any>('/chat-entry', {
+  chatEntry: (text: string, wallets: any[], categories: any[], goals: any[], currentDate: string, extras?: { assets?: any[], debts?: any[], fixedExpenses?: any[], incomeSources?: any[] }) => request<any>('/chat-entry', {
     method: 'POST',
-    body: JSON.stringify({ text, wallets, categories, goals, currentDate })
+    body: JSON.stringify({ text, wallets, categories, goals, currentDate, ...extras })
   }),
 };

@@ -17,7 +17,9 @@ import {
   Mic,
   MicOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  HandCoins,
+  CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -35,7 +37,7 @@ interface ChatMessage {
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language, user } = useApp();
+  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language, user, assets, debts, addDebt, payDebt, budget } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -222,7 +224,13 @@ export default function AIChatAssistant() {
         wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
         categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
         goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
-        new Date().toISOString()
+        new Date().toISOString(),
+        {
+          assets: assets.map(a => ({ id: a.id, name: a.name, type: a.type, purchasePrice: a.purchasePrice, currentPrice: a.currentPrice })),
+          debts: debts.map(d => ({ id: d.id, title: d.title, type: d.type, contact: d.contact, amount: d.amount, remainingAmount: d.remainingAmount, dueDate: d.dueDate, interestRate: d.interestRate, status: d.status })),
+          fixedExpenses: budget.fixedExpenses.map(fe => ({ name: fe.name, amount: fe.amount, dueDate: fe.dueDate, status: fe.status, lastPaid: fe.lastPaid })),
+          incomeSources: budget.incomeSources.map(is => ({ name: is.name, amount: is.amount }))
+        }
       );
 
       // Prepend receipt scanning success text
@@ -354,7 +362,13 @@ export default function AIChatAssistant() {
         wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
         categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
         goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
-        new Date().toISOString()
+        new Date().toISOString(),
+        {
+          assets: assets.map(a => ({ id: a.id, name: a.name, type: a.type, purchasePrice: a.purchasePrice, currentPrice: a.currentPrice })),
+          debts: debts.map(d => ({ id: d.id, title: d.title, type: d.type, contact: d.contact, amount: d.amount, remainingAmount: d.remainingAmount, dueDate: d.dueDate, interestRate: d.interestRate, status: d.status })),
+          fixedExpenses: budget.fixedExpenses.map(fe => ({ name: fe.name, amount: fe.amount, dueDate: fe.dueDate, status: fe.status, lastPaid: fe.lastPaid })),
+          incomeSources: budget.incomeSources.map(is => ({ name: is.name, amount: is.amount }))
+        }
       );
 
       let spokenText = "";
@@ -424,6 +438,47 @@ export default function AIChatAssistant() {
             timestamp: new Date(),
             parsedData: data,
             status: 'pending'
+          }
+        ]);
+      } else if (data.action === 'create_debt') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi pencatatan ${data.type === 'DEBT' ? 'hutang' : 'piutang'} baru. Apakah Anda ingin mencatatnya?`
+          : `I detected a new ${data.type === 'DEBT' ? 'debt' : 'receivable'} entry. Would you like to record it?`;
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: spokenText,
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      } else if (data.action === 'pay_debt') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi pembayaran ${data.debtTitle ? `"${data.debtTitle}"` : 'hutang/piutang'}. Apakah Anda ingin memprosesnya?`
+          : `I detected a payment for ${data.debtTitle ? `"${data.debtTitle}"` : 'debt/receivable'}. Would you like to process it?`;
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: spokenText,
+            timestamp: new Date(),
+            parsedData: data,
+            status: 'pending'
+          }
+        ]);
+      } else if (data.action === 'debt_not_found') {
+        spokenText = data.message || (language === 'id' ? "Hutang/piutang tidak ditemukan." : "Debt/receivable not found.");
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: spokenText,
+            timestamp: new Date()
           }
         ]);
       } else {
@@ -607,7 +662,7 @@ export default function AIChatAssistant() {
         } else {
           addToast(language === 'id' ? 'Kategori berhasil dibuat!' : 'Category created!', 'success');
         }
-      } else {
+      } else if (!parsedData.action || parsedData.action === 'create') {
         // Create transaction
         addJournal({
           description: parsedData.description,
@@ -637,6 +692,64 @@ export default function AIChatAssistant() {
             timestamp: new Date()
           }
         ]);
+        addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transaction recorded!', 'success');
+      } else if (parsedData.action === 'create_debt') {
+        // Create debt/receivable
+        await addDebt({
+          title: parsedData.title,
+          type: parsedData.type,
+          contact: parsedData.contact,
+          amount: parsedData.amount,
+          dueDate: parsedData.dueDate || undefined,
+          interestRate: parsedData.interestRate || 0,
+          notes: parsedData.notes || 'Via AI Chat',
+          walletId: parsedData.walletId || undefined
+        });
+
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        const debtLabel = parsedData.type === 'DEBT'
+          ? (language === 'id' ? 'Hutang' : 'Debt')
+          : (language === 'id' ? 'Piutang' : 'Receivable');
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `${debtLabel} "${parsedData.title}" sebesar ${formatCurrency(parsedData.amount)} ke ${parsedData.contact} berhasil dicatat! 📝`
+              : `${debtLabel} "${parsedData.title}" of ${formatCurrency(parsedData.amount)} with ${parsedData.contact} has been recorded! 📝`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? `${debtLabel} dicatat!` : `${debtLabel} recorded!`, 'success');
+      } else if (parsedData.action === 'pay_debt') {
+        // Pay debt
+        await payDebt(parsedData.debtId, {
+          walletId: parsedData.walletId,
+          amount: parsedData.amount,
+          note: 'Paid via AI Chat'
+        });
+
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Pembayaran ${formatCurrency(parsedData.amount)} untuk "${parsedData.debtTitle}" berhasil diproses dari dompet ${parsedData.walletName}! 💰`
+              : `Payment of ${formatCurrency(parsedData.amount)} for "${parsedData.debtTitle}" has been processed from ${parsedData.walletName}! 💰`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Pembayaran berhasil!' : 'Payment successful!', 'success');
         addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transaction recorded!', 'success');
       }
     } catch (err) {
@@ -849,6 +962,8 @@ export default function AIChatAssistant() {
                           "w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border transition-all",
                           msg.parsedData.action === 'delete' ? "border-error/30" : 
                           msg.parsedData.action === 'allocate_goal' ? "border-success/30" : 
+                          msg.parsedData.action === 'create_debt' ? "border-amber-500/30" :
+                          msg.parsedData.action === 'pay_debt' ? "border-primary/30" :
                           msg.parsedData.duplicateAlert ? "border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : 
                           msg.parsedData.budgetAlert ? "border-error/30" : 
                           "border-secondary/25"
@@ -859,6 +974,8 @@ export default function AIChatAssistant() {
                             "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
                             msg.parsedData.action === 'delete' ? "text-error" : 
                             msg.parsedData.action === 'allocate_goal' ? "text-success" : 
+                            msg.parsedData.action === 'create_debt' ? "text-amber-500" :
+                            msg.parsedData.action === 'pay_debt' ? "text-primary" :
                             msg.parsedData.duplicateAlert ? "text-amber-500" : 
                             "text-secondary"
                           )}>
@@ -871,6 +988,16 @@ export default function AIChatAssistant() {
                               <>
                                 <Sparkles size={12} className="text-success" />
                                 {language === 'id' ? 'MENABUNG KE GOAL' : 'SAVE TO GOAL'}
+                              </>
+                            ) : msg.parsedData.action === 'create_debt' ? (
+                              <>
+                                <HandCoins size={12} />
+                                {msg.parsedData.type === 'DEBT' ? (language === 'id' ? 'CATAT HUTANG' : 'RECORD DEBT') : (language === 'id' ? 'CATAT PIUTANG' : 'RECORD RECEIVABLE')}
+                              </>
+                            ) : msg.parsedData.action === 'pay_debt' ? (
+                              <>
+                                <CreditCard size={12} />
+                                {language === 'id' ? 'BAYAR HUTANG' : 'PAY DEBT'}
                               </>
                             ) : (
                               <>
@@ -888,6 +1015,10 @@ export default function AIChatAssistant() {
                           <p className="font-semibold text-on-surface">
                             {msg.parsedData.action === 'allocate_goal' 
                               ? `${language === 'id' ? 'Menabung untuk' : 'Saving for'} "${msg.parsedData.goalName}"` 
+                              : msg.parsedData.action === 'create_debt'
+                              ? `${msg.parsedData.title} — ${msg.parsedData.contact}`
+                              : msg.parsedData.action === 'pay_debt'
+                              ? `${language === 'id' ? 'Pembayaran' : 'Payment'} "${msg.parsedData.debtTitle}" — ${msg.parsedData.contact}`
                               : msg.parsedData.description}
                           </p>
                           
