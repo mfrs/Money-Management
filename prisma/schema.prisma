@@ -72,6 +72,7 @@ model Category {
 
 model Journal {
   id          String   @id @default(cuid())
+  seqId       Int      @default(autoincrement()) @unique
   date        DateTime
   description String
   note        String   @default("")

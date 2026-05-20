@@ -89,6 +89,7 @@ export default function TransactionsView() {
 
       return {
         id: j.id,
+        seqId: j.seqId,
         description: j.description,
         note: j.note,
         date: j.date,
@@ -130,6 +131,7 @@ export default function TransactionsView() {
         const wallet = getWalletById(t.walletId);
         return (
           t.id.toLowerCase().includes(q) ||
+          String(t.seqId || '').includes(q) ||
           t.description.toLowerCase().includes(q) ||
           t.note.toLowerCase().includes(q) ||
           cat?.name.toLowerCase().includes(q) ||
@@ -294,6 +296,7 @@ export default function TransactionsView() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em]">
+                <th className="px-6 lg:px-10 py-5 lg:py-6">Tx ID</th>
                 <th className="px-6 lg:px-10 py-5 lg:py-6">Date</th>
                 <th className="px-6 lg:px-10 py-5 lg:py-6">Description</th>
                 <th className="px-6 lg:px-10 py-5 lg:py-6 hidden lg:table-cell">Category</th>
@@ -335,6 +338,9 @@ export default function TransactionsView() {
                           : "hover:bg-on-surface/[0.04]"
                     )}
                   >
+                    <td className="px-6 lg:px-10 py-5 lg:py-7 text-xs font-bold text-on-surface font-mono tracking-tighter uppercase whitespace-nowrap">
+                      TX-{tx.seqId || 'N/A'}
+                    </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7 text-xs font-bold text-on-surface/30 uppercase tracking-widest tabular-nums whitespace-nowrap">
                       {formatDate(tx.date)}
                     </td>
@@ -375,7 +381,7 @@ export default function TransactionsView() {
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest font-mono">
-                              ID: {tx.id}
+                              ID: TX-{tx.seqId || 'N/A'}
                             </span>
                             <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest">{categoryName}</span>
                           </div>

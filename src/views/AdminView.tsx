@@ -324,7 +324,9 @@ export default function AdminView() {
                       .filter(j => {
                         if (!txSearchQuery.trim()) return true;
                         const query = txSearchQuery.toLowerCase();
-                        return j.id.toLowerCase().includes(query) || j.description.toLowerCase().includes(query);
+                        return j.id.toLowerCase().includes(query) || 
+                               String(j.seqId || '').includes(query) ||
+                               j.description.toLowerCase().includes(query);
                       })
                       .map(j => {
                         const debit = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
@@ -374,7 +376,7 @@ export default function AdminView() {
                                   </div>
                                   <div className="flex flex-wrap items-center gap-2 mt-1">
                                     <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest font-mono">
-                                      ID: {j.id}
+                                      ID: TX-{j.seqId || 'N/A'}
                                     </span>
                                     <span className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest">
                                       {new Date(j.date).toLocaleDateString()} • {j.lines.length} Ledger Lines

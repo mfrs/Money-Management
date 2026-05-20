@@ -32,6 +32,7 @@ export interface JournalLine {
 
 export interface Journal {
   id: string;
+  seqId?: number;
   description: string;
   date: string;
   note: string;
