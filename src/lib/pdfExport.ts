@@ -2,304 +2,181 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatCurrencyShort } from './types';
 
-// ─── Color Constants ───
-const COLORS = {
-  darkBg: [15, 15, 25] as [number, number, number],
-  cardBg: [25, 25, 40] as [number, number, number],
-  headerBg: [35, 35, 55] as [number, number, number],
-  primary: [59, 130, 246] as [number, number, number],
-  secondary: [99, 102, 241] as [number, number, number],
-  white: [255, 255, 255] as [number, number, number],
-  lightGray: [180, 180, 200] as [number, number, number],
-  mutedGray: [120, 120, 145] as [number, number, number],
-  green: [34, 197, 94] as [number, number, number],
-  red: [239, 68, 68] as [number, number, number],
-  amber: [245, 158, 11] as [number, number, number],
-  divider: [45, 45, 65] as [number, number, number],
+// ─── Color Palette (Professional Light Theme for PDF) ───
+type RGB = [number, number, number];
+
+const C = {
+  // Backgrounds
+  white:      [255, 255, 255] as RGB,
+  pageBg:     [248, 249, 252] as RGB,
+  cardBg:     [255, 255, 255] as RGB,
+  headerBg:   [17, 24, 39] as RGB,
+  tableHead:  [30, 41, 59] as RGB,
+  tableRow1:  [248, 250, 252] as RGB,
+  tableRow2:  [241, 245, 249] as RGB,
+  // Accents
+  primary:    [59, 130, 246] as RGB,
+  primaryDk:  [37, 99, 235] as RGB,
+  secondary:  [99, 102, 241] as RGB,
+  green:      [22, 163, 74] as RGB,
+  greenBg:    [220, 252, 231] as RGB,
+  red:        [220, 38, 38] as RGB,
+  redBg:      [254, 226, 226] as RGB,
+  amber:      [217, 119, 6] as RGB,
+  amberBg:    [254, 243, 199] as RGB,
+  // Text
+  textDark:   [15, 23, 42] as RGB,
+  textBody:   [51, 65, 85] as RGB,
+  textMuted:  [100, 116, 139] as RGB,
+  textLight:  [148, 163, 184] as RGB,
+  // Borders
+  border:     [226, 232, 240] as RGB,
+  borderLight:[241, 245, 249] as RGB,
 };
 
-const PAGE_MARGIN = 20;
-const CONTENT_WIDTH_A4 = 210 - PAGE_MARGIN * 2; // 170mm
+const PAGE_W = 210;
+const PAGE_H = 297;
+const M = 16; // margin
+const CW = PAGE_W - M * 2; // content width = 178mm
 
-// ─── Utility Helpers ───
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
 
-function addPageBackground(pdf: jsPDF) {
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  pdf.setFillColor(...COLORS.darkBg);
-  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+function drawPageBg(pdf: jsPDF) {
+  pdf.setFillColor(...C.pageBg);
+  pdf.rect(0, 0, PAGE_W, PAGE_H, 'F');
 }
 
-function drawRoundedRect(
-  pdf: jsPDF,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-  fillColor: [number, number, number]
-) {
-  pdf.setFillColor(...fillColor);
-  pdf.roundedRect(x, y, w, h, r, r, 'F');
+function newPageWithBg(pdf: jsPDF): number {
+  pdf.addPage();
+  drawPageBg(pdf);
+  return M + 5;
 }
 
-function ensureSpace(pdf: jsPDF, currentY: number, needed: number): number {
-  if (currentY + needed > pdf.internal.pageSize.getHeight() - 20) {
-    pdf.addPage();
-    addPageBackground(pdf);
-    return PAGE_MARGIN + 10;
-  }
-  return currentY;
-}
-
-// ─── Report Header ───
-
-function drawReportHeader(
-  pdf: jsPDF,
-  title: string,
-  subtitle: string,
-  dateStr: string
-): number {
-  let y = PAGE_MARGIN;
-
-  // Title
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(22);
-  pdf.setTextColor(...COLORS.white);
-  pdf.text(title.toUpperCase(), PAGE_MARGIN, y + 8);
-  y += 14;
-
-  // Subtitle
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  pdf.setTextColor(...COLORS.mutedGray);
-  pdf.text(subtitle, PAGE_MARGIN, y + 4);
-
-  // Date on the right
-  pdf.setFontSize(9);
-  pdf.setTextColor(...COLORS.lightGray);
-  const dateWidth = pdf.getTextWidth(dateStr);
-  pdf.text(dateStr, 210 - PAGE_MARGIN - dateWidth, PAGE_MARGIN + 8);
-
-  y += 10;
-
-  // Divider line
-  pdf.setDrawColor(...COLORS.divider);
-  pdf.setLineWidth(0.3);
-  pdf.line(PAGE_MARGIN, y, 210 - PAGE_MARGIN, y);
-
-  return y + 8;
-}
-
-// ─── Metric Cards ───
-
-function drawMetricCards(
-  pdf: jsPDF,
-  y: number,
-  metrics: { label: string; value: string; sub: string }[]
-): number {
-  y = ensureSpace(pdf, y, 35);
-  const cardWidth = (CONTENT_WIDTH_A4 - 8) / 3;
-  const cardHeight = 30;
-
-  metrics.forEach((metric, i) => {
-    const x = PAGE_MARGIN + i * (cardWidth + 4);
-    drawRoundedRect(pdf, x, y, cardWidth, cardHeight, 3, COLORS.cardBg);
-
-    // Border
-    pdf.setDrawColor(...COLORS.divider);
-    pdf.setLineWidth(0.2);
-    pdf.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'S');
-
-    // Label
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.mutedGray);
-    pdf.text(metric.label.toUpperCase(), x + 8, y + 10);
-
-    // Value
-    pdf.setFontSize(14);
-    pdf.setTextColor(...COLORS.white);
-    pdf.text(metric.value, x + 8, y + 20);
-
-    // Sub
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.primary);
-    pdf.text(metric.sub, x + 8, y + 26);
-  });
-
-  return y + cardHeight + 8;
-}
-
-// ─── Section Title ───
-
-function drawSectionTitle(pdf: jsPDF, y: number, title: string): number {
-  y = ensureSpace(pdf, y, 15);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(13);
-  pdf.setTextColor(...COLORS.white);
-  pdf.text(title.toUpperCase(), PAGE_MARGIN, y + 5);
-
-  pdf.setDrawColor(...COLORS.primary);
-  pdf.setLineWidth(0.8);
-  pdf.line(PAGE_MARGIN, y + 8, PAGE_MARGIN + 30, y + 8);
-
-  return y + 16;
-}
-
-// ─── Breakdown Bars ───
-
-function drawBreakdownBars(
-  pdf: jsPDF,
-  y: number,
-  items: { name: string; amount: string; progress: number; color: string }[]
-): number {
-  if (items.length === 0) return y;
-
-  y = ensureSpace(pdf, y, items.length * 14 + 10);
-  drawRoundedRect(pdf, PAGE_MARGIN, y, CONTENT_WIDTH_A4, items.length * 14 + 10, 4, COLORS.cardBg);
-
-  let iy = y + 8;
-  items.forEach((item) => {
-    // Name
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(...COLORS.white);
-    pdf.text(item.name, PAGE_MARGIN + 8, iy);
-
-    // Amount
-    pdf.setTextColor(...COLORS.lightGray);
-    const amountWidth = pdf.getTextWidth(item.amount);
-    pdf.text(item.amount, 210 - PAGE_MARGIN - 8 - amountWidth, iy);
-
-    // Progress bar
-    const barY = iy + 2;
-    const barWidth = CONTENT_WIDTH_A4 - 16;
-    pdf.setFillColor(40, 40, 60);
-    pdf.roundedRect(PAGE_MARGIN + 8, barY, barWidth, 2.5, 1, 1, 'F');
-
-    // Parse color string to RGB
-    const rgb = hexToRgb(item.color) || COLORS.primary;
-    pdf.setFillColor(...rgb);
-    const fillWidth = Math.max(2, (item.progress / 100) * barWidth);
-    pdf.roundedRect(PAGE_MARGIN + 8, barY, fillWidth, 2.5, 1, 1, 'F');
-
-    iy += 14;
-  });
-
-  return iy + 4;
-}
-
-function hexToRgb(hex: string): [number, number, number] | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
-    : null;
-}
-
-// ─── Insights ───
-
-function drawInsights(
-  pdf: jsPDF,
-  y: number,
-  insights: { title: string; text: string; positive: boolean }[]
-): number {
-  if (insights.length === 0) return y;
-
-  for (const insight of insights) {
-    y = ensureSpace(pdf, y, 22);
-    const color = insight.positive ? COLORS.green : COLORS.red;
-    const bgColor: [number, number, number] = insight.positive ? [20, 40, 30] : [45, 20, 20];
-
-    drawRoundedRect(pdf, PAGE_MARGIN, y, CONTENT_WIDTH_A4, 18, 3, bgColor);
-
-    // Indicator dot
-    pdf.setFillColor(...color);
-    pdf.circle(PAGE_MARGIN + 8, y + 7, 2, 'F');
-
-    // Title
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(...color);
-    pdf.text(insight.title.toUpperCase(), PAGE_MARGIN + 14, y + 8);
-
-    // Text (wrap)
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.lightGray);
-    const lines = pdf.splitTextToSize(insight.text, CONTENT_WIDTH_A4 - 24);
-    pdf.text(lines, PAGE_MARGIN + 14, y + 14);
-
-    y += 22;
+function ensureSpace(pdf: jsPDF, y: number, needed: number): number {
+  if (y + needed > PAGE_H - 20) {
+    return newPageWithBg(pdf);
   }
   return y;
 }
 
-// ─── Chart Data as Mini-Table ───
-
-function drawChartTable(
-  pdf: jsPDF,
-  y: number,
-  chartData: { name: string; income: number; expenses: number }[],
-  lang: string
-): number {
-  y = ensureSpace(pdf, y, 30);
-
-  const head = [[
-    lang === 'id' ? 'BULAN' : 'MONTH',
-    lang === 'id' ? 'PEMASUKAN' : 'INCOME',
-    lang === 'id' ? 'PENGELUARAN' : 'EXPENSES',
-    lang === 'id' ? 'SELISIH' : 'NET'
-  ]];
-
-  const body = chartData.map((d) => [
-    d.name,
-    formatCurrency(d.income),
-    formatCurrency(d.expenses),
-    formatCurrency(d.income - d.expenses),
-  ]);
-
-  autoTable(pdf, {
-    startY: y,
-    head,
-    body,
-    theme: 'plain',
-    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
-    styles: {
-      font: 'helvetica',
-      fontSize: 8,
-      textColor: COLORS.lightGray,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
-      lineWidth: 0,
-    },
-    headStyles: {
-      fillColor: COLORS.headerBg,
-      textColor: COLORS.mutedGray,
-      fontStyle: 'bold',
-      fontSize: 7,
-    },
-    bodyStyles: {
-      fillColor: COLORS.cardBg,
-    },
-    alternateRowStyles: {
-      fillColor: [30, 30, 48],
-    },
-    columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      3: { halign: 'right' },
-    },
-    didDrawPage: () => {
-      addPageBackground(pdf);
-    },
-  });
-
-  return (pdf as any).lastAutoTable.finalY + 8;
+function hexToRgb(hex: string): RGB {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : C.primary;
 }
 
-// ═════════════════════════════════════════════════
-// PUBLIC: Export Analytics Report
-// ═════════════════════════════════════════════════
+// ─── Reusable drawing primitives ───
+
+function drawRoundedCard(pdf: jsPDF, x: number, y: number, w: number, h: number, opts?: { fill?: RGB; border?: RGB; shadow?: boolean }) {
+  const fill = opts?.fill || C.cardBg;
+  const border = opts?.border || C.border;
+  const r = 3;
+
+  // Subtle depth via slightly darker bottom-right border
+  if (opts?.shadow !== false) {
+    pdf.setFillColor(200, 205, 215);
+    pdf.roundedRect(x + 0.3, y + 0.5, w, h, r, r, 'F');
+  }
+
+  pdf.setFillColor(...fill);
+  pdf.roundedRect(x, y, w, h, r, r, 'F');
+  pdf.setDrawColor(...border);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(x, y, w, h, r, r, 'S');
+}
+
+function drawHeaderBanner(pdf: jsPDF, title: string, subtitle: string, dateStr: string, appName?: string): number {
+  // Dark banner
+  const bannerH = 36;
+  pdf.setFillColor(...C.headerBg);
+  pdf.rect(0, 0, PAGE_W, bannerH, 'F');
+
+  // Accent line
+  pdf.setFillColor(...C.primary);
+  pdf.rect(0, bannerH, PAGE_W, 1.2, 'F');
+
+  // App name / brand
+  const brand = appName || 'STASHLY';
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(brand, M, 10);
+
+  // Title
+  pdf.setFontSize(18);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(title, M, 22);
+
+  // Subtitle
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(180, 190, 210);
+  pdf.text(subtitle, M, 30);
+
+  // Date on right
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.setTextColor(180, 190, 210);
+  const dw = pdf.getTextWidth(dateStr);
+  pdf.text(dateStr, PAGE_W - M - dw, 22);
+
+  return bannerH + 1.2 + 10; // y after banner + spacing
+}
+
+function drawSectionHeader(pdf: jsPDF, y: number, title: string, accentColor?: RGB): number {
+  y = ensureSpace(pdf, y, 14);
+  const color = accentColor || C.primary;
+
+  // Accent bar
+  pdf.setFillColor(...color);
+  pdf.rect(M, y, 3, 8, 'F');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(11);
+  pdf.setTextColor(...C.textDark);
+  pdf.text(title, M + 7, y + 6);
+
+  return y + 14;
+}
+
+function drawFooter(pdf: jsPDF, lang: string) {
+  const totalPages = pdf.getNumberOfPages();
+  const now = new Date().toLocaleString(lang === 'id' ? 'id-ID' : 'en-GB');
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    // Separator line
+    pdf.setDrawColor(...C.border);
+    pdf.setLineWidth(0.3);
+    pdf.line(M, PAGE_H - 16, PAGE_W - M, PAGE_H - 16);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(...C.textLight);
+    pdf.text(`${lang === 'id' ? 'Dibuat' : 'Generated'}: ${now}`, M, PAGE_H - 11);
+
+    const pg = `${lang === 'id' ? 'Halaman' : 'Page'} ${i} / ${totalPages}`;
+    const pw = pdf.getTextWidth(pg);
+    pdf.text(pg, PAGE_W - M - pw, PAGE_H - 11);
+  }
+}
+
+// Helper for autoTable: only add bg on NEW pages created by the table
+function makePageBgHook(pdf: jsPDF) {
+  const startPage = pdf.getNumberOfPages();
+  return {
+    willDrawPage: () => {
+      const cur = pdf.getNumberOfPages();
+      if (cur > startPage) {
+        drawPageBg(pdf);
+      }
+    },
+  };
+}
+
+// ════════════════════════════════════════════════════
+// ANALYTICS REPORT
+// ════════════════════════════════════════════════════
 
 export interface AnalyticsReportData {
   totalIncome: number;
@@ -314,82 +191,256 @@ export interface AnalyticsReportData {
 }
 
 export function exportAnalyticsReport(data: AnalyticsReportData) {
-  const { language: lang } = data;
+  const lang = data.language;
   const pdf = new jsPDF('p', 'mm', 'a4');
-  addPageBackground(pdf);
+  drawPageBg(pdf);
 
-  const title = lang === 'id' ? 'Laporan Keuangan' : 'Financial Report';
-  const subtitle = lang === 'id'
-    ? 'Analitik distribusi keuangan dan pola pengeluaran'
-    : 'Analytics breakdown of financial distribution and spending patterns';
   const dateStr = new Date().toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  let y = drawReportHeader(pdf, title, subtitle, dateStr);
+  let y = drawHeaderBanner(
+    pdf,
+    lang === 'id' ? 'LAPORAN KEUANGAN' : 'FINANCIAL REPORT',
+    lang === 'id' ? 'Analitik distribusi keuangan dan pola pengeluaran' : 'Analytics breakdown of financial distribution and spending patterns',
+    dateStr,
+  );
 
-  // ─ Metrics ─
+  // ── Metric Cards ──
   const savings = Math.max(0, data.totalIncome - data.totalExpenses);
   const savingsRate = data.totalIncome > 0
-    ? `${Math.round(((data.totalIncome - data.totalExpenses) / data.totalIncome) * 100)}%`
-    : '0%';
+    ? Math.round(((data.totalIncome - data.totalExpenses) / data.totalIncome) * 100)
+    : 0;
 
-  y = drawMetricCards(pdf, y, [
+  const metrics = [
     {
-      label: lang === 'id' ? 'Total Tabungan' : 'Total Savings',
+      label: lang === 'id' ? 'TOTAL TABUNGAN' : 'TOTAL SAVINGS',
       value: formatCurrency(savings),
-      sub: savingsRate,
+      badge: `${savingsRate}%`,
+      badgeColor: savingsRate >= 20 ? C.green : C.amber,
+      badgeBg: savingsRate >= 20 ? C.greenBg : C.amberBg,
+      accent: C.primary,
     },
     {
-      label: lang === 'id' ? 'Tingkat Konsumsi Harian' : 'Daily Burn Rate',
+      label: lang === 'id' ? 'KONSUMSI HARIAN' : 'DAILY BURN RATE',
       value: formatCurrencyShort(data.burnRate),
-      sub: lang === 'id' ? '/hari' : '/day',
+      badge: lang === 'id' ? '/hari' : '/day',
+      badgeColor: C.textMuted,
+      badgeBg: C.borderLight,
+      accent: C.secondary,
     },
     {
-      label: lang === 'id' ? 'Kekayaan Bersih' : 'Net Worth',
+      label: lang === 'id' ? 'KEKAYAAN BERSIH' : 'NET WORTH',
       value: formatCurrency(data.totalBalance),
-      sub: `${data.txCount} ${lang === 'id' ? 'transaksi' : 'transactions'}`,
+      badge: `${data.txCount} txns`,
+      badgeColor: C.textMuted,
+      badgeBg: C.borderLight,
+      accent: [22, 163, 74] as RGB,
     },
+  ];
+
+  const cardW = (CW - 8) / 3;
+  const cardH = 32;
+  metrics.forEach((m, i) => {
+    const x = M + i * (cardW + 4);
+    drawRoundedCard(pdf, x, y, cardW, cardH);
+
+    // Top accent line
+    pdf.setFillColor(...m.accent);
+    pdf.rect(x + 6, y + 1, 20, 1.5, 'F');
+
+    // Label
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(...C.textMuted);
+    pdf.text(m.label, x + 6, y + 10);
+
+    // Value
+    pdf.setFontSize(13);
+    pdf.setTextColor(...C.textDark);
+    pdf.text(m.value, x + 6, y + 20);
+
+    // Badge
+    const bw = pdf.getTextWidth(m.badge) + 6;
+    pdf.setFillColor(...m.badgeBg);
+    pdf.roundedRect(x + 6, y + 23, bw, 5, 1.5, 1.5, 'F');
+    pdf.setFontSize(6);
+    pdf.setTextColor(...m.badgeColor);
+    pdf.text(m.badge, x + 9, y + 26.5);
+  });
+
+  y += cardH + 10;
+
+  // ── Income vs Expenses Table ──
+  y = drawSectionHeader(pdf, y, lang === 'id' ? 'Pemasukan vs Pengeluaran' : 'Income vs Expenses');
+
+  const chartHead = [[
+    lang === 'id' ? 'BULAN' : 'MONTH',
+    lang === 'id' ? 'PEMASUKAN' : 'INCOME',
+    lang === 'id' ? 'PENGELUARAN' : 'EXPENSES',
+    lang === 'id' ? 'SELISIH' : 'NET',
+  ]];
+
+  const totalInc = data.chartData.reduce((s, d) => s + d.income, 0);
+  const totalExp = data.chartData.reduce((s, d) => s + d.expenses, 0);
+
+  const chartBody = data.chartData.map((d) => [
+    d.name,
+    formatCurrency(d.income),
+    formatCurrency(d.expenses),
+    formatCurrency(d.income - d.expenses),
   ]);
 
-  // ─ Income vs Expenses Table ─
-  y = drawSectionTitle(pdf, y, lang === 'id' ? 'Pemasukan vs Pengeluaran' : 'Income vs Expenses');
-  y = drawChartTable(pdf, y, data.chartData, lang);
+  // Summary row
+  chartBody.push([
+    lang === 'id' ? 'TOTAL' : 'TOTAL',
+    formatCurrency(totalInc),
+    formatCurrency(totalExp),
+    formatCurrency(totalInc - totalExp),
+  ]);
 
-  // ─ Expense Breakdown ─
-  y = drawSectionTitle(pdf, y, lang === 'id' ? 'Rincian Pengeluaran' : 'Expense Breakdown');
-  y = drawBreakdownBars(pdf, y, data.breakdown);
+  const hook1 = makePageBgHook(pdf);
 
-  // ─ Insights ─
-  y = drawSectionTitle(pdf, y, lang === 'id' ? 'Wawasan Cerdas' : 'Smart Insights');
-  y = drawInsights(pdf, y, data.insights);
+  autoTable(pdf, {
+    startY: y,
+    head: chartHead,
+    body: chartBody,
+    theme: 'grid',
+    margin: { left: M, right: M },
+    tableLineColor: C.border,
+    tableLineWidth: 0.2,
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      textColor: C.textBody,
+      cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+      lineColor: C.border,
+      lineWidth: 0.15,
+    },
+    headStyles: {
+      fillColor: C.tableHead,
+      textColor: [255, 255, 255] as RGB,
+      fontStyle: 'bold',
+      fontSize: 7.5,
+    },
+    bodyStyles: {
+      fillColor: C.white,
+    },
+    alternateRowStyles: {
+      fillColor: C.tableRow1,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 30 },
+      1: { halign: 'right' },
+      2: { halign: 'right' },
+      3: { halign: 'right', fontStyle: 'bold' },
+    },
+    willDrawCell: (hookData) => {
+      // Style the total row
+      if (hookData.section === 'body' && hookData.row.index === chartBody.length - 1) {
+        hookData.cell.styles.fillColor = C.tableHead;
+        hookData.cell.styles.textColor = [255, 255, 255];
+        hookData.cell.styles.fontStyle = 'bold';
+      }
+      // Color net column
+      if (hookData.section === 'body' && hookData.column.index === 3 && hookData.row.index < chartBody.length - 1) {
+        const d = data.chartData[hookData.row.index];
+        if (d) {
+          hookData.cell.styles.textColor = d.income - d.expenses >= 0 ? C.green : C.red;
+        }
+      }
+    },
+    ...hook1,
+  });
 
-  // ─ Footer ─
-  const totalPages = pdf.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    pdf.setPage(i);
-    const pageH = pdf.internal.pageSize.getHeight();
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.mutedGray);
-    pdf.text(
-      `${lang === 'id' ? 'Dibuat' : 'Generated'}: ${new Date().toLocaleString(lang === 'id' ? 'id-ID' : 'en-GB')}`,
-      PAGE_MARGIN,
-      pageH - 10,
-    );
-    const pageText = `${i} / ${totalPages}`;
-    const pw = pdf.getTextWidth(pageText);
-    pdf.text(pageText, 210 - PAGE_MARGIN - pw, pageH - 10);
+  y = (pdf as any).lastAutoTable.finalY + 10;
+
+  // ── Expense Breakdown ──
+  if (data.breakdown.length > 0) {
+    y = drawSectionHeader(pdf, y, lang === 'id' ? 'Rincian Pengeluaran' : 'Expense Breakdown');
+    y = ensureSpace(pdf, y, data.breakdown.length * 12 + 14);
+
+    drawRoundedCard(pdf, M, y, CW, data.breakdown.length * 12 + 10, { shadow: true });
+
+    let iy = y + 8;
+    data.breakdown.forEach((item) => {
+      // Name
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(...C.textDark);
+      pdf.text(item.name, M + 8, iy);
+
+      // Amount
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(...C.textMuted);
+      const aw = pdf.getTextWidth(item.amount);
+      pdf.text(item.amount, PAGE_W - M - 8 - aw, iy);
+
+      // Bar background
+      const barY = iy + 2;
+      const barW = CW - 16;
+      pdf.setFillColor(...C.borderLight);
+      pdf.roundedRect(M + 8, barY, barW, 2.5, 1, 1, 'F');
+
+      // Bar fill
+      const rgb = hexToRgb(item.color);
+      pdf.setFillColor(...rgb);
+      const fw = Math.max(3, (item.progress / 100) * barW);
+      pdf.roundedRect(M + 8, barY, fw, 2.5, 1, 1, 'F');
+
+      iy += 12;
+    });
+
+    y = iy + 6;
   }
+
+  // ── Smart Insights ──
+  if (data.insights.length > 0) {
+    y = drawSectionHeader(pdf, y, lang === 'id' ? 'Wawasan Cerdas' : 'Smart Insights', C.secondary);
+
+    for (const insight of data.insights) {
+      y = ensureSpace(pdf, y, 18);
+      const isGood = insight.positive;
+      const bgColor = isGood ? C.greenBg : C.redBg;
+      const textColor = isGood ? C.green : C.red;
+      const borderColor = isGood ? [187, 247, 208] as RGB : [254, 202, 202] as RGB;
+
+      drawRoundedCard(pdf, M, y, CW, 14, { fill: bgColor, border: borderColor, shadow: false });
+
+      // Icon indicator
+      pdf.setFillColor(...textColor);
+      pdf.circle(M + 8, y + 5.5, 1.8, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(5);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(isGood ? '✓' : '!', M + 7, y + 6.5);
+
+      // Title
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(...textColor);
+      pdf.text(insight.title, M + 14, y + 6);
+
+      // Text
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(...C.textBody);
+      const lines = pdf.splitTextToSize(insight.text, CW - 24);
+      pdf.text(lines.slice(0, 2), M + 14, y + 11);
+
+      y += 18;
+    }
+  }
+
+  // ── Footer ──
+  drawFooter(pdf, lang);
 
   pdf.save(`Stashly_Report_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-// ═════════════════════════════════════════════════
-// PUBLIC: Export Wallet Journal
-// ═════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// WALLET JOURNAL
+// ════════════════════════════════════════════════════
 
 export interface WalletJournalData {
   walletName: string;
@@ -405,19 +456,54 @@ export interface WalletJournalData {
 }
 
 export function exportWalletJournal(data: WalletJournalData) {
-  const { language: lang } = data;
+  const lang = data.language;
   const pdf = new jsPDF('p', 'mm', 'a4');
-  addPageBackground(pdf);
+  drawPageBg(pdf);
 
-  const title = lang === 'id' ? 'Mutasi Rekening' : 'Wallet Journal';
-  const subtitle = `${data.walletName} — ${lang === 'id' ? 'Buku Besar Dompet (Double-Entry)' : 'Double-Entry Wallet Ledger'}`;
   const dateStr = new Date().toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  let y = drawReportHeader(pdf, title, subtitle, dateStr);
+  let y = drawHeaderBanner(
+    pdf,
+    lang === 'id' ? 'MUTASI REKENING' : 'WALLET JOURNAL',
+    `${data.walletName} — ${lang === 'id' ? 'Buku Besar Dompet (Double-Entry)' : 'Double-Entry Wallet Ledger'}`,
+    dateStr,
+  );
+
+  // Summary card
+  const totalDebit = data.entries.reduce((s, e) => s + e.debit, 0);
+  const totalCredit = data.entries.reduce((s, e) => s + e.credit, 0);
+  const lastBalance = data.entries.length > 0 ? data.entries[0].runningBalance : 0;
+
+  const summaryW = (CW - 6) / 3;
+  const summaryItems = [
+    { label: lang === 'id' ? 'TOTAL MASUK' : 'TOTAL IN', value: formatCurrency(totalDebit), color: C.green },
+    { label: lang === 'id' ? 'TOTAL KELUAR' : 'TOTAL OUT', value: formatCurrency(totalCredit), color: C.red },
+    { label: lang === 'id' ? 'SALDO AKHIR' : 'ENDING BALANCE', value: formatCurrency(lastBalance), color: C.primary },
+  ];
+
+  summaryItems.forEach((item, i) => {
+    const x = M + i * (summaryW + 3);
+    drawRoundedCard(pdf, x, y, summaryW, 22);
+    // Top accent
+    pdf.setFillColor(...item.color);
+    pdf.rect(x + 6, y + 1, 16, 1.2, 'F');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6);
+    pdf.setTextColor(...C.textMuted);
+    pdf.text(item.label, x + 6, y + 9);
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(...C.textDark);
+    pdf.text(item.value, x + 6, y + 17);
+  });
+
+  y += 30;
+
+  // Table
+  y = drawSectionHeader(pdf, y, lang === 'id' ? 'Rincian Transaksi' : 'Transaction Details');
 
   const head = [[
     lang === 'id' ? 'TANGGAL' : 'DATE',
@@ -435,68 +521,54 @@ export function exportWalletJournal(data: WalletJournalData) {
     formatCurrency(e.runningBalance),
   ]);
 
+  const hook = makePageBgHook(pdf);
+
   autoTable(pdf, {
     startY: y,
     head,
     body,
-    theme: 'plain',
-    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+    theme: 'grid',
+    margin: { left: M, right: M },
+    tableLineColor: C.border,
+    tableLineWidth: 0.2,
     styles: {
       font: 'helvetica',
       fontSize: 8,
-      textColor: COLORS.lightGray,
+      textColor: C.textBody,
       cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
-      lineWidth: 0,
+      lineColor: C.border,
+      lineWidth: 0.15,
       overflow: 'linebreak',
     },
     headStyles: {
-      fillColor: COLORS.headerBg,
-      textColor: COLORS.mutedGray,
+      fillColor: C.tableHead,
+      textColor: [255, 255, 255] as RGB,
       fontStyle: 'bold',
       fontSize: 7,
     },
     bodyStyles: {
-      fillColor: COLORS.cardBg,
+      fillColor: C.white,
     },
     alternateRowStyles: {
-      fillColor: [30, 30, 48],
+      fillColor: C.tableRow1,
     },
     columnStyles: {
-      0: { cellWidth: 25 },
+      0: { cellWidth: 24, fontSize: 7 },
       1: { cellWidth: 'auto' },
-      2: { halign: 'right', cellWidth: 30 },
-      3: { halign: 'right', cellWidth: 30 },
-      4: { halign: 'right', cellWidth: 30, textColor: COLORS.primary, fontStyle: 'bold' },
+      2: { halign: 'right', cellWidth: 28, textColor: C.green },
+      3: { halign: 'right', cellWidth: 28, textColor: C.red },
+      4: { halign: 'right', cellWidth: 30, fontStyle: 'bold', textColor: C.primary },
     },
-    didDrawPage: () => {
-      addPageBackground(pdf);
-    },
+    ...hook,
   });
 
-  // Footer
-  const totalPages = pdf.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    pdf.setPage(i);
-    const pageH = pdf.internal.pageSize.getHeight();
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.mutedGray);
-    pdf.text(
-      `${lang === 'id' ? 'Dibuat' : 'Generated'}: ${new Date().toLocaleString(lang === 'id' ? 'id-ID' : 'en-GB')}`,
-      PAGE_MARGIN,
-      pageH - 10,
-    );
-    const pageText = `${i} / ${totalPages}`;
-    const pw = pdf.getTextWidth(pageText);
-    pdf.text(pageText, 210 - PAGE_MARGIN - pw, pageH - 10);
-  }
-
+  drawFooter(pdf, lang);
   pdf.save(`Stashly_WalletJournal_${data.walletName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-// ═════════════════════════════════════════════════
-// PUBLIC: Export Journal Detail
-// ═════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// JOURNAL DETAIL
+// ════════════════════════════════════════════════════
 
 export interface JournalDetailData {
   journalId: string;
@@ -515,86 +587,91 @@ export interface JournalDetailData {
 }
 
 export function exportJournalDetail(data: JournalDetailData) {
-  const { language: lang } = data;
+  const lang = data.language;
   const pdf = new jsPDF('p', 'mm', 'a4');
-  addPageBackground(pdf);
+  drawPageBg(pdf);
 
-  const title = lang === 'id' ? 'Detail Jurnal' : 'Journal Detail';
   const docNo = `JRN-${data.journalId.substring(data.journalId.length - 6).toUpperCase()}`;
-  const subtitle = `No. Doc: ${docNo}`;
   const dateStr = new Date(data.date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  let y = drawReportHeader(pdf, title, subtitle, dateStr);
+  let y = drawHeaderBanner(
+    pdf,
+    lang === 'id' ? 'DETAIL JURNAL' : 'JOURNAL DETAIL',
+    `No. Doc: ${docNo}`,
+    dateStr,
+  );
 
-  // ─ Info Card ─
+  // ── Info Grid ──
   const infoItems = [
     { label: lang === 'id' ? 'MATA UANG' : 'CURRENCY', value: 'IDR (Rupiah)' },
-    { label: lang === 'id' ? 'TGL. DOC' : 'DOC DATE', value: dateStr },
+    { label: lang === 'id' ? 'TGL. DOKUMEN' : 'DOC DATE', value: dateStr },
     {
       label: lang === 'id' ? 'TGL. DIINPUT' : 'INSERT DATE',
       value: data.createdAt
         ? new Date(data.createdAt).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          }) +
-          ' ' +
-          new Date(data.createdAt).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
+            day: 'numeric', month: 'short', year: 'numeric',
+          }) + ' ' + new Date(data.createdAt).toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-GB', {
+            hour: '2-digit', minute: '2-digit',
           })
         : '-',
     },
     { label: 'STATUS', value: 'POSTED' },
-    { label: lang === 'id' ? 'KODE VOUCHER' : 'VOUCHER CODE', value: data.journalId.substring(data.journalId.length - 8).toUpperCase() },
+    {
+      label: lang === 'id' ? 'KODE VOUCHER' : 'VOUCHER CODE',
+      value: data.journalId.substring(data.journalId.length - 8).toUpperCase(),
+    },
   ];
 
-  drawRoundedRect(pdf, PAGE_MARGIN, y, CONTENT_WIDTH_A4, 38, 4, COLORS.cardBg);
-  pdf.setDrawColor(...COLORS.divider);
-  pdf.setLineWidth(0.2);
-  pdf.roundedRect(PAGE_MARGIN, y, CONTENT_WIDTH_A4, 38, 4, 4, 'S');
+  const gridCardH = 36;
+  drawRoundedCard(pdf, M, y, CW, gridCardH);
 
-  const colWidth = CONTENT_WIDTH_A4 / 3;
+  // Draw info items in a 3-column grid
+  const colW = CW / 3;
   infoItems.forEach((item, idx) => {
     const col = idx % 3;
     const row = Math.floor(idx / 3);
-    const ix = PAGE_MARGIN + col * colWidth + 8;
-    const iy = y + 8 + row * 14;
+    const ix = M + col * colW + 8;
+    const iy = y + 9 + row * 14;
 
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(6.5);
-    pdf.setTextColor(...COLORS.mutedGray);
+    pdf.setFontSize(6);
+    pdf.setTextColor(...C.textLight);
     pdf.text(item.label, ix, iy);
 
-    pdf.setFontSize(8.5);
-    pdf.setTextColor(...COLORS.white);
-    pdf.text(item.value, ix, iy + 5);
+    pdf.setFontSize(9);
+    pdf.setTextColor(...C.textDark);
+    pdf.text(item.value, ix, iy + 5.5);
   });
 
-  y += 42;
+  y += gridCardH + 6;
 
-  // Description
+  // ── Description ──
+  drawRoundedCard(pdf, M, y, CW, data.note ? 22 : 16);
+
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(7);
-  pdf.setTextColor(...COLORS.mutedGray);
-  pdf.text((lang === 'id' ? 'KETERANGAN' : 'DESCRIPTION').toUpperCase(), PAGE_MARGIN, y + 3);
+  pdf.setFontSize(6);
+  pdf.setTextColor(...C.textLight);
+  pdf.text(lang === 'id' ? 'KETERANGAN' : 'DESCRIPTION', M + 8, y + 7);
+
   pdf.setFontSize(10);
-  pdf.setTextColor(...COLORS.white);
-  pdf.text(data.description, PAGE_MARGIN, y + 10);
+  pdf.setTextColor(...C.textDark);
+  pdf.text(data.description, M + 8, y + 13);
+
   if (data.note) {
+    pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.lightGray);
-    pdf.text(data.note, PAGE_MARGIN, y + 16);
-    y += 22;
+    pdf.setTextColor(...C.textMuted);
+    pdf.text(data.note, M + 8, y + 19);
+    y += 28;
   } else {
-    y += 16;
+    y += 22;
   }
 
-  // ─ Lines Table ─
+  // ── Journal Lines Table ──
+  y = drawSectionHeader(pdf, y, lang === 'id' ? 'Rincian Jurnal' : 'Journal Lines');
+
   const head = [[
     'GL ACCOUNT',
     lang === 'id' ? 'KETERANGAN' : 'DESCRIPTION',
@@ -602,87 +679,89 @@ export function exportJournalDetail(data: JournalDetailData) {
     'CREDIT',
   ]];
 
-  const body = data.lines.map((l) => [
+  const bodyRows = data.lines.map((l) => [
     `${l.accountName}\n[${l.accountCategory}]`,
     l.description,
-    l.debit > 0 ? formatCurrency(l.debit) : '0',
-    l.credit > 0 ? formatCurrency(l.credit) : '0',
+    l.debit > 0 ? formatCurrency(l.debit) : '-',
+    l.credit > 0 ? formatCurrency(l.credit) : '-',
   ]);
 
   const totalDebit = data.lines.reduce((s, l) => s + l.debit, 0);
   const totalCredit = data.lines.reduce((s, l) => s + l.credit, 0);
 
+  // Add total row
+  bodyRows.push([
+    'T O T A L',
+    '',
+    formatCurrency(totalDebit),
+    formatCurrency(totalCredit),
+  ]);
+
+  const hook = makePageBgHook(pdf);
+
   autoTable(pdf, {
     startY: y,
     head,
-    body,
-    theme: 'plain',
-    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+    body: bodyRows,
+    theme: 'grid',
+    margin: { left: M, right: M },
+    tableLineColor: C.border,
+    tableLineWidth: 0.2,
     styles: {
       font: 'helvetica',
-      fontSize: 8,
-      textColor: COLORS.lightGray,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
-      lineWidth: 0,
+      fontSize: 8.5,
+      textColor: C.textBody,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+      lineColor: C.border,
+      lineWidth: 0.15,
     },
     headStyles: {
-      fillColor: COLORS.headerBg,
-      textColor: COLORS.mutedGray,
+      fillColor: C.tableHead,
+      textColor: [255, 255, 255] as RGB,
       fontStyle: 'bold',
-      fontSize: 7,
+      fontSize: 7.5,
     },
     bodyStyles: {
-      fillColor: COLORS.cardBg,
+      fillColor: C.white,
     },
     alternateRowStyles: {
-      fillColor: [30, 30, 48],
+      fillColor: C.tableRow1,
     },
     columnStyles: {
-      0: { cellWidth: 40 },
+      0: { cellWidth: 42, fontStyle: 'bold' },
       1: { cellWidth: 'auto' },
-      2: { halign: 'right', cellWidth: 30 },
-      3: { halign: 'right', cellWidth: 30 },
+      2: { halign: 'right', cellWidth: 32 },
+      3: { halign: 'right', cellWidth: 32 },
     },
-    didDrawPage: () => {
-      addPageBackground(pdf);
+    willDrawCell: (hookData) => {
+      // Style total row
+      if (hookData.section === 'body' && hookData.row.index === bodyRows.length - 1) {
+        hookData.cell.styles.fillColor = C.tableHead;
+        hookData.cell.styles.textColor = [255, 255, 255];
+        hookData.cell.styles.fontStyle = 'bold';
+      }
     },
+    ...hook,
   });
 
-  y = (pdf as any).lastAutoTable.finalY + 2;
+  // ── Balance check ──
+  y = (pdf as any).lastAutoTable.finalY + 8;
+  y = ensureSpace(pdf, y, 14);
 
-  // Total row
-  drawRoundedRect(pdf, PAGE_MARGIN, y, CONTENT_WIDTH_A4, 10, 2, COLORS.headerBg);
+  const isBalanced = totalDebit === totalCredit;
+  const checkBg = isBalanced ? C.greenBg : C.redBg;
+  const checkBorder = isBalanced ? [187, 247, 208] as RGB : [254, 202, 202] as RGB;
+  const checkColor = isBalanced ? C.green : C.red;
+  const checkText = isBalanced
+    ? (lang === 'id' ? '✓ Jurnal ini balance — Debet = Kredit' : '✓ This journal is balanced — Debit = Credit')
+    : (lang === 'id' ? '✗ Jurnal tidak balance!' : '✗ Journal is NOT balanced!');
+
+  drawRoundedCard(pdf, M, y, CW, 10, { fill: checkBg, border: checkBorder, shadow: false });
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(7);
-  pdf.setTextColor(...COLORS.mutedGray);
-  pdf.text('T O T A L', PAGE_MARGIN + 6, y + 6.5);
+  pdf.setFontSize(8);
+  pdf.setTextColor(...checkColor);
+  pdf.text(checkText, M + 8, y + 6.5);
 
-  pdf.setFontSize(9);
-  pdf.setTextColor(...COLORS.secondary);
-  const debitText = formatCurrency(totalDebit);
-  pdf.text(debitText, 210 - PAGE_MARGIN - 34 - pdf.getTextWidth(debitText), y + 6.5);
-
-  pdf.setTextColor(...COLORS.primary);
-  const creditText = formatCurrency(totalCredit);
-  pdf.text(creditText, 210 - PAGE_MARGIN - 4 - pdf.getTextWidth(creditText), y + 6.5);
-
-  // Footer
-  const totalPages = pdf.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    pdf.setPage(i);
-    const pageH = pdf.internal.pageSize.getHeight();
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.mutedGray);
-    pdf.text(
-      `${lang === 'id' ? 'Dibuat' : 'Generated'}: ${new Date().toLocaleString(lang === 'id' ? 'id-ID' : 'en-GB')}`,
-      PAGE_MARGIN,
-      pageH - 10,
-    );
-    const pageText = `${i} / ${totalPages}`;
-    const pw = pdf.getTextWidth(pageText);
-    pdf.text(pageText, 210 - PAGE_MARGIN - pw, pageH - 10);
-  }
-
+  drawFooter(pdf, lang);
   pdf.save(`Journal_Detail_${data.journalId.substring(0, 8)}.pdf`);
 }
