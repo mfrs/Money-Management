@@ -1,52 +1,52 @@
 import { Router, Response } from 'express';
-import { prisma } from '../db.js';
-import { authMiddleware, AuthRequest } from '../middleware.js';
+import { prisma } from '../_db.js';
+import { authMiddleware, AuthRequest } from '../_middleware.js';
 
 const router = Router();
 
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const categories = await prisma.category.findMany({
+    const wallets = await prisma.wallet.findMany({
       where: { userId: req.userId! },
       orderBy: { createdAt: 'asc' }
     });
-    res.json(categories);
+    res.json(wallets);
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to fetch categories' });
+    res.status(500).json({ error: 'Failed to fetch wallets' });
   }
 });
 
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const category = await prisma.category.create({
+    const wallet = await prisma.wallet.create({
       data: { ...req.body, userId: req.userId! }
     });
-    res.status(201).json(category);
+    res.status(201).json(wallet);
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to create category' });
+    res.status(500).json({ error: 'Failed to create wallet' });
   }
 });
 
 router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const category = await prisma.category.update({
+    const wallet = await prisma.wallet.update({
       where: { id: req.params.id, userId: req.userId! },
       data: req.body
     });
-    res.json(category);
+    res.json(wallet);
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to update category' });
+    res.status(500).json({ error: 'Failed to update wallet' });
   }
 });
 
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    await prisma.category.delete({
+    await prisma.wallet.delete({
       where: { id: req.params.id, userId: req.userId! }
     });
     res.json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to delete category' });
+    res.status(500).json({ error: 'Failed to delete wallet' });
   }
 });
 
