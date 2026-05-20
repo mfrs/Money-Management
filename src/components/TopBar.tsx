@@ -1,14 +1,44 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff } from 'lucide-react';
+import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff, Megaphone } from 'lucide-react';
 import { isExpensePaidForCurrentTerm } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrencyShort } from '../lib/types';
 import { AnimatePresence, motion } from 'motion/react';
+import WhatsNewModal from './WhatsNewModal';
 
 export default function TopBar() {
   const { setIsQuickEntryOpen, searchQuery, setSearchQuery, setCurrentView, setIsMobileSidebarOpen, user, t, budget, goals, isSensored, toggleSensored } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [hasNewChangelog, setHasNewChangelog] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Check if there's a new changelog on mount
+    checkLatestChangelog();
+
+    // Listen for custom event from WhatsNewModal
+    const handleChangelogSeen = () => setHasNewChangelog(false);
+    window.addEventListener('changelog_seen', handleChangelogSeen);
+    
+    return () => window.removeEventListener('changelog_seen', handleChangelogSeen);
+  }, []);
+
+  const checkLatestChangelog = async () => {
+    try {
+      const { api } = await import('../lib/api');
+      const res = await api.get('/changelog');
+      if (res.data && res.data.length > 0) {
+        const latestId = res.data[0].id;
+        const lastSeenId = localStorage.getItem('stashly_last_seen_changelog');
+        if (latestId !== lastSeenId) {
+          setHasNewChangelog(true);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const initials = user ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
 
@@ -116,6 +146,20 @@ export default function TopBar() {
 
       <div className="flex items-center gap-3 lg:gap-6">
         <button
+          onClick={() => {
+            setShowWhatsNew(true);
+            setHasNewChangelog(false);
+          }}
+          className="relative flex items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full"
+          title="What's New"
+        >
+          <Megaphone size={16} />
+          {hasNewChangelog && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse"></span>
+          )}
+        </button>
+
+        <button
           id="btn-quick-entry"
           onClick={() => setIsQuickEntryOpen(true)}
           className="flex items-center gap-2 bg-primary text-on-surface px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95 duration-200"
@@ -195,6 +239,11 @@ export default function TopBar() {
           <span className="text-xs font-medium text-on-surface/80">{user?.name || 'User'}</span>
         </div>
       </div>
+
+      <WhatsNewModal 
+        isOpen={showWhatsNew} 
+        onClose={() => setShowWhatsNew(false)} 
+      />
     </header>
   );
 }

@@ -5,14 +5,17 @@ import {
   ShieldAlert,
   ArrowLeft,
   Wallet,
-  Receipt,
-  Tag,
   Trash2,
-  Target,
   ChevronDown,
   ChevronUp,
+  Megaphone,
+  Plus,
+  Edit2,
+  Target,
+  Receipt,
+  Tag,
 } from 'lucide-react';
-import { adminApi, AuthUser } from '../lib/api';
+import { adminApi, AuthUser, api } from '../lib/api';
 import { cn } from '../lib/utils';
 import { formatCurrencyShort } from '../lib/types';
 import { useApp } from '../context/AppContext';
@@ -29,6 +32,8 @@ interface AdminUser extends AuthUser {
 
 export default function AdminView() {
   const { user: currentUser } = useApp();
+  const [adminTab, setAdminTab] = useState<'users' | 'changelog'>('users');
+  
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,9 +45,59 @@ export default function AdminView() {
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
   const [txSearchQuery, setTxSearchQuery] = useState('');
 
+  // Changelog State
+  const [changelogs, setChangelogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [editingLog, setEditingLog] = useState<any | null>(null);
+  const [showLogForm, setShowLogForm] = useState(false);
+  
+  const [logForm, setLogForm] = useState({ version: '', title: '', content: '', isPublished: false });
+
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (adminTab === 'users') {
+      fetchUsers();
+    } else if (adminTab === 'changelog') {
+      fetchChangelogs();
+    }
+  }, [adminTab]);
+
+  const fetchChangelogs = async () => {
+    try {
+      setLoadingLogs(true);
+      const res = await api.get('/changelog/all');
+      setChangelogs(res.data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleSaveChangelog = async () => {
+    try {
+      if (editingLog) {
+        await api.put(`/changelog/${editingLog.id}`, logForm);
+      } else {
+        await api.post('/changelog', logForm);
+      }
+      setShowLogForm(false);
+      setEditingLog(null);
+      setLogForm({ version: '', title: '', content: '', isPublished: false });
+      fetchChangelogs();
+    } catch (err: any) {
+      alert('Failed to save changelog');
+    }
+  };
+
+  const handleDeleteChangelog = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this changelog?')) return;
+    try {
+      await api.delete(`/changelog/${id}`);
+      fetchChangelogs();
+    } catch (err: any) {
+      alert('Failed to delete changelog');
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -105,11 +160,172 @@ export default function AdminView() {
             Full System Overview & User Control.
           </p>
         </div>
+        <div className="flex bg-on-surface/5 p-1 rounded-2xl border border-on-surface/5">
+          <button
+            onClick={() => setAdminTab('users')}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
+              adminTab === 'users' ? "bg-primary text-on-primary shadow-lg" : "text-on-surface/40 hover:text-on-surface hover:bg-on-surface/5"
+            )}
+          >
+            Users
+          </button>
+          <button
+            onClick={() => setAdminTab('changelog')}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
+              adminTab === 'changelog' ? "bg-primary text-on-primary shadow-lg" : "text-on-surface/40 hover:text-on-surface hover:bg-on-surface/5"
+            )}
+          >
+            Changelogs
+          </button>
+        </div>
       </header>
 
-      {/* Main View: User List */}
+      {/* Main View: Switching based on adminTab */}
       <AnimatePresence mode="wait">
-        {!selectedUser ? (
+        {adminTab === 'changelog' ? (
+          <motion.div
+            key="changelog"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="glass rounded-[32px] p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/20 text-secondary flex items-center justify-center border border-secondary/30">
+                    <Megaphone size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-on-surface uppercase">Patch Notes & Changelog</h3>
+                    <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">Manage what users see in "What's New"</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingLog(null);
+                    setLogForm({ version: '', title: '', content: '', isPublished: false });
+                    setShowLogForm(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                >
+                  <Plus size={16} /> New Draft
+                </button>
+              </div>
+
+              {loadingLogs ? (
+                <div className="text-center py-10 text-on-surface/40 uppercase tracking-widest text-sm">Loading changelogs...</div>
+              ) : showLogForm ? (
+                <div className="bg-on-surface/5 p-6 rounded-[24px] border border-on-surface/5 space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-on-surface/40 uppercase tracking-widest mb-1">Version (e.g., v1.2.0)</label>
+                      <input
+                        type="text"
+                        value={logForm.version}
+                        onChange={e => setLogForm({ ...logForm, version: e.target.value })}
+                        className="w-full bg-on-surface/5 border border-on-surface/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="flex-[2]">
+                      <label className="block text-xs font-bold text-on-surface/40 uppercase tracking-widest mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={logForm.title}
+                        onChange={e => setLogForm({ ...logForm, title: e.target.value })}
+                        className="w-full bg-on-surface/5 border border-on-surface/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface/40 uppercase tracking-widest mb-1">Content (Markdown Supported)</label>
+                    <textarea
+                      value={logForm.content}
+                      onChange={e => setLogForm({ ...logForm, content: e.target.value })}
+                      rows={8}
+                      className="w-full bg-on-surface/5 border border-on-surface/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/50 font-mono"
+                      placeholder="### New Features&#10;- Added export to PDF&#10;- Bug fixes"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="isPublished"
+                      checked={logForm.isPublished}
+                      onChange={e => setLogForm({ ...logForm, isPublished: e.target.checked })}
+                      className="w-4 h-4 rounded text-primary bg-on-surface/10 border-on-surface/20"
+                    />
+                    <label htmlFor="isPublished" className="text-sm font-bold text-on-surface cursor-pointer">
+                      Publish to Users (Visible in "What's New")
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4 border-t border-on-surface/5">
+                    <button
+                      onClick={() => setShowLogForm(false)}
+                      className="px-6 py-2.5 rounded-xl text-xs font-bold text-on-surface/60 hover:bg-on-surface/10 uppercase tracking-widest transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveChangelog}
+                      disabled={!logForm.title || !logForm.version || !logForm.content}
+                      className="px-6 py-2.5 rounded-xl text-xs font-bold bg-primary text-on-primary uppercase tracking-widest disabled:opacity-50 transition-colors"
+                    >
+                      Save Changelog
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {changelogs.map(log => (
+                    <div key={log.id} className="flex flex-col md:flex-row justify-between gap-4 p-5 bg-on-surface/5 rounded-2xl border border-on-surface/5 group">
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                            {log.version}
+                          </span>
+                          <h4 className="font-bold text-on-surface">{log.title}</h4>
+                          {log.isPublished ? (
+                            <span className="text-[9px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest border border-green-500/20">Published</span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest border border-amber-500/20">Draft</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-on-surface/40 mt-2 line-clamp-2 max-w-2xl">{log.content}</p>
+                        <p className="text-[9px] text-on-surface/30 uppercase tracking-widest mt-3">Created: {new Date(log.createdAt).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setEditingLog(log);
+                            setLogForm({ version: log.version, title: log.title, content: log.content, isPublished: log.isPublished });
+                            setShowLogForm(true);
+                          }}
+                          className="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface hover:bg-primary hover:text-on-primary transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteChangelog(log.id)}
+                          className="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface hover:bg-error hover:text-error-content transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {changelogs.length === 0 && (
+                    <div className="text-center py-10 text-on-surface/30 text-xs uppercase tracking-widest border border-dashed border-on-surface/10 rounded-2xl">
+                      No changelogs found. Create a draft or push to Github.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ) : !selectedUser ? (
           <motion.div
             key="list"
             initial={{ opacity: 0, x: -20 }}

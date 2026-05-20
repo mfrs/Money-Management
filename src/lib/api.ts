@@ -12,6 +12,13 @@ export function clearToken() {
   localStorage.removeItem('wm_token');
 }
 
+export const api = {
+  get: <T = any>(url: string) => request<T>(url),
+  post: <T = any>(url: string, data?: any) => request<T>(url, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
+  put: <T = any>(url: string, data?: any) => request<T>(url, { method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
+  delete: <T = any>(url: string) => request<T>(url, { method: 'DELETE' }),
+};
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${url}`, {
