@@ -502,7 +502,7 @@ export default function Dashboard() {
                       useShort
                       stripRp
                       prefix="-"
-                      className="text-[7.5px] lg:text-[8.5px] font-mono font-bold text-tertiary tracking-tighter truncate mb-0.5"
+                      className="text-[9px] lg:text-[11px] leading-none font-mono font-bold text-tertiary tracking-tighter truncate mb-1"
                     />
                   ) : (
                     <span className="h-[10px]" />
