@@ -23,8 +23,7 @@ import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort } from '../lib/types';
 import { getIcon } from '../lib/icons';
 
-import { jsPDF } from 'jspdf';
-import * as htmlToImage from 'html-to-image';
+import { exportAnalyticsReport, exportWalletJournal } from '../lib/pdfExport';
 
 export default function ReportsView() {
   const { journals, categories, wallets, totalBalance, totalIncome, totalExpenses, getCategorySpent, addToast, t, language } = useApp();
@@ -41,40 +40,33 @@ export default function ReportsView() {
     );
     
     try {
-      const element = document.getElementById('report-content');
-      if (!element) {
-        throw new Error(
-          language === 'id' ? 'Elemen laporan tidak ditemukan' : 'Report element not found'
-        );
+      if (activeTab === 'analytics') {
+        exportAnalyticsReport({
+          totalIncome,
+          totalExpenses,
+          totalBalance,
+          burnRate,
+          txCount: mappedTransactions.length,
+          chartData,
+          breakdown,
+          insights: insights.map(i => ({ title: i.title, text: i.text, positive: i.positive })),
+          language,
+        });
+      } else {
+        const wallet = wallets.find(w => w.id === selectedWalletId);
+        exportWalletJournal({
+          walletName: wallet?.name || 'Unknown',
+          entries: journalEntries.map((e: any) => ({
+            date: e.date,
+            description: e.description,
+            type: e.type,
+            debit: e.debit,
+            credit: e.credit,
+            runningBalance: e.runningBalance,
+          })),
+          language,
+        });
       }
-      
-      // Tunggu sebentar untuk memastikan semua animasi dan chart render selesai
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const imgData = await htmlToImage.toJpeg(element, {
-        quality: 0.9,
-        pixelRatio: 2,
-        backgroundColor: '#0f0f19',
-        style: {
-          transform: 'none',
-        },
-        filter: (node) => {
-          // You can filter out specific nodes if needed here
-          return true;
-        }
-      });
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      // The image properties logic might need a dummy image if we don't have canvas height
-      // htmlToImage returns data URL, we can get dimensions from it
-      const img = new Image();
-      img.src = imgData;
-      await new Promise((resolve) => { img.onload = resolve; });
-      
-      const pdfHeight = (img.height * pdfWidth) / img.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Stashly_Report_${new Date().toISOString().split('T')[0]}.pdf`);
       
       addToast(
         language === 'id' ? 'Berhasil mengunduh PDF!' : 'PDF downloaded successfully!',

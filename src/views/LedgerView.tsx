@@ -11,8 +11,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../lib/types';
 import { cn } from '../lib/utils';
-import * as htmlToImage from 'html-to-image';
-import { jsPDF } from 'jspdf';
+import { exportJournalDetail } from '../lib/pdfExport';
 
 export default function LedgerView() {
   const { journals, wallets, categories, t, addToast, language } = useApp();
@@ -58,28 +57,39 @@ export default function LedgerView() {
     );
     
     try {
-      const element = document.getElementById('journal-detail-content');
-      if (!element) throw new Error('Elemen tidak ditemukan');
-      
-      // Wait a bit to ensure rendering
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const imgData = await htmlToImage.toJpeg(element, {
-        quality: 1,
-        pixelRatio: 2,
-        backgroundColor: '#0f0f19',
+      if (!selectedJournal) throw new Error('No journal selected');
+
+      const lines = selectedJournal.lines.map((l: any) => {
+        let accountName = 'Unknown';
+        let accountCategory = '';
+        if (l.walletId) {
+          const w = wallets.find((w: any) => w.id === l.walletId);
+          accountName = w ? w.name : 'Unknown';
+          accountCategory = 'ASSET';
+        } else if (l.categoryId) {
+          const c = categories.find((c: any) => c.id === l.categoryId);
+          accountName = c ? c.name : 'Unknown';
+          accountCategory = c?.type === 'income' ? 'REVENUE' : 'EXPENSE';
+        }
+        return {
+          accountName,
+          accountCategory,
+          description: selectedJournal.description,
+          debit: l.type === 'DEBIT' ? l.amount : 0,
+          credit: l.type === 'CREDIT' ? l.amount : 0,
+        };
       });
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      
-      const img = new Image();
-      img.src = imgData;
-      await new Promise((resolve) => { img.onload = resolve; });
-      
-      const pdfHeight = (img.height * pdfWidth) / img.width;
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Journal_Detail_${selectedJournal.id.substring(0,8)}.pdf`);
-      
+
+      exportJournalDetail({
+        journalId: selectedJournal.id,
+        description: selectedJournal.description,
+        note: selectedJournal.note,
+        date: selectedJournal.date,
+        createdAt: selectedJournal.createdAt,
+        lines,
+        language,
+      });
+
       addToast(
         language === 'id' ? 'Berhasil mengunduh PDF!' : 'PDF downloaded successfully!',
         'success'
