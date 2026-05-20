@@ -19,6 +19,7 @@ export default function LedgerView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournal, setSelectedJournal] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'normal' | 'reversed'>('all');
 
   // Map journals into a sortable array with total amount
   const ledgerJournals = useMemo(() => {
@@ -31,15 +32,23 @@ export default function LedgerView() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [journals]);
 
-  // Filter journals based on search
+  // Filter journals based on active tab and search
   const filteredJournals = useMemo(() => {
-    if (!searchQuery) return ledgerJournals;
+    let result = [...ledgerJournals];
+
+    if (activeTab === 'normal') {
+      result = result.filter(j => !j.isReversed && !j.description.startsWith('[REVERSAL]'));
+    } else if (activeTab === 'reversed') {
+      result = result.filter(j => j.isReversed || j.description.startsWith('[REVERSAL]'));
+    }
+
+    if (!searchQuery) return result;
     const lowerQuery = searchQuery.toLowerCase();
-    return ledgerJournals.filter(j => 
+    return result.filter(j => 
       j.description.toLowerCase().includes(lowerQuery) ||
       j.id.toLowerCase().includes(lowerQuery)
     );
-  }, [ledgerJournals, searchQuery]);
+  }, [ledgerJournals, searchQuery, activeTab]);
 
   const exportDetailToPDF = async () => {
     setIsExporting(true);
@@ -106,8 +115,8 @@ export default function LedgerView() {
       {/* Main Ledger Table */}
       <div className="glass rounded-[24px] lg:rounded-[32px] overflow-hidden border border-on-surface/5 flex flex-col">
         {/* Toolbar */}
-        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col lg:flex-row gap-6 justify-between items-center">
+          <div className="flex items-center gap-4 w-full lg:w-auto">
             <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
               <BookOpen size={20} />
             </div>
@@ -120,8 +129,30 @@ export default function LedgerView() {
               </p>
             </div>
           </div>
+
+          {/* Sub Menu Tabs */}
+          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full lg:w-auto justify-center overflow-x-auto whitespace-nowrap">
+            {(['all', 'normal', 'reversed'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "px-4 lg:px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all",
+                  activeTab === tab 
+                    ? "bg-on-surface text-surface shadow-lg" 
+                    : "text-on-surface/30 hover:text-on-surface"
+                )}
+              >
+                {tab === 'all' 
+                  ? (language === 'id' ? 'Semua Jurnal' : 'All Journals') 
+                  : tab === 'normal' 
+                    ? (language === 'id' ? 'Normal Journal Entry' : 'Normal Journal Entry') 
+                    : (language === 'id' ? 'Reversed Journal' : 'Reversed Journal')}
+              </button>
+            ))}
+          </div>
           
-          <div className="relative w-full md:w-80 group">
+          <div className="relative w-full lg:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 group-focus-within:text-primary transition-colors" size={16} />
             <input
               type="text"
