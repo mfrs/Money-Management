@@ -49,7 +49,7 @@ router.post('/register', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.status(201).json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme, hasCompletedTour: user.hasCompletedTour },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Registration failed' });
@@ -76,7 +76,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme, hasCompletedTour: user.hasCompletedTour },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Login failed' });
@@ -87,7 +87,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId! },
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, createdAt: true }
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, hasCompletedTour: true, createdAt: true }
     });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -110,7 +110,7 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response) =
     const user = await prisma.user.update({
       where: { id: req.userId! },
       data,
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true },
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, hasCompletedTour: true },
     });
     res.json(user);
   } catch (err: any) {
@@ -118,6 +118,18 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response) =
       return res.status(409).json({ error: 'Email already in use' });
     }
     res.status(500).json({ error: err.message || 'Update failed' });
+  }
+});
+
+router.post('/complete-tour', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: { hasCompletedTour: true }
+    });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to complete tour' });
   }
 });
 

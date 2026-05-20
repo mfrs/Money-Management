@@ -127,6 +127,7 @@ export default function Sidebar() {
         {navItems.map((item) => (
           <button
             key={item.id}
+            id={item.id === 'wallets' ? 'tour-wallets' : item.id === 'goals' ? 'tour-goals' : item.id === 'debts' ? 'tour-debts' : undefined}
             onClick={() => setCurrentView(item.id as any)}
             className={cn(
               "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 group",
