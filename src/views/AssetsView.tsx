@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Edit2, X, TrendingUp, TrendingDown, Home, Car, Gem, Briefcase, Landmark, Calendar, FileText, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort } from '../lib/types';
-import { cn } from '../lib/utils';
+import { cn, getLocalDateString } from '../lib/utils';
 
 const loc = {
   en: {
@@ -142,7 +142,7 @@ export default function AssetsView() {
     setType('investment');
     setPurchasePrice('');
     setCurrentPrice('');
-    setPurchaseDate(new Date().toISOString().split('T')[0]);
+    setPurchaseDate(getLocalDateString());
     setEstimatedRate('0');
     setNotes('');
     setEditingId(null);
@@ -154,7 +154,7 @@ export default function AssetsView() {
     setType(asset.type);
     setPurchasePrice(asset.purchasePrice.toString());
     setCurrentPrice(asset.currentPrice.toString());
-    setPurchaseDate(new Date(asset.purchaseDate).toISOString().split('T')[0]);
+    setPurchaseDate(getLocalDateString(asset.purchaseDate));
     setEstimatedRate(asset.estimatedRate.toString());
     setNotes(asset.notes || '');
     setEditingId(asset.id);

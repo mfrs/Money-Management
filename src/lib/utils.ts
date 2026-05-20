@@ -65,3 +65,23 @@ export function compressImage(file: File, maxWidth = 1024, maxHeight = 1024, qua
   });
 }
 
+export function getLocalDateString(d: Date | string = new Date()): string {
+  const dateObj = typeof d === 'string' ? new Date(d) : d;
+  // Handle invalid dates fallback
+  if (isNaN(dateObj.getTime())) {
+    return new Date().toISOString().split('T')[0];
+  }
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function combineDateAndTimeToISO(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const txDate = new Date();
+  txDate.setFullYear(year, month - 1, day);
+  return txDate.toISOString();
+}
+
+

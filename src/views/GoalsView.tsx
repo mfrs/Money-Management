@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Target, CheckCircle, Clock, Trash2, Edit2, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort } from '../lib/types';
-import { cn } from '../lib/utils';
+import { cn, getLocalDateString } from '../lib/utils';
 import { getIcon } from '../lib/icons';
 
 export default function GoalsView() {
@@ -32,7 +32,7 @@ export default function GoalsView() {
     setName(goal.name);
     setTargetAmount(goal.targetAmount.toString());
     setCurrentAmount(goal.currentAmount.toString());
-    setDeadline(goal.deadline ? new Date(goal.deadline).toISOString().split('T')[0] : '');
+    setDeadline(goal.deadline ? getLocalDateString(goal.deadline) : '');
     setColor(goal.color);
     setEditingId(goal.id);
     setIsAdding(true);

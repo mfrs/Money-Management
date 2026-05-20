@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { toolsApi } from '../lib/api';
-import { cn, compressImage } from '../lib/utils';
+import { cn, compressImage, getLocalDateString } from '../lib/utils';
 
 interface ChatMessage {
   id: string;
@@ -208,7 +208,7 @@ export default function AIChatAssistant() {
       }
 
       // 2. Generate natural language command to call our chatEntry API
-      const dateStr = receipt.date || new Date().toISOString().split('T')[0];
+      const dateStr = receipt.date || getLocalDateString();
       const merchant = receipt.merchantName || 'Merchant';
       const amount = receipt.totalAmount || 0;
 

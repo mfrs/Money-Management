@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
-import { cn, compressImage } from '../lib/utils';
+import { cn, compressImage, getLocalDateString, combineDateAndTimeToISO } from '../lib/utils';
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
@@ -24,7 +24,7 @@ export default function QuickEntryModal() {
   const [walletId, setWalletId] = useState('');
   const [toWalletId, setToWalletId] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateString());
   const [note, setNote] = useState('');
   const [description, setDescription] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -130,7 +130,7 @@ export default function QuickEntryModal() {
       categoryId: type === 'transfer' ? undefined : categoryId,
       walletId,
       toWalletId: type === 'transfer' ? toWalletId : undefined,
-      date: `${date}T${new Date().toTimeString().split(' ')[0]}`,
+      date: combineDateAndTimeToISO(date),
       note,
     });
 
@@ -147,7 +147,7 @@ export default function QuickEntryModal() {
       if (!walletId && wallets.length > 0) setWalletId(wallets[0].id);
       if (!toWalletId && wallets.length > 1) setToWalletId(wallets[1].id);
       if (!categoryId && filteredCategories.length > 0) setCategoryId(filteredCategories[0].id);
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getLocalDateString());
     }
   }, [isQuickEntryOpen]);
 

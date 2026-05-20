@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Edit2, X, Handshake, ArrowUpRight, ArrowDownLeft, Calendar, User, Percent, DollarSign, Wallet, FileText, Info, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort } from '../lib/types';
-import { cn } from '../lib/utils';
+import { cn, getLocalDateString } from '../lib/utils';
 
 const loc = {
   en: {
@@ -97,7 +97,7 @@ export default function DebtsView() {
   const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentWalletId, setPaymentWalletId] = useState('');
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState(getLocalDateString());
   const [paymentNote, setPaymentNote] = useState('');
 
   // Form State
@@ -160,7 +160,7 @@ export default function DebtsView() {
     setType(debt.type);
     setContact(debt.contact);
     setAmount(debt.amount.toString());
-    setDueDate(debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : '');
+    setDueDate(debt.dueDate ? getLocalDateString(debt.dueDate) : '');
     setInterestRate(debt.interestRate.toString());
     setNotes(debt.notes || '');
     setWalletId(debt.walletId || '');
@@ -172,7 +172,7 @@ export default function DebtsView() {
     setPayingDebtId(debt.id);
     setPaymentAmount(debt.remainingAmount.toString());
     setPaymentWalletId(wallets[0]?.id || '');
-    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setPaymentDate(getLocalDateString());
     setPaymentNote('');
   };
 

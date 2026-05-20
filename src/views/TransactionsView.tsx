@@ -11,7 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, getLocalDateString, combineDateAndTimeToISO } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatDate } from '../lib/types';
 import { getIcon } from '../lib/icons';
@@ -41,7 +41,7 @@ export default function TransactionsView() {
   const [formWallet, setFormWallet] = useState(wallets[0]?.id || '');
   const [formCategory, setFormCategory] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formDate, setFormDate] = useState(getLocalDateString());
 
   const filteredCategories = categories.filter(c => c.type === formType);
 
@@ -165,7 +165,7 @@ export default function TransactionsView() {
       type: formType,
       categoryId: formCategory,
       walletId: formWallet,
-      date: `${formDate}T${new Date().toTimeString().split(' ')[0]}`,
+      date: combineDateAndTimeToISO(formDate),
       note: '',
     });
 
