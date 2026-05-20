@@ -28,16 +28,24 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthRequest, r
 router.get('/users/:id/data', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const userId = req.params.id;
   try {
-    const [wallets, journals, categories] = await Promise.all([
+    const [wallets, journals, categories, goals] = await Promise.all([
       prisma.wallet.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
       prisma.journal.findMany({ 
         where: { userId }, 
-        include: { lines: true },
+        include: { 
+          lines: {
+            include: {
+              wallet: true,
+              category: true
+            }
+          }
+        },
         orderBy: { date: 'desc' }
       }),
-      prisma.category.findMany({ where: { userId } })
+      prisma.category.findMany({ where: { userId } }),
+      prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
     ]);
-    res.json({ wallets, journals, categories });
+    res.json({ wallets, journals, categories, goals });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch user data' });
   }

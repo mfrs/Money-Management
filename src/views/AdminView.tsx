@@ -8,6 +8,9 @@ import {
   Receipt,
   Tag,
   Trash2,
+  Target,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { adminApi, AuthUser } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -31,9 +34,10 @@ export default function AdminView() {
   const [error, setError] = useState('');
   
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [userData, setUserData] = useState<{ wallets: any[], journals: any[], categories: any[] } | null>(null);
+  const [userData, setUserData] = useState<{ wallets: any[], journals: any[], categories: any[], goals: any[] } | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -212,8 +216,9 @@ export default function AdminView() {
             ) : userData && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Stats */}
+                {/* Left Column: Stats, Wallets, Goals */}
                 <div className="lg:col-span-1 space-y-6">
+                  {/* Wallets */}
                   <div className="glass rounded-[32px] p-6 border border-on-surface/5">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
@@ -235,6 +240,45 @@ export default function AdminView() {
                     </div>
                   </div>
 
+                  {/* Goals */}
+                  <div className="glass rounded-[32px] p-6 border border-on-surface/5">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <Target size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-on-surface uppercase tracking-widest font-display">Financial Goals</span>
+                    </div>
+                    <div className="space-y-4">
+                      {userData.goals?.map(g => {
+                        const progress = Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) || 0;
+                        return (
+                          <div key={g.id} className="p-4 bg-on-surface/5 rounded-2xl space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-bold text-on-surface uppercase tracking-wider">{g.name}</p>
+                                {g.deadline && (
+                                  <p className="text-[9px] text-on-surface/40 mt-0.5">Deadline: {new Date(g.deadline).toLocaleDateString()}</p>
+                                )}
+                              </div>
+                              <span className="text-xs font-bold" style={{ color: g.color }}>
+                                {progress}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-on-surface/5 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: g.color }} />
+                            </div>
+                            <div className="flex justify-between text-[9px] text-on-surface/40 font-medium">
+                              <span>{formatCurrencyShort(g.currentAmount)}</span>
+                              <span>/ {formatCurrencyShort(g.targetAmount)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {(!userData.goals || userData.goals.length === 0) && <p className="text-xs text-on-surface/30">No goals found</p>}
+                    </div>
+                  </div>
+
+                  {/* Categories */}
                   <div className="glass rounded-[32px] p-6 border border-on-surface/5">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-secondary/20 text-secondary flex items-center justify-center">
@@ -252,38 +296,83 @@ export default function AdminView() {
                   </div>
                 </div>
 
-                {/* Journals */}
+                {/* Right Column: Detailed Journals */}
                 <div className="lg:col-span-2 glass rounded-[32px] p-8 border border-on-surface/5">
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-xl bg-tertiary/20 text-tertiary flex items-center justify-center border border-tertiary/30">
                       <Receipt size={24} />
                     </div>
-                    <span className="font-display text-xl font-bold text-on-surface uppercase">Raw Journals</span>
+                    <span className="font-display text-xl font-bold text-on-surface uppercase">User Transactions & Ledger Details</span>
                   </div>
 
                   <div className="space-y-4">
                     {userData.journals.map(j => {
-                      // Calc total debit/credit for this journal
                       const debit = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
+                      const isExpanded = expandedJournalId === j.id;
                       
                       return (
-                        <div key={j.id} className="p-5 bg-on-surface/5 rounded-2xl border border-on-surface/5 flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-bold text-on-surface">{j.description}</p>
-                            <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mt-1">
-                              {new Date(j.date).toLocaleDateString()} • {j.lines.length} lines
-                            </p>
+                        <div key={j.id} className="bg-on-surface/5 rounded-[20px] border border-on-surface/5 overflow-hidden transition-all duration-300">
+                          {/* Collapsed Header */}
+                          <div 
+                            onClick={() => setExpandedJournalId(isExpanded ? null : j.id)}
+                            className="p-5 flex justify-between items-center cursor-pointer hover:bg-on-surface/[0.02] transition-colors"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="text-on-surface/30">
+                                {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-on-surface">{j.description}</p>
+                                <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mt-1">
+                                  {new Date(j.date).toLocaleDateString()} • {j.lines.length} Ledger Lines
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-display text-base font-bold text-on-surface tabular-nums">{formatCurrencyShort(debit)}</p>
+                              <p className="text-[9px] font-bold text-on-surface/30 uppercase mt-1 tracking-[0.2em]">Balanced</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-display text-base font-bold text-on-surface tabular-nums">{formatCurrencyShort(debit)}</p>
-                            <p className="text-[9px] font-bold text-on-surface/30 uppercase mt-1 tracking-[0.2em]">Balanced</p>
-                          </div>
+
+                          {/* Expanded Ledger Details */}
+                          {isExpanded && (
+                            <div className="px-5 pb-5 pt-1 bg-black/10 border-t border-on-surface/5 space-y-3">
+                              <div className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest mb-1">Double-Entry Ledger Lines</div>
+                              <div className="space-y-2">
+                                {j.lines.map((line: any) => (
+                                  <div key={line.id} className="flex justify-between items-center px-4 py-3 bg-on-surface/[0.02] rounded-xl border border-on-surface/5">
+                                    <div className="flex items-center gap-3">
+                                      <span className={cn(
+                                        "px-2.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider",
+                                        line.type === 'DEBIT' 
+                                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                      )}>
+                                        {line.type}
+                                      </span>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-on-surface">
+                                          {line.wallet ? `Wallet: ${line.wallet.name}` : `Category: ${line.category?.name || 'Uncategorized'}`}
+                                        </span>
+                                        <span className="text-[9px] text-on-surface/40 uppercase tracking-wide">
+                                          {line.wallet ? `Type: ${line.wallet.type}` : `Type: Budget Category`}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-on-surface tabular-nums">
+                                      {formatCurrencyShort(line.amount)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                     {userData.journals.length === 0 && (
                       <div className="text-center py-10 text-on-surface/30 text-xs uppercase tracking-widest">
-                        No journals recorded
+                        No transactions recorded
                       </div>
                     )}
                   </div>
