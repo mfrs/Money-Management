@@ -145,12 +145,22 @@ export default function LedgerView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredJournals.map((journal) => (
-                <tr 
-                  key={journal.id} 
-                  onClick={() => setSelectedJournal(journal)}
-                  className="hover:bg-on-surface/[0.04] transition-colors cursor-pointer group"
-                >
+              {filteredJournals.map((journal) => {
+                const isReversed = journal.isReversed;
+                const isReversal = journal.description.startsWith('[REVERSAL]');
+                return (
+                  <tr 
+                    key={journal.id} 
+                    onClick={() => setSelectedJournal(journal)}
+                    className={cn(
+                      "transition-colors cursor-pointer group",
+                      isReversed 
+                        ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04] text-amber-500/70" 
+                        : isReversal 
+                          ? "bg-sky-500/[0.02] hover:bg-sky-500/[0.04] text-sky-500/70" 
+                          : "hover:bg-on-surface/[0.04]"
+                    )}
+                  >
                   <td className="px-6 lg:px-8 py-4 whitespace-nowrap">
                     <p className="text-[10px] font-bold text-on-surface/75 uppercase tracking-widest">
                       {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
@@ -168,10 +178,23 @@ export default function LedgerView() {
                     JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
                   </td>
                   <td className="px-6 lg:px-8 py-4">
-                    <div className="flex items-center gap-2">
-                      <p className={cn("text-xs font-bold text-on-surface", journal.isReversed && "line-through opacity-50")}>{journal.description}</p>
-                      {journal.isReversed && <span className="text-[8px] bg-error/20 text-error px-2 py-0.5 rounded-full uppercase tracking-widest border border-error/20">Reversed</span>}
-                      {journal.description.startsWith('[REVERSAL]') && <span className="text-[8px] bg-secondary/20 text-secondary px-2 py-0.5 rounded-full uppercase tracking-widest border border-secondary/20">Reversal</span>}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={cn(
+                        "text-xs font-bold",
+                        isReversed ? "line-through text-on-surface/40" : "text-on-surface"
+                      )}>
+                        {journal.description}
+                      </p>
+                      {isReversed && (
+                        <span className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wider">
+                          Reversed
+                        </span>
+                      )}
+                      {isReversal && (
+                        <span className="text-[8px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-wider">
+                          Reversal
+                        </span>
+                      )}
                     </div>
                     {journal.note && <p className="text-[9px] text-on-surface/40 mt-1 truncate max-w-sm">{journal.note}</p>}
                   </td>
@@ -179,7 +202,8 @@ export default function LedgerView() {
                     {formatCurrency(journal.totalAmount)}
                   </td>
                 </tr>
-              ))}
+              );
+            })}
               {filteredJournals.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">

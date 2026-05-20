@@ -38,6 +38,7 @@ export default function AdminView() {
   const [loadingData, setLoadingData] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
+  const [txSearchQuery, setTxSearchQuery] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -298,78 +299,131 @@ export default function AdminView() {
 
                 {/* Right Column: Detailed Journals */}
                 <div className="lg:col-span-2 glass rounded-[32px] p-8 border border-on-surface/5">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-xl bg-tertiary/20 text-tertiary flex items-center justify-center border border-tertiary/30">
-                      <Receipt size={24} />
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-tertiary/20 text-tertiary flex items-center justify-center border border-tertiary/30">
+                        <Receipt size={24} />
+                      </div>
+                      <span className="font-display text-xl font-bold text-on-surface uppercase">User Transactions & Ledger Details</span>
                     </div>
-                    <span className="font-display text-xl font-bold text-on-surface uppercase">User Transactions & Ledger Details</span>
+
+                    {/* Search Bar for Transactions */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search by ID or Description..."
+                        value={txSearchQuery}
+                        onChange={(e) => setTxSearchQuery(e.target.value)}
+                        className="w-full md:w-64 px-4 py-2 text-xs bg-on-surface/5 border border-on-surface/5 rounded-xl text-on-surface focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-4">
-                    {userData.journals.map(j => {
-                      const debit = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
-                      const isExpanded = expandedJournalId === j.id;
-                      
-                      return (
-                        <div key={j.id} className="bg-on-surface/5 rounded-[20px] border border-on-surface/5 overflow-hidden transition-all duration-300">
-                          {/* Collapsed Header */}
+                    {userData.journals
+                      .filter(j => {
+                        if (!txSearchQuery.trim()) return true;
+                        const query = txSearchQuery.toLowerCase();
+                        return j.id.toLowerCase().includes(query) || j.description.toLowerCase().includes(query);
+                      })
+                      .map(j => {
+                        const debit = j.lines.filter((l: any) => l.type === 'DEBIT').reduce((s: number, l: any) => s + l.amount, 0);
+                        const isExpanded = expandedJournalId === j.id;
+                        const isReversed = j.isReversed;
+                        const isReversal = j.description.startsWith('[REVERSAL]');
+                        
+                        return (
                           <div 
-                            onClick={() => setExpandedJournalId(isExpanded ? null : j.id)}
-                            className="p-5 flex justify-between items-center cursor-pointer hover:bg-on-surface/[0.02] transition-colors"
+                            key={j.id} 
+                            className={cn(
+                              "rounded-[20px] border overflow-hidden transition-all duration-300",
+                              isReversed 
+                                ? "bg-amber-500/[0.02] border-amber-500/10 text-amber-500/80" 
+                                : isReversal 
+                                  ? "bg-sky-500/[0.02] border-sky-500/10 text-sky-500/80" 
+                                  : "bg-on-surface/5 border-on-surface/5 text-on-surface"
+                            )}
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="text-on-surface/30">
-                                {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-on-surface">{j.description}</p>
-                                <p className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest mt-1">
-                                  {new Date(j.date).toLocaleDateString()} • {j.lines.length} Ledger Lines
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-display text-base font-bold text-on-surface tabular-nums">{formatCurrencyShort(debit)}</p>
-                              <p className="text-[9px] font-bold text-on-surface/30 uppercase mt-1 tracking-[0.2em]">Balanced</p>
-                            </div>
-                          </div>
-
-                          {/* Expanded Ledger Details */}
-                          {isExpanded && (
-                            <div className="px-5 pb-5 pt-1 bg-black/10 border-t border-on-surface/5 space-y-3">
-                              <div className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest mb-1">Double-Entry Ledger Lines</div>
-                              <div className="space-y-2">
-                                {j.lines.map((line: any) => (
-                                  <div key={line.id} className="flex justify-between items-center px-4 py-3 bg-on-surface/[0.02] rounded-xl border border-on-surface/5">
-                                    <div className="flex items-center gap-3">
-                                      <span className={cn(
-                                        "px-2.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider",
-                                        line.type === 'DEBIT' 
-                                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                                      )}>
-                                        {line.type}
+                            {/* Collapsed Header */}
+                            <div 
+                              onClick={() => setExpandedJournalId(isExpanded ? null : j.id)}
+                              className="p-5 flex justify-between items-center cursor-pointer hover:bg-on-surface/[0.02] transition-colors"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="text-on-surface/30">
+                                  {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={cn(
+                                      "text-sm font-bold",
+                                      isReversed ? "line-through text-on-surface/40" : "text-on-surface"
+                                    )}>
+                                      {j.description}
+                                    </span>
+                                    {isReversed && (
+                                      <span className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wider">
+                                        Reversed
                                       </span>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-on-surface">
-                                          {line.wallet ? `Wallet: ${line.wallet.name}` : `Category: ${line.category?.name || 'Uncategorized'}`}
-                                        </span>
-                                        <span className="text-[9px] text-on-surface/40 uppercase tracking-wide">
-                                          {line.wallet ? `Type: ${line.wallet.type}` : `Type: Budget Category`}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <span className="text-xs font-bold text-on-surface tabular-nums">
-                                      {formatCurrencyShort(line.amount)}
+                                    )}
+                                    {isReversal && (
+                                      <span className="text-[8px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-wider">
+                                        Reversal
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest font-mono">
+                                      ID: {j.id}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest">
+                                      {new Date(j.date).toLocaleDateString()} • {j.lines.length} Ledger Lines
                                     </span>
                                   </div>
-                                ))}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-display text-base font-bold text-on-surface tabular-nums">{formatCurrencyShort(debit)}</p>
+                                <p className="text-[9px] font-bold text-on-surface/30 uppercase mt-1 tracking-[0.2em]">Balanced</p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+
+                            {/* Expanded Ledger Details */}
+                            {isExpanded && (
+                              <div className="px-5 pb-5 pt-1 bg-black/10 border-t border-on-surface/5 space-y-3">
+                                <div className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest mb-1">Double-Entry Ledger Lines</div>
+                                <div className="space-y-2">
+                                  {j.lines.map((line: any) => (
+                                    <div key={line.id} className="flex justify-between items-center px-4 py-3 bg-on-surface/[0.02] rounded-xl border border-on-surface/5">
+                                      <div className="flex items-center gap-3">
+                                        <span className={cn(
+                                          "px-2.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider",
+                                          line.type === 'DEBIT' 
+                                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                                            : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                        )}>
+                                          {line.type}
+                                        </span>
+                                        <div className="flex flex-col">
+                                          <span className="text-xs font-bold text-on-surface">
+                                            {line.wallet ? `Wallet: ${line.wallet.name}` : `Category: ${line.category?.name || 'Uncategorized'}`}
+                                          </span>
+                                          <span className="text-[9px] text-on-surface/40 uppercase tracking-wide">
+                                            {line.wallet ? `Type: ${line.wallet.type}` : `Type: Budget Category`}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs font-bold text-on-surface tabular-nums">
+                                        {formatCurrencyShort(line.amount)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     {userData.journals.length === 0 && (
                       <div className="text-center py-10 text-on-surface/30 text-xs uppercase tracking-widest">
                         No transactions recorded

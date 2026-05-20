@@ -47,7 +47,6 @@ export default function TransactionsView() {
 
   const mappedTransactions = useMemo(() => {
     return journals
-      .filter(j => !j.isReversed && !j.description.startsWith('[REVERSAL]'))
       .map(j => {
         const categoryLine = j.lines.find(l => l.categoryId);
       const walletLines = j.lines.filter(l => l.walletId);
@@ -130,6 +129,7 @@ export default function TransactionsView() {
         const cat = getCategoryById(t.categoryId);
         const wallet = getWalletById(t.walletId);
         return (
+          t.id.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
           t.note.toLowerCase().includes(q) ||
           cat?.name.toLowerCase().includes(q) ||
@@ -320,24 +320,65 @@ export default function TransactionsView() {
                       ? tx.debtType === 'DEBT'
                         ? t('common.debt')
                         : t('common.receivable')
-                      : 'Unknown';
+                      : 'Unknown';                const isReversed = tx.isReversed;
+                const isReversal = tx.description.startsWith('[REVERSAL]');
 
                 return (
-                  <tr key={tx.id} className="hover:bg-on-surface/[0.04] transition-colors group">
+                  <tr 
+                    key={tx.id} 
+                    className={cn(
+                      "transition-colors group",
+                      isReversed 
+                        ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04] text-amber-500/70" 
+                        : isReversal 
+                          ? "bg-sky-500/[0.02] hover:bg-sky-500/[0.04] text-sky-500/70" 
+                          : "hover:bg-on-surface/[0.04]"
+                    )}
+                  >
                     <td className="px-6 lg:px-10 py-5 lg:py-7 text-xs font-bold text-on-surface/30 uppercase tracking-widest tabular-nums whitespace-nowrap">
                       {formatDate(tx.date)}
                     </td>
                     <td className="px-6 lg:px-10 py-5 lg:py-7">
                       <div className="flex items-center gap-4 lg:gap-5">
                         <div className={cn(
-                          "w-9 h-9 lg:w-10 lg:h-10 rounded-xl glass-dark border border-on-surface/5 flex items-center justify-center group-hover:border-primary/20 transition-all",
-                          tx.type === 'income' ? "text-primary" : tx.type === 'transfer' ? "text-secondary" : "text-on-surface/50"
+                          "w-9 h-9 lg:w-10 lg:h-10 rounded-xl glass-dark border flex items-center justify-center group-hover:border-primary/20 transition-all",
+                          isReversed 
+                            ? "border-amber-500/20 text-amber-400 bg-amber-500/5" 
+                            : isReversal 
+                              ? "border-sky-500/20 text-sky-400 bg-sky-500/5" 
+                              : tx.type === 'income' 
+                                ? "border-on-surface/5 text-primary" 
+                                : tx.type === 'transfer' 
+                                  ? "border-on-surface/5 text-secondary" 
+                                  : "border-on-surface/5 text-on-surface/50"
                         )}>
                           {tx.type === 'transfer' ? <ArrowUpDown size={16} className="rotate-45" /> : <IconComp size={16} />}
                         </div>
                         <div>
-                          <span className="text-sm font-bold text-on-surface">{tx.description}</span>
-                          <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest mt-1">{categoryName}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={cn(
+                              "text-sm font-bold",
+                              isReversed ? "line-through text-on-surface/40" : "text-on-surface"
+                            )}>
+                              {tx.description}
+                            </span>
+                            {isReversed && (
+                              <span className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wider">
+                                Reversed
+                              </span>
+                            )}
+                            {isReversal && (
+                              <span className="text-[8px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-wider">
+                                Reversal
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest font-mono">
+                              ID: {tx.id}
+                            </span>
+                            <span className="block lg:hidden text-[9px] text-on-surface/30 uppercase tracking-widest">{categoryName}</span>
+                          </div>
                         </div>
                       </div>
                     </td>
