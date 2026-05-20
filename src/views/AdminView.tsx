@@ -203,16 +203,50 @@ export default function AdminView() {
                     <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium mt-1">Manage what users see in "What's New"</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingLog(null);
-                    setLogForm({ version: '', title: '', content: '', isPublished: false });
-                    setShowLogForm(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
-                >
-                  <Plus size={16} /> New Draft
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('https://api.github.com/repos/mfrs/Money-Management/commits?per_page=5');
+                        if (!res.ok) throw new Error('Failed to fetch commits');
+                        const commits = await res.json();
+                        
+                        let markdown = '### Recent Updates\\n\\n';
+                        commits.forEach((c: any) => {
+                          // Clean up commit messages
+                          const msg = c.commit.message.split('\\n')[0];
+                          markdown += `- ${msg}\\n`;
+                        });
+                        
+                        const dateStr = new Date().toISOString().split('T')[0];
+                        
+                        setEditingLog(null);
+                        setLogForm({ 
+                          version: `v${dateStr.replace(/-/g, '')}`, 
+                          title: `Update ${dateStr}`, 
+                          content: markdown, 
+                          isPublished: false 
+                        });
+                        setShowLogForm(true);
+                      } catch (err) {
+                        alert('Gagal mengambil data dari GitHub');
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-on-surface/5 text-on-surface rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-on-surface/10 transition-colors border border-on-surface/10"
+                  >
+                    Sync GitHub
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingLog(null);
+                      setLogForm({ version: '', title: '', content: '', isPublished: false });
+                      setShowLogForm(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus size={16} /> New Draft
+                  </button>
+                </div>
               </div>
 
               {loadingLogs ? (
