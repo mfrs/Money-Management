@@ -64,8 +64,8 @@ export default function AdminView() {
   const fetchChangelogs = async () => {
     try {
       setLoadingLogs(true);
-      const res = await api.get('/changelog/all');
-      setChangelogs(res.data);
+      const data = await api.get('/changelog/all');
+      setChangelogs(data);
     } catch (err: any) {
       console.error(err);
     } finally {

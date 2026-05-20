@@ -27,9 +27,9 @@ export default function TopBar() {
   const checkLatestChangelog = async () => {
     try {
       const { api } = await import('../lib/api');
-      const res = await api.get('/changelog');
-      if (res.data && res.data.length > 0) {
-        const latestId = res.data[0].id;
+      const data = await api.get('/changelog');
+      if (data && data.length > 0) {
+        const latestId = data[0].id;
         const lastSeenId = localStorage.getItem('stashly_last_seen_changelog');
         if (latestId !== lastSeenId) {
           setHasNewChangelog(true);

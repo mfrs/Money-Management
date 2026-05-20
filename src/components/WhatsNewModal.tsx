@@ -22,12 +22,12 @@ export default function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
   const fetchChangelogs = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/changelog');
-      setChangelogs(res.data);
+      const data = await api.get('/changelog');
+      setChangelogs(data || []);
       
       // Update local storage so we know the user has seen the latest version
-      if (res.data && res.data.length > 0) {
-        localStorage.setItem('stashly_last_seen_changelog', res.data[0].id);
+      if (data && data.length > 0) {
+        localStorage.setItem('stashly_last_seen_changelog', data[0].id);
         // Trigger a custom event so TopBar can update the red dot immediately
         window.dispatchEvent(new Event('changelog_seen'));
       }
