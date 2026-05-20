@@ -394,43 +394,8 @@ export function exportAnalyticsReport(data: AnalyticsReportData) {
     y = iy + 6;
   }
 
-  // ── Smart Insights ──
-  if (data.insights.length > 0) {
-    y = drawSectionHeader(pdf, y, lang === 'id' ? 'Wawasan Cerdas' : 'Smart Insights', C.secondary);
 
-    for (const insight of data.insights) {
-      y = ensureSpace(pdf, y, 18);
-      const isGood = insight.positive;
-      const bgColor = isGood ? C.greenBg : C.redBg;
-      const textColor = isGood ? C.green : C.red;
-      const borderColor = isGood ? [187, 247, 208] as RGB : [254, 202, 202] as RGB;
 
-      drawRoundedCard(pdf, M, y, CW, 14, { fill: bgColor, border: borderColor, shadow: false });
-
-      // Icon indicator
-      pdf.setFillColor(...textColor);
-      pdf.circle(M + 8, y + 5.5, 1.8, 'F');
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(5);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(isGood ? '✓' : '!', M + 7, y + 6.5);
-
-      // Title
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(...textColor);
-      pdf.text(insight.title, M + 14, y + 6);
-
-      // Text
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(...C.textBody);
-      const lines = pdf.splitTextToSize(insight.text, CW - 24);
-      pdf.text(lines.slice(0, 2), M + 14, y + 11);
-
-      y += 18;
-    }
-  }
 
   // ── Footer ──
   drawFooter(pdf, lang);
