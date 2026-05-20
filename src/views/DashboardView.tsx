@@ -205,7 +205,7 @@ export default function Dashboard() {
       className="space-y-8 pb-10"
     >
       {/* Balance Header */}
-      <header id="tour-dashboard" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
         <div>
           <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
           <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">

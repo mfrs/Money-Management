@@ -74,7 +74,7 @@ export default function CategoriesView() {
     >
       <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-on-surface/5 pb-8 lg:pb-10 gap-6 px-2">
         <div className="space-y-4">
-          <h2 id="tour-categories" className="font-display text-4xl lg:text-5xl font-extrabold text-on-surface tracking-tighter uppercase">Categories</h2>
+          <h2 className="font-display text-4xl lg:text-5xl font-extrabold text-on-surface tracking-tighter uppercase">Categories</h2>
           <p className="text-sm text-on-surface/30 leading-relaxed max-w-xl font-medium uppercase tracking-widest">
             Define your spending and income categories to track and control your finances.
           </p>

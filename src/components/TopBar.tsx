@@ -160,7 +160,7 @@ export default function TopBar() {
         </button>
 
         <button
-          id="tour-quick-entry"
+          id="btn-quick-entry"
           onClick={() => setIsQuickEntryOpen(true)}
           className="flex items-center gap-2 bg-primary text-on-surface px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95 duration-200"
         >

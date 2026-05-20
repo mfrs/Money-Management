@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -19,13 +19,11 @@ import PGMonitorView from './views/PGMonitorView';
 import QuickEntryModal from './components/QuickEntryModal';
 import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
-import InteractiveTour from './components/InteractiveTour';
 import { AnimatePresence } from 'motion/react';
 import { ShieldAlert } from 'lucide-react';
 
 function AppContent() {
-  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading, refreshUser } = useApp();
-  const [showTour, setShowTour] = useState(false);
+  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading } = useApp();
 
   // Sync /pgmonitor pathname to view state
   React.useEffect(() => {
@@ -40,19 +38,6 @@ function AppContent() {
       window.history.pushState({}, '', '/');
     }
   }, [currentView]);
-
-  // Check if tour should be shown
-  useEffect(() => {
-    if (isAuthenticated && user && !user.hasCompletedTour && !isLoading) {
-      // Small delay to ensure everything is rendered
-      const timer = setTimeout(() => {
-        setShowTour(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowTour(false);
-    }
-  }, [isAuthenticated, user, isLoading]);
 
   // Show nothing while checking if user has a saved session
   if (authLoading) {
@@ -149,14 +134,6 @@ function AppContent() {
       <QuickEntryModal />
       <AIChatAssistant />
       <ToastContainer />
-
-      {/* Tour Component */}
-      {showTour && (
-        <InteractiveTour onComplete={() => {
-          setShowTour(false);
-          refreshUser(); // Re-fetch user data to update hasCompletedTour state
-        }} />
-      )}
 
       {/* Dynamic background accents */}
       <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ opacity: 'var(--th-accent-glow)' }}>
