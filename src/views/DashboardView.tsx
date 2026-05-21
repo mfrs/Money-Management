@@ -265,7 +265,7 @@ export default function Dashboard() {
               <div className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter">{Math.max(0, savingsRate)}%</div>
             </div>
             <div className="relative w-12 h-12">
-              <svg className="w-full h-full transform -rotate-90">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 48 48">
                 <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-on-surface/5" />
                 <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={126} strokeDashoffset={126 - (126 * Math.max(0, savingsRate)) / 100} className="text-secondary" />
               </svg>
