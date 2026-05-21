@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import StashlyLandingPage from '../Landing Page/StashlyLandingPage';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import DashboardView from './views/DashboardView';
@@ -146,6 +147,17 @@ function AppContent() {
 }
 
 export default function App() {
+  const hostname = window.location.hostname;
+  
+  // Deteksi domain: tampilkan Landing Page jika diakses dari www.farisrf.tech atau farisrf.tech
+  // Untuk pengujian lokal (localhost), Anda bisa mengubah isLandingPage menjadi `true` sementara jika ingin melihatnya
+  const isLandingPage = hostname === 'www.farisrf.tech' || hostname === 'farisrf.tech';
+
+  if (isLandingPage) {
+    return <StashlyLandingPage />;
+  }
+
+  // Tampilkan Web App utama jika diakses dari mm.farisrf.tech (atau localhost)
   return (
     <AppProvider>
       <AppContent />
