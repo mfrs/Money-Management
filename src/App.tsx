@@ -132,9 +132,9 @@ function AppContent() {
     <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30 w-full max-w-[100vw] overflow-x-hidden">
       <Sidebar />
 
-      <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full">
+      <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full w-full">
         <TopBar />
-        <div className="pt-[calc(env(safe-area-inset-top,0px)+128px)] lg:pt-[calc(env(safe-area-inset-top,0px)+144px)] px-4 lg:px-10 max-w-[1440px] mx-auto min-h-screen">
+        <div className="pt-[calc(env(safe-area-inset-top,0px)+128px)] lg:pt-[calc(env(safe-area-inset-top,0px)+144px)] px-4 lg:px-10 w-full max-w-[1440px] mx-auto min-h-screen min-w-0">
           <AnimatePresence mode="wait">
             <React.Fragment key={currentView}>
               {renderView()}

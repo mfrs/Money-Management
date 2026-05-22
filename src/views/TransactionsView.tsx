@@ -191,10 +191,12 @@ export default function TransactionsView() {
       animate={{ opacity: 1 }}
       className="space-y-8 pb-10"
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2">
-        <div>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tighter uppercase">Transactions</h2>
-          <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2 min-w-0 w-full">
+        <div className="min-w-0 w-full">
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase break-words">
+            Transactions
+          </h2>
+          <p className="text-[10px] md:text-xs text-on-surface/40 uppercase tracking-[0.2em] font-medium mt-2 max-w-lg leading-relaxed break-words whitespace-normal">
             {filtered.length} transactions • Net: {formatCurrency(filteredTotal)}
           </p>
         </div>

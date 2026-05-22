@@ -111,12 +111,12 @@ export default function LedgerView() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8 pb-10"
     >
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
-        <div>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2 min-w-0 w-full">
+        <div className="min-w-0 w-full">
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-on-surface tracking-tight uppercase break-words">
             {t('ledger.title')}
           </h2>
-          <p className="text-xs text-on-surface/40 mt-3 max-w-lg leading-relaxed uppercase tracking-widest font-medium">
+          <p className="text-[10px] md:text-xs text-on-surface/40 uppercase tracking-[0.2em] font-medium mt-2 max-w-lg leading-relaxed break-words whitespace-normal">
             {t('ledger.subtitle')}
           </p>
         </div>
