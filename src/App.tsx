@@ -22,6 +22,9 @@ import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
 import { AnimatePresence } from 'motion/react';
 import { ShieldAlert } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 
 function AppContent() {
   const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading } = useApp();
@@ -32,6 +35,14 @@ function AppContent() {
       setCurrentView('pgmonitor');
     }
   }, [setCurrentView]);
+
+  // Capacitor Mobile Initialization
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      SplashScreen.hide().catch(() => {});
+    }
+  }, []);
 
   // Sync URL state when navigating away from pgmonitor
   React.useEffect(() => {

@@ -14,6 +14,8 @@ import type {
 import { generateId } from '../lib/types';
 import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, debtApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 export interface Toast {
   id: string;
@@ -613,6 +615,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addToast('All data reset.', 'info');
     } catch { addToast('Failed to reset data', 'error'); }
   }, [addToast, loadAllData]);
+
+  // ===================== NATIVE BRIDGE (CAPACITOR) =====================
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const syncToNative = async () => {
+        try {
+          const token = localStorage.getItem('wm_token') || '';
+          await Preferences.set({ key: 'TokenAuth', value: token });
+          await Preferences.set({ key: 'TotalSaldo', value: totalBalance.toString() });
+          
+          const totalBudget = fixedExpenses.reduce((sum, e) => sum + e.amount, 0) 
+            + categories.reduce((sum, c) => sum + (c.budgetLimit || 0), 0);
+          const status = totalExpenses > totalBudget ? 'OVER_BUDGET' : 'ON_TRACK';
+          await Preferences.set({ key: 'StatusAnggaran', value: status });
+        } catch (e) {
+          console.warn('Failed to sync to native preferences', e);
+        }
+      };
+      syncToNative();
+    }
+  }, [totalBalance, totalExpenses, fixedExpenses, categories, isAuthenticated]);
 
   return (
     <AppContext.Provider value={{

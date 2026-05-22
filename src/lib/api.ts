@@ -1,4 +1,9 @@
-const API_BASE = '/api';
+import { Capacitor } from '@capacitor/core';
+
+let API_BASE = '/api';
+if (Capacitor.isNativePlatform()) {
+  API_BASE = 'https://mm.farisrf.tech/api';
+}
 
 function getToken(): string | null {
   return localStorage.getItem('wm_token');
