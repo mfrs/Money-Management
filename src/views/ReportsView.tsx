@@ -552,8 +552,8 @@ export default function ReportsView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {journalEntries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-on-surface/[0.03] transition-colors">
+                {journalEntries.map((entry, index) => (
+                  <tr key={entry.id} className={cn("hover:bg-on-surface/[0.03] transition-colors", index % 2 !== 0 ? "bg-on-surface/[0.02]" : "")}>
                     <td className="px-6 lg:px-8 py-4 text-xs font-bold text-on-surface/30 uppercase tracking-widest whitespace-nowrap">
                       {new Date(entry.date).toLocaleDateString('en-GB')}
                     </td>
@@ -589,7 +589,7 @@ export default function ReportsView() {
             {/* Mobile Layout */}
             <div className="md:hidden flex flex-col">
               {journalEntries.map((entry) => (
-                <div key={entry.id} className="p-5 border-b border-on-surface/5 hover:bg-on-surface/[0.02] transition-colors flex flex-col gap-3">
+                <div key={entry.id} className="p-5 border-b border-on-surface/5 hover:bg-on-surface/[0.03] transition-colors flex flex-col gap-3 even:bg-on-surface/[0.02]">
                   <div className="flex justify-between items-start gap-4">
                     <div>
                       <p className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">

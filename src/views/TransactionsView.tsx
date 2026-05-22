@@ -337,7 +337,7 @@ export default function TransactionsView() {
                         ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04] text-amber-500/70" 
                         : isReversal 
                           ? "bg-sky-500/[0.02] hover:bg-sky-500/[0.04] text-sky-500/70" 
-                          : "hover:bg-on-surface/[0.04]"
+                          : "hover:bg-on-surface/[0.04] even:bg-on-surface/[0.02]"
                     )}
                   >
                     <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7 text-xs font-bold text-on-surface font-mono tracking-tighter uppercase whitespace-nowrap hidden md:table-cell">
@@ -439,7 +439,7 @@ export default function TransactionsView() {
               const isReversal = tx.description.startsWith('[REVERSAL]');
 
               return (
-                <div key={tx.id} className={cn("p-4 flex flex-col gap-3 transition-colors relative group", isReversed ? "bg-amber-500/[0.02] text-amber-500/70" : isReversal ? "bg-sky-500/[0.02] text-sky-500/70" : "")}>
+                <div key={tx.id} className={cn("p-4 flex flex-col gap-3 transition-colors relative group hover:bg-on-surface/[0.03]", isReversed ? "bg-amber-500/[0.02] text-amber-500/70" : isReversal ? "bg-sky-500/[0.02] text-sky-500/70" : "even:bg-on-surface/[0.02]")}>
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex items-center gap-3">
                       <div className={cn("w-10 h-10 rounded-xl glass-dark border flex items-center justify-center shrink-0", isReversed ? "border-amber-500/20 text-amber-400 bg-amber-500/5" : isReversal ? "border-sky-500/20 text-sky-400 bg-sky-500/5" : tx.type === 'income' ? "border-on-surface/5 text-primary" : tx.type === 'transfer' ? "border-on-surface/5 text-secondary" : "border-on-surface/5 text-on-surface/50")}>

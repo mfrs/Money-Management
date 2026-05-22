@@ -186,7 +186,7 @@ export default function LedgerView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredJournals.map((journal) => {
+              {filteredJournals.map((journal, index) => {
                 const isReversed = journal.isReversed;
                 const isReversal = journal.description.startsWith('[REVERSAL]');
                 return (
@@ -195,6 +195,7 @@ export default function LedgerView() {
                     onClick={() => setSelectedJournal(journal)}
                     className={cn(
                       "transition-colors cursor-pointer group",
+                      index % 2 !== 0 ? "bg-on-surface/[0.02]" : "",
                       isReversed 
                         ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04] text-amber-500/70" 
                         : isReversal 
@@ -272,8 +273,8 @@ export default function LedgerView() {
                   key={journal.id} 
                   onClick={() => setSelectedJournal(journal)}
                   className={cn(
-                    "p-4 flex flex-col gap-3 transition-colors cursor-pointer group relative",
-                    isReversed ? "bg-amber-500/[0.02] text-amber-500/70" : isReversal ? "bg-sky-500/[0.02] text-sky-500/70" : ""
+                    "p-4 flex flex-col gap-3 transition-colors cursor-pointer group relative hover:bg-on-surface/[0.03]",
+                    isReversed ? "bg-amber-500/[0.02] text-amber-500/70" : isReversal ? "bg-sky-500/[0.02] text-sky-500/70" : "even:bg-on-surface/[0.02]"
                   )}
                 >
                   <div className="flex justify-between items-start gap-4">
