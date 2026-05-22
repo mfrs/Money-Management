@@ -132,7 +132,7 @@ function AppContent() {
     <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30">
       <Sidebar />
 
-      <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full overflow-x-hidden">
+      <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full">
         <TopBar />
         <div className="pt-[calc(env(safe-area-inset-top,0px)+128px)] lg:pt-[calc(env(safe-area-inset-top,0px)+144px)] px-4 lg:px-10 max-w-[1440px] mx-auto min-h-screen">
           <AnimatePresence mode="wait">
