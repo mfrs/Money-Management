@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Delete, LogOut, CheckCircle2 } from 'lucide-react';
+import { Lock, Delete, LogOut, CheckCircle2, Fingerprint } from 'lucide-react';
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 import { useApp } from '../context/AppContext';
 import { authApi } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -16,6 +17,13 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
   const [setupPin, setSetupPin] = useState('');
   const [step, setStep] = useState<'verify' | 'setup' | 'confirm'>('verify');
   const [errorAnimation, setErrorAnimation] = useState(false);
+  const [hasBiometric, setHasBiometric] = useState(false);
+
+  useEffect(() => {
+    NativeBiometric.isAvailable().then(result => {
+      setHasBiometric(result.isAvailable);
+    }).catch(() => setHasBiometric(false));
+  }, []);
 
   useEffect(() => {
     if (!user?.pin) {
@@ -78,6 +86,20 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
       navigator.vibrate([200, 100, 200]);
     }
     setTimeout(() => setErrorAnimation(false), 500);
+  };
+
+  const handleBiometricAuth = async () => {
+    try {
+      await NativeBiometric.verifyIdentity({
+        reason: language === 'id' ? 'Gunakan biometrik untuk masuk' : 'Use biometric to login',
+        title: language === 'id' ? 'Buka Kunci' : 'Unlock',
+        subtitle: language === 'id' ? 'Verifikasi Identitas Anda' : 'Verify Your Identity',
+      });
+      onVerified();
+    } catch (err) {
+      console.log('Biometric failed or canceled', err);
+      triggerError();
+    }
   };
 
   const getTitleText = () => {
@@ -182,14 +204,24 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
           </button>
         </div>
 
-        {/* Logout Option */}
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-on-surface/40 hover:text-error transition-colors px-6 py-3 rounded-full hover:bg-error/5"
-        >
-          <LogOut size={16} />
-          <span>{language === 'id' ? 'Keluar Akun' : 'Logout'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {hasBiometric && step === 'verify' && (
+            <button
+              onClick={handleBiometricAuth}
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary hover:text-primary-focus transition-colors px-6 py-3 rounded-full hover:bg-primary/5"
+            >
+              <Fingerprint size={16} />
+              <span>{language === 'id' ? 'Biometrik' : 'Biometric'}</span>
+            </button>
+          )}
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-on-surface/40 hover:text-error transition-colors px-6 py-3 rounded-full hover:bg-error/5"
+          >
+            <LogOut size={16} />
+            <span>{language === 'id' ? 'Keluar Akun' : 'Logout'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
