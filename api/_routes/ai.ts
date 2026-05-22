@@ -438,7 +438,53 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
      {
        "action": "debt_not_found",
        "message": "Hutang/piutang tidak ditemukan di daftar aktif."
-     }`;
+     }
+
+8. If the user wants to CREATE A NEW WALLET / ACCOUNT (e.g. "bikin dompet baru namanya OVO", "tambah rekening BCA dengan saldo 5 juta"):
+   - Return ONLY this structure:
+     {
+       "action": "create_wallet",
+       "name": "OVO",
+       "balance": 0 // numeric value if mentioned, else 0
+     }
+
+9. If the user wants to CREATE A NEW SAVINGS GOAL (e.g. "bikin target tabungan liburan 10 juta", "saya mau nabung buat beli mobil 200jt"):
+   - Return ONLY this structure:
+     {
+       "action": "create_goal",
+       "name": "Liburan",
+       "targetAmount": 10000000,
+       "currentAmount": 0, // starting amount if mentioned, else 0
+       "deadline": null // ISO string date if mentioned (e.g. "tahun depan", "akhir tahun"), else null
+     }
+
+10. If the user wants to CREATE/BUY A NEW ASSET (e.g. "beli saham BBCA 10 lot harga 1 juta", "catat beli emas 5 gram harga 1.2jt"):
+    - Identify if they are paying using a specific wallet.
+    - Return ONLY this structure:
+      {
+        "action": "create_asset",
+        "name": "Saham BBCA", // descriptive name
+        "type": "STOCK", // choose best fit from: STOCK, CRYPTO, PROPERTY, VEHICLE, GOLD, OTHER
+        "purchasePrice": 1000000, // total numeric value of purchase
+        "walletId": "uuid-of-wallet" // resolved wallet UUID if user mentions payment source, else null
+      }
+
+11. If the user wants to SET/UPDATE THEIR MONTHLY INCOME SOURCE (e.g. "gajiku sekarang 10 juta per bulan", "tambah pemasukan dari freelance 2 juta"):
+    - Return ONLY this structure:
+      {
+        "action": "create_income_source",
+        "name": "Gaji", // descriptive name based on input
+        "amount": 10000000
+      }
+
+12. If the user wants to SET/UPDATE THEIR MONTHLY FIXED EXPENSE (e.g. "tiap bulan saya bayar kos 2 juta", "tambah langganan netflix 150rb tiap tanggal 10"):
+    - Return ONLY this structure:
+      {
+        "action": "create_fixed_expense",
+        "name": "Bayar Kos",
+        "amount": 2000000,
+        "dueDate": 1 // Day of month (1-31) if mentioned, else 1
+      }`;
 
     let rawText = '';
     const isGeminiKey = apiKey.startsWith('AIzaSy');

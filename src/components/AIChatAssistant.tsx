@@ -37,7 +37,12 @@ interface ChatMessage {
 }
 
 export default function AIChatAssistant() {
-  const { wallets, categories, goals, addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, language, user, assets, debts, addDebt, payDebt, budget } = useApp();
+  const { 
+    wallets, categories, goals, assets, debts, budget, user, language,
+    addJournal, deleteJournal, updateWallet, updateGoal, addCategory, addToast, 
+    addDebt, payDebt,
+    addWallet, addGoal, addAsset, addFixedExpense, addIncomeSource
+  } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -481,6 +486,31 @@ export default function AIChatAssistant() {
             timestamp: new Date()
           }
         ]);
+      } else if (data.action === 'create_wallet') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi permintaan untuk membuat dompet baru bernama "${data.name}". Apakah Anda ingin membuatnya?`
+          : `I detected a request to create a new wallet named "${data.name}". Would you like to create it?`;
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+      } else if (data.action === 'create_goal') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi sasaran tabungan baru "${data.name}" dengan target ${formatCurrency(data.targetAmount)}. Apakah Anda ingin membuatnya?`
+          : `I detected a new savings goal "${data.name}" for ${formatCurrency(data.targetAmount)}. Would you like to create it?`;
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+      } else if (data.action === 'create_asset') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi pembelian aset "${data.name}" seharga ${formatCurrency(data.purchasePrice)}. Apakah Anda ingin mencatatnya?`
+          : `I detected an asset purchase "${data.name}" for ${formatCurrency(data.purchasePrice)}. Would you like to record it?`;
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+      } else if (data.action === 'create_income_source') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi sumber pemasukan baru "${data.name}" sebesar ${formatCurrency(data.amount)}. Apakah Anda ingin menambahkannya?`
+          : `I detected a new income source "${data.name}" for ${formatCurrency(data.amount)}. Would you like to add it?`;
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+      } else if (data.action === 'create_fixed_expense') {
+        spokenText = language === 'id'
+          ? `Saya mendeteksi pengeluaran rutin "${data.name}" sebesar ${formatCurrency(data.amount)} tiap tanggal ${data.dueDate || 1}. Apakah Anda ingin menambahkannya?`
+          : `I detected a new fixed expense "${data.name}" for ${formatCurrency(data.amount)} due on the ${data.dueDate || 1}. Would you like to add it?`;
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else {
         // Fallback or "create" action
         let msgText = language === 'id'
@@ -750,9 +780,38 @@ export default function AIChatAssistant() {
           }
         ]);
         addToast(language === 'id' ? 'Pembayaran berhasil!' : 'Payment successful!', 'success');
-        addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transaction recorded!', 'success');
+      } else if (parsedData.action === 'create_wallet') {
+        addWallet({ name: parsedData.name, type: 'CASH', balance: parsedData.balance || 0, currency: user?.currency || 'IDR', color: '#10B981', icon: 'Wallet' });
+        setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Dompet "${parsedData.name}" berhasil dibuat! 💳` : `Wallet "${parsedData.name}" created successfully! 💳`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Dompet dibuat!' : 'Wallet created!', 'success');
+      } else if (parsedData.action === 'create_goal') {
+        addGoal({ name: parsedData.name, targetAmount: parsedData.targetAmount, currentAmount: parsedData.currentAmount || 0, color: '#3B82F6', icon: 'Target', deadline: parsedData.deadline || undefined });
+        setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Target tabungan "${parsedData.name}" berhasil dibuat! 🎯` : `Savings goal "${parsedData.name}" created successfully! 🎯`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Target tabungan dibuat!' : 'Goal created!', 'success');
+      } else if (parsedData.action === 'create_asset') {
+        await addAsset({ name: parsedData.name, type: parsedData.type || 'OTHER', purchasePrice: parsedData.purchasePrice, currentPrice: parsedData.purchasePrice, purchaseDate: new Date().toISOString(), notes: 'Via AI Chat' });
+        if (parsedData.walletId) {
+          const w = wallets.find(ww => ww.id === parsedData.walletId);
+          if (w) await updateWallet(w.id, { balance: w.balance - parsedData.purchasePrice });
+        }
+        setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Aset "${parsedData.name}" berhasil dicatat! 📈` : `Asset "${parsedData.name}" recorded successfully! 📈`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Aset dicatat!' : 'Asset recorded!', 'success');
+      } else if (parsedData.action === 'create_income_source') {
+        addIncomeSource({ name: parsedData.name, amount: parsedData.amount });
+        setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Sumber pemasukan "${parsedData.name}" berhasil ditambahkan! 💵` : `Income source "${parsedData.name}" added successfully! 💵`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Pemasukan ditambahkan!' : 'Income source added!', 'success');
+      } else if (parsedData.action === 'create_fixed_expense') {
+        addFixedExpense({ name: parsedData.name, amount: parsedData.amount, dueDate: parsedData.dueDate || 1, status: 'ACTIVE' });
+        setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Pengeluaran rutin "${parsedData.name}" berhasil ditambahkan! 🗓️` : `Fixed expense "${parsedData.name}" added successfully! 🗓️`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Pengeluaran rutin ditambahkan!' : 'Fixed expense added!', 'success');
       }
     } catch (err) {
+      console.error(err);
       addToast(language === 'id' ? 'Gagal memproses transaksi' : 'Failed to process transaction', 'error');
     }
   };
