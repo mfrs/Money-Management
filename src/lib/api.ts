@@ -53,6 +53,7 @@ export interface AuthUser {
   isAdmin: boolean;
   currency: string;
   theme: string;
+  pin?: string | null;
 }
 
 export interface AuthResponse {

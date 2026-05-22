@@ -254,6 +254,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setAuthLoading(false));
   }, []);
 
+  // Sync DB PIN to localStorage when user is loaded
+  useEffect(() => {
+    if (user?.pin && user?.id) {
+      localStorage.setItem(`wm_pin_${user.id}`, user.pin);
+    }
+  }, [user?.pin, user?.id]);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
     setToken(res.token);

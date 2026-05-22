@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Delete, LogOut, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { authApi } from '../lib/api';
 import { cn } from '../lib/utils';
 
 interface PinLockViewProps {
@@ -49,6 +50,10 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
       } else if (step === 'confirm') {
         if (enteredPin === setupPin) {
           localStorage.setItem(`wm_pin_${user?.id}`, enteredPin);
+          
+          // Save to backend DB for cross-device sync
+          authApi.updateProfile({ pin: enteredPin }).catch(e => console.error('Failed to sync PIN to DB', e));
+
           addToast(language === 'id' ? 'PIN berhasil dibuat!' : 'PIN successfully set!', 'success');
           onVerified();
         } else {

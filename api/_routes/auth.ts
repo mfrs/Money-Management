@@ -49,7 +49,7 @@ router.post('/register', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.status(201).json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme, pin: user.pin },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Registration failed' });
@@ -76,7 +76,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = signToken(user.id);
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme },
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, currency: user.currency, theme: user.theme, pin: user.pin },
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Login failed' });
@@ -87,7 +87,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId! },
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, createdAt: true }
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true, createdAt: true }
     });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -100,17 +100,18 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
 
 router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, email, currency, theme } = req.body;
+    const { name, email, currency, theme, pin } = req.body;
     const data: any = {};
     if (name) data.name = name;
     if (email) data.email = email;
     if (currency) data.currency = currency;
     if (theme) data.theme = theme;
+    if (pin !== undefined) data.pin = pin;
 
     const user = await prisma.user.update({
       where: { id: req.userId! },
       data,
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true },
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true },
     });
     res.json(user);
   } catch (err: any) {
