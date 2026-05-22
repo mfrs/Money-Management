@@ -120,7 +120,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="fixed top-5 right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
+    <header className="fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
       {/* Mobile hamburger */}
       <button
         onClick={() => setIsMobileSidebarOpen(true)}

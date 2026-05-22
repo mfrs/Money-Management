@@ -67,7 +67,7 @@ export default function Sidebar() {
   const progressPercentage = Math.min(100, Math.round((xpProgressInLevel / xpNeededInLevel) * 100));
 
   const navContent = (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col h-full p-6 pt-[calc(env(safe-area-inset-top,0px)+24px)]">
       {/* Logo */}
       <div className="flex items-center justify-between mb-8 shrink-0">
         <div className="flex items-center gap-4">

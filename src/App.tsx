@@ -134,7 +134,7 @@ function AppContent() {
 
       <main className="flex-1 lg:ml-[280px]">
         <TopBar />
-        <div className="pt-32 lg:pt-36 px-4 lg:px-10 max-w-[1440px] mx-auto min-h-screen">
+        <div className="pt-[calc(env(safe-area-inset-top,0px)+128px)] lg:pt-[calc(env(safe-area-inset-top,0px)+144px)] px-4 lg:px-10 max-w-[1440px] mx-auto min-h-screen">
           <AnimatePresence mode="wait">
             <React.Fragment key={currentView}>
               {renderView()}
