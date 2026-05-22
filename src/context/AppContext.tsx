@@ -256,8 +256,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Sync DB PIN to localStorage when user is loaded
   useEffect(() => {
-    if (user?.pin && user?.id) {
-      localStorage.setItem(`wm_pin_${user.id}`, user.pin);
+    if (user?.id) {
+      if (user.pin) {
+        localStorage.setItem(`wm_pin_${user.id}`, user.pin);
+      } else if (user.pin === null) {
+        // If DB pin is null (e.g. reset by admin), clear it locally
+        localStorage.removeItem(`wm_pin_${user.id}`);
+      }
     }
   }, [user?.pin, user?.id]);
 
