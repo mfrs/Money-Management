@@ -254,17 +254,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setAuthLoading(false));
   }, []);
 
-  // Sync DB PIN to localStorage when user is loaded
+  // Cleanup legacy localStorage PIN
   useEffect(() => {
     if (user?.id) {
-      if (user.pin) {
-        localStorage.setItem(`wm_pin_${user.id}`, user.pin);
-      } else if (user.pin === null) {
-        // If DB pin is null (e.g. reset by admin), clear it locally
-        localStorage.removeItem(`wm_pin_${user.id}`);
-      }
+      localStorage.removeItem(`wm_pin_${user.id}`);
     }
-  }, [user?.pin, user?.id]);
+  }, [user?.id]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password });

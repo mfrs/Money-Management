@@ -11,15 +11,14 @@ interface PinLockViewProps {
 }
 
 export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) {
-  const { user, addToast, language } = useApp();
+  const { user, addToast, language, updateProfile } = useApp();
   const [pin, setPin] = useState('');
   const [setupPin, setSetupPin] = useState('');
   const [step, setStep] = useState<'verify' | 'setup' | 'confirm'>('verify');
   const [errorAnimation, setErrorAnimation] = useState(false);
 
   useEffect(() => {
-    const savedPin = localStorage.getItem(`wm_pin_${user?.id}`);
-    if (!savedPin) {
+    if (!user?.pin) {
       setStep('setup');
     } else {
       setStep('verify');
@@ -49,10 +48,8 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
         setStep('confirm');
       } else if (step === 'confirm') {
         if (enteredPin === setupPin) {
-          localStorage.setItem(`wm_pin_${user?.id}`, enteredPin);
-          
-          // Save to backend DB for cross-device sync
-          authApi.updateProfile({ pin: enteredPin }).catch(e => console.error('Failed to sync PIN to DB', e));
+          // Save to backend DB and update in-memory state
+          updateProfile({ pin: enteredPin }).catch(e => console.error('Failed to sync PIN to DB', e));
 
           addToast(language === 'id' ? 'PIN berhasil dibuat!' : 'PIN successfully set!', 'success');
           onVerified();
@@ -64,7 +61,7 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
           setStep('setup');
         }
       } else if (step === 'verify') {
-        const savedPin = localStorage.getItem(`wm_pin_${user?.id}`);
+        const savedPin = user?.pin;
         if (enteredPin === savedPin) {
           onVerified();
         } else {
