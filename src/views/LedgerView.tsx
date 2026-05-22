@@ -125,7 +125,7 @@ export default function LedgerView() {
       {/* Main Ledger Table */}
       <div className="glass rounded-[24px] lg:rounded-[32px] overflow-hidden border border-on-surface/5 flex flex-col">
         {/* Toolbar */}
-        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col lg:flex-row gap-6 justify-between items-center">
+        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col lg:flex-row gap-6 justify-between items-center min-w-0 w-full">
           <div className="flex items-center gap-4 w-full lg:w-auto">
             <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
               <BookOpen size={20} />
@@ -141,7 +141,7 @@ export default function LedgerView() {
           </div>
 
           {/* Sub Menu Tabs */}
-          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full max-w-full lg:w-auto justify-start lg:justify-center overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full min-w-0 max-w-full lg:w-auto justify-start lg:justify-center overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(['all', 'normal', 'reversed'] as const).map((tab) => (
               <button
                 key={tab}

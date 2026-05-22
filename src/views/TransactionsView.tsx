@@ -210,8 +210,8 @@ export default function TransactionsView() {
       {/* Main Content */}
       <div className="glass rounded-[24px] lg:rounded-[32px] flex flex-col overflow-hidden relative">
         {/* Toolbar */}
-        <div className="p-6 lg:p-8 border-b border-on-surface/5 flex flex-wrap gap-4 lg:gap-6 justify-between items-center">
-          <div className="flex gap-3 lg:gap-4">
+        <div className="p-6 lg:p-8 border-b border-on-surface/5 flex flex-wrap gap-4 lg:gap-6 justify-between items-center min-w-0 w-full">
+          <div className="flex gap-3 lg:gap-4 w-full min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
@@ -232,7 +232,7 @@ export default function TransactionsView() {
               <option value="lowest">Lowest</option>
             </select>
           </div>
-          <div className="flex gap-1.5 glass-dark p-1 rounded-full border border-on-surface/5 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1.5 glass-dark p-1 rounded-full border border-on-surface/5 w-full min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(['all', 'income', 'expense'] as const).map((tab) => (
               <button
                 key={tab}
