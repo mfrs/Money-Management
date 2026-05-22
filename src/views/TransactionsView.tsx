@@ -293,7 +293,7 @@ export default function TransactionsView() {
 
         {/* Table */}
         <div className="flex-1 overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left hidden md:table">
             <thead>
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em]">
                 <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 hidden md:table-cell">Tx ID</th>
@@ -425,8 +425,61 @@ export default function TransactionsView() {
               )}
             </tbody>
           </table>
-        </div>
+          {/* Mobile List */}
+          <div className="md:hidden flex flex-col divide-y divide-white/5">
+            {paged.map((tx) => {
+              const cat = getCategoryById(tx.categoryId);
+              const wallet = getWalletById(tx.walletId);
+              const isDebtTx = !tx.categoryId && tx.type !== 'transfer';
+              const IconComp = cat ? getIcon(cat.icon) : isDebtTx ? getIcon('Handshake') : getIcon('HelpCircle');
+              const categoryName = tx.type === 'transfer' ? t('common.transfer') : cat ? cat.name : isDebtTx ? tx.debtType === 'DEBT' ? t('common.debt') : t('common.receivable') : 'Unknown';
+              const isReversed = tx.isReversed;
+              const isReversal = tx.description.startsWith('[REVERSAL]');
 
+              return (
+                <div key={tx.id} className={cn("p-4 flex flex-col gap-3 transition-colors relative group", isReversed ? "bg-amber-500/[0.02] text-amber-500/70" : isReversal ? "bg-sky-500/[0.02] text-sky-500/70" : "")}>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-10 h-10 rounded-xl glass-dark border flex items-center justify-center shrink-0", isReversed ? "border-amber-500/20 text-amber-400 bg-amber-500/5" : isReversal ? "border-sky-500/20 text-sky-400 bg-sky-500/5" : tx.type === 'income' ? "border-on-surface/5 text-primary" : tx.type === 'transfer' ? "border-on-surface/5 text-secondary" : "border-on-surface/5 text-on-surface/50")}>
+                        {tx.type === 'transfer' ? <ArrowUpDown size={16} className="rotate-45" /> : <IconComp size={16} />}
+                      </div>
+                      <div>
+                        <p className={cn("text-sm font-bold leading-tight", isReversed ? "line-through text-on-surface/40" : "text-on-surface")}>
+                          {tx.description}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {isReversed && <span className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase border border-amber-500/20 tracking-wider">Reversed</span>}
+                          {isReversal && <span className="text-[8px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded uppercase border border-sky-500/20 tracking-wider">Reversal</span>}
+                          <span className="text-[9px] font-bold text-on-surface/40 uppercase tracking-widest">{formatDate(tx.date)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 mt-1">
+                      <p className={cn("text-base font-bold font-display tracking-tighter whitespace-nowrap", tx.type === 'income' ? "text-primary" : tx.type === 'transfer' ? "text-secondary" : "text-on-surface/80")}>
+                        {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pl-[52px]">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest font-mono">ID: TX-{tx.seqId || 'N/A'}</span>
+                      <span className="text-[9px] text-on-surface/20">•</span>
+                      <span className="text-[9px] font-bold text-on-surface/40 uppercase tracking-widest">{categoryName}</span>
+                    </div>
+                    <button onClick={() => setDeleteId(tx.id)} className="p-2 text-on-surface/20 hover:text-error transition-colors -mr-2">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {paged.length === 0 && (
+              <div className="px-10 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
+                {searchQuery ? 'No transactions match your search' : 'No transactions yet'}
+              </div>
+            )}
+          </div>
+        </div>
         {/* Pagination */}
         <div className="p-6 lg:p-8 border-t border-on-surface/5 flex justify-between items-center text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] glass-dark">
           <span className="flex items-center gap-4">
