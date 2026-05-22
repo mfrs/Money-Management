@@ -237,52 +237,31 @@ export default function Dashboard() {
       className="space-y-8 pb-10"
     >
       {/* Balance Header */}
-      <header className="relative flex flex-col justify-between items-start gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden group">
-        {/* Background Sparkline Chart */}
-        <div className="absolute right-0 bottom-0 w-[60%] lg:w-[40%] h-[70%] opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity duration-700">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sparklineData}>
-              <defs>
-                <linearGradient id="sparklineGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#3b82f6" 
-                strokeWidth={3} 
-                fillOpacity={1} 
-                fill="url(#sparklineGrad)" 
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="relative z-10 w-full">
-          <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
-          <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter drop-shadow-sm">
-            <CensoredAmount amount={totalBalance} isSensored={isSensored} />
-          </div>
+      <header className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 shadow-sm">
+        <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
+        <div className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-on-surface tracking-tighter mb-8 break-words">
+          <CensoredAmount amount={totalBalance} isSensored={isSensored} />
         </div>
         
-        <div className="relative z-10 flex gap-8 lg:gap-12 w-full">
-          <div>
+        <div className="flex items-center justify-between border-t border-on-surface/10 pt-6 mt-2">
+          <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.income')}</span>
             </div>
-            <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
+            <div className="font-display text-lg sm:text-xl font-bold text-on-surface tracking-tight">
               <CensoredAmount amount={totalIncome} isSensored={isSensored} useShort />
             </div>
           </div>
-          <div>
+          
+          <div className="w-px h-8 bg-on-surface/10 mx-4"></div>
+          
+          <div className="flex-1 text-right flex flex-col items-end">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(236,72,153,0.5)]"></div>
               <span className="text-[10px] font-bold text-on-surface/50 uppercase tracking-widest">{t('common.expense')}</span>
+              <div className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(236,72,153,0.5)]"></div>
             </div>
-            <div className="font-display text-lg lg:text-xl font-bold text-on-surface tracking-tight">
+            <div className="font-display text-lg sm:text-xl font-bold text-on-surface tracking-tight">
               <CensoredAmount amount={totalExpenses} isSensored={isSensored} useShort />
             </div>
           </div>
