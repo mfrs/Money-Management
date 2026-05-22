@@ -66,6 +66,19 @@ router.delete('/users/:id', authMiddleware, adminMiddleware, async (req: AuthReq
   }
 });
 
+router.post('/users/:id/reset-pin', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const userId = req.params.id;
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { pin: null }
+    });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to reset PIN' });
+  }
+});
+
 router.get('/pgmonitor', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const dbInfo: any[] = await prisma.$queryRawUnsafe(`

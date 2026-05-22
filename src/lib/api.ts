@@ -205,6 +205,7 @@ export const adminApi = {
   getUsers: () => request<any[]>('/admin/users'),
   getUserData: (userId: string) => request<any>(`/admin/users/${userId}/data`),
   deleteUser: (userId: string) => request<any>(`/admin/users/${userId}`, { method: 'DELETE' }),
+  resetUserPin: (userId: string) => request<any>(`/admin/users/${userId}/reset-pin`, { method: 'POST' }),
   getPGMonitorStats: () => request<any>('/admin/pgmonitor'),
   downloadBackupJSON: async () => {
     const token = getToken();

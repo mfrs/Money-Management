@@ -14,6 +14,7 @@ import {
   Target,
   Receipt,
   Tag,
+  Unlock,
 } from 'lucide-react';
 import { adminApi, AuthUser, api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -178,6 +179,18 @@ export default function AdminView() {
     } catch (err: any) {
       console.error(err);
       alert('Failed to delete user: ' + (err.message || 'Server error'));
+    }
+  };
+
+  const handleResetPin = async () => {
+    if (!selectedUser) return;
+    if (!confirm("Are you sure you want to reset this user's PIN? They will need to create a new one on their next login.")) return;
+    try {
+      await adminApi.resetUserPin(selectedUser.id);
+      alert('PIN successfully reset to empty.');
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to reset PIN: ' + (err.message || 'Server error'));
     }
   };
 
@@ -523,12 +536,20 @@ export default function AdminView() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setDeleteId(selectedUser.id)}
-                className="flex items-center gap-3 px-6 py-3 bg-error/10 text-error rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-error/20 transition-all border border-error/20"
-              >
-                <Trash2 size={16} /> Delete User
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleResetPin}
+                  className="flex items-center gap-2 px-6 py-3 bg-warning/10 text-warning rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-warning/20 transition-all border border-warning/20"
+                >
+                  <Unlock size={16} /> Reset PIN
+                </button>
+                <button
+                  onClick={() => setDeleteId(selectedUser.id)}
+                  className="flex items-center gap-2 px-6 py-3 bg-error/10 text-error rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-error/20 transition-all border border-error/20"
+                >
+                  <Trash2 size={16} /> Delete User
+                </button>
+              </div>
             </div>
 
             {loadingData ? (
