@@ -814,10 +814,23 @@ export default function AIChatAssistant() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] sm:hidden"
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="modal"
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-[164px] right-6 lg:bottom-28 lg:right-8 z-[80] w-[360px] sm:w-[400px] h-[550px] rounded-[30px] border border-on-surface/10 flex flex-col overflow-hidden shadow-2xl bg-surface/95 backdrop-blur-2xl"
+            className="fixed bottom-0 left-0 right-0 z-[100] w-full h-[85dvh] sm:bottom-[164px] sm:right-6 sm:left-auto lg:bottom-28 lg:right-8 sm:w-[400px] sm:h-[600px] rounded-t-[32px] sm:rounded-[30px] border-t border-l border-r sm:border border-on-surface/10 flex flex-col overflow-hidden shadow-2xl bg-surface/95 backdrop-blur-2xl"
           >
             {/* Header */}
             <div className="px-6 py-5 flex items-center justify-between border-b border-on-surface/5 bg-on-surface/5">
