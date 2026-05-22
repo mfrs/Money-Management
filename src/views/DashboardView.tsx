@@ -17,6 +17,8 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { useApp } from '../context/AppContext';
 import { formatCurrency, formatCurrencyShort, formatDate } from '../lib/types';
@@ -198,6 +200,36 @@ export default function Dashboard() {
     return categorySpending.filter(c => c.percentage >= 80);
   }, [categorySpending]);
 
+  // Last 7 days balance trend for the sparkline
+  const sparklineData = useMemo(() => {
+    const data = [];
+    let currentBal = totalBalance;
+    const now = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dayTxs = mappedTransactions.filter(t => {
+        const txDate = new Date(t.date);
+        return txDate.getFullYear() === d.getFullYear() && txDate.getMonth() === d.getMonth() && txDate.getDate() === d.getDate();
+      });
+      const net = dayTxs.reduce((sum, tx) => sum + (tx.type === 'income' ? tx.amount : tx.type === 'expense' ? -tx.amount : 0), 0);
+      
+      data.unshift({
+        name: d.getDate().toString(),
+        value: currentBal
+      });
+      currentBal -= net; // go backwards to find past balances
+    }
+    
+    // Add some variance if all values are identical so the chart doesn't look flat
+    const allSame = data.every(d => d.value === data[0].value);
+    if (allSame) {
+      return data.map((d, i) => ({ ...d, value: d.value + (i * (d.value * 0.001)) }));
+    }
+    
+    return data;
+  }, [totalBalance, mappedTransactions]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -205,14 +237,37 @@ export default function Dashboard() {
       className="space-y-8 pb-10"
     >
       {/* Balance Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8">
-        <div>
+      <header className="relative flex flex-col justify-between items-start gap-6 glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden group">
+        {/* Background Sparkline Chart */}
+        <div className="absolute right-0 bottom-0 w-[60%] lg:w-[40%] h-[70%] opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity duration-700">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparklineData}>
+              <defs>
+                <linearGradient id="sparklineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={1}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#3b82f6" 
+                strokeWidth={3} 
+                fillOpacity={1} 
+                fill="url(#sparklineGrad)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="relative z-10 w-full">
           <h2 className="text-xs font-bold text-on-surface/40 uppercase tracking-[0.2em] mb-3">{t('common.totalBalance')}</h2>
-          <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter">
+          <div className="font-display text-3xl md:text-4xl lg:text-6xl font-bold text-on-surface tracking-tighter drop-shadow-sm">
             <CensoredAmount amount={totalBalance} isSensored={isSensored} />
           </div>
         </div>
-        <div className="flex gap-8 lg:gap-12">
+        
+        <div className="relative z-10 flex gap-8 lg:gap-12 w-full">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
