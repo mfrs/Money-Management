@@ -293,10 +293,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Listen for global unauthorized/expired session events
   useEffect(() => {
     const handleUnauthorized = () => {
-      if (isAuthenticated) {
-        logout();
-        addToast('Session expired. Please log in again.', 'error');
-      }
+      // Intentionally not calling logout() to enforce unlimited session on the frontend
+      // as requested by the user. The app will persist the token until explicitly logged out.
     };
     window.addEventListener('auth_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
@@ -340,7 +338,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setDebts(dbt);
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('token')) {
-        logout();
+        // Suppress auto logout for unlimited session feature
+        console.warn('Backend rejected token, but keeping session active per unlimited session rule.');
       } else {
         addToast('Failed to load data from server', 'error');
       }

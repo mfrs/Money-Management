@@ -36,7 +36,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     if (res.status === 401) {
-      clearToken();
+      // Intentionally not calling clearToken() here to support unlimited session
       window.dispatchEvent(new Event('auth_unauthorized'));
     }
     const error = await res.json().catch(() => ({ error: 'Network error' }));

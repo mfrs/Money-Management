@@ -10,6 +10,7 @@ import TransactionsView from './views/TransactionsView';
 import ReportsView from './views/ReportsView';
 import SettingsView from './views/SettingsView';
 import SignInView from './views/SignInView';
+import PinLockView from './views/PinLockView';
 import GoalsView from './views/GoalsView';
 import AdminView from './views/AdminView';
 import LedgerView from './views/LedgerView';
@@ -27,7 +28,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 
 function AppContent() {
-  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading } = useApp();
+  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading, logout } = useApp();
+  const [isPinVerified, setIsPinVerified] = React.useState(false);
 
   // Sync /pgmonitor pathname to view state
   React.useEffect(() => {
@@ -65,6 +67,10 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <SignInView />;
+  }
+
+  if (!isPinVerified) {
+    return <PinLockView onVerified={() => setIsPinVerified(true)} onLogout={logout} />;
   }
 
   // Admin access check for PGMonitor URL
