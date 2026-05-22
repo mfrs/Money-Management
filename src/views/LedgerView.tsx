@@ -179,10 +179,10 @@ export default function LedgerView() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] bg-on-surface/[0.01]">
-                <th className="px-6 lg:px-8 py-5">{t('ledger.postDate')}</th>
-                <th className="px-6 lg:px-8 py-5">{t('ledger.journalNo')}</th>
-                <th className="px-6 lg:px-8 py-5">{t('ledger.description')}</th>
-                <th className="px-6 lg:px-8 py-5 text-right">{t('ledger.totalAmount')}</th>
+                <th className="px-4 lg:px-8 py-5 hidden md:table-cell">{t('ledger.postDate')}</th>
+                <th className="px-4 lg:px-8 py-5 hidden md:table-cell">{t('ledger.journalNo')}</th>
+                <th className="px-4 lg:px-8 py-5">{t('ledger.description')}</th>
+                <th className="px-4 lg:px-8 py-5 text-right">{t('ledger.totalAmount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -202,7 +202,7 @@ export default function LedgerView() {
                           : "hover:bg-on-surface/[0.04]"
                     )}
                   >
-                  <td className="px-6 lg:px-8 py-4 whitespace-nowrap">
+                  <td className="px-4 lg:px-8 py-4 whitespace-nowrap hidden md:table-cell">
                     <p className="text-[10px] font-bold text-on-surface/75 uppercase tracking-widest">
                       {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
                     </p>
@@ -215,10 +215,18 @@ export default function LedgerView() {
                       </p>
                     )}
                   </td>
-                  <td className="px-6 lg:px-8 py-4 text-[10px] font-bold text-on-surface/60 font-mono tracking-tighter uppercase">
+                  <td className="px-4 lg:px-8 py-4 text-[10px] font-bold text-on-surface/60 font-mono tracking-tighter uppercase hidden md:table-cell">
                     JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
                   </td>
-                  <td className="px-6 lg:px-8 py-4">
+                  <td className="px-4 lg:px-8 py-4">
+                    <div className="md:hidden flex flex-wrap gap-2 mb-2">
+                      <span className="text-[9px] font-bold text-on-surface/50 uppercase tracking-widest">
+                        {new Date(journal.date).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-GB')}
+                      </span>
+                      <span className="text-[9px] font-bold text-on-surface/30 uppercase tracking-widest font-mono">
+                        JRN-{journal.id.substring(journal.id.length - 6).toUpperCase()}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={cn(
                         "text-xs font-bold",
@@ -239,7 +247,7 @@ export default function LedgerView() {
                     </div>
                     {journal.note && <p className="text-[9px] text-on-surface/40 mt-1 truncate max-w-sm">{journal.note}</p>}
                   </td>
-                  <td className="px-6 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap text-on-surface">
+                  <td className="px-4 lg:px-8 py-4 text-right text-sm font-bold font-display tracking-tighter tabular-nums whitespace-nowrap text-on-surface">
                     {formatCurrency(journal.totalAmount)}
                   </td>
                 </tr>

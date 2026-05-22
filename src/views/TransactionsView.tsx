@@ -296,13 +296,13 @@ export default function TransactionsView() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em]">
-                <th className="px-6 lg:px-10 py-5 lg:py-6">Tx ID</th>
-                <th className="px-6 lg:px-10 py-5 lg:py-6">Date</th>
-                <th className="px-6 lg:px-10 py-5 lg:py-6">Description</th>
-                <th className="px-6 lg:px-10 py-5 lg:py-6 hidden lg:table-cell">Category</th>
-                <th className="px-6 lg:px-10 py-5 lg:py-6 hidden md:table-cell">Wallet</th>
-                <th className="px-6 lg:px-10 py-5 lg:py-6 text-right">Amount</th>
-                <th className="px-4 lg:px-6 py-5 lg:py-6 w-12"></th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 hidden md:table-cell">Tx ID</th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 hidden md:table-cell">Date</th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6">Description</th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 hidden lg:table-cell">Category</th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 hidden md:table-cell">Wallet</th>
+                <th className="px-4 md:px-6 lg:px-10 py-4 lg:py-6 text-right">Amount</th>
+                <th className="px-2 md:px-4 lg:px-6 py-4 lg:py-6 w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -338,13 +338,13 @@ export default function TransactionsView() {
                           : "hover:bg-on-surface/[0.04]"
                     )}
                   >
-                    <td className="px-6 lg:px-10 py-5 lg:py-7 text-xs font-bold text-on-surface font-mono tracking-tighter uppercase whitespace-nowrap">
+                    <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7 text-xs font-bold text-on-surface font-mono tracking-tighter uppercase whitespace-nowrap hidden md:table-cell">
                       TX-{tx.seqId || 'N/A'}
                     </td>
-                    <td className="px-6 lg:px-10 py-5 lg:py-7 text-xs font-bold text-on-surface/30 uppercase tracking-widest tabular-nums whitespace-nowrap">
+                    <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7 text-xs font-bold text-on-surface/30 uppercase tracking-widest tabular-nums whitespace-nowrap hidden md:table-cell">
                       {formatDate(tx.date)}
                     </td>
-                    <td className="px-6 lg:px-10 py-5 lg:py-7">
+                    <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7">
                       <div className="flex items-center gap-4 lg:gap-5">
                         <div className={cn(
                           "w-9 h-9 lg:w-10 lg:h-10 rounded-xl glass-dark border flex items-center justify-center group-hover:border-primary/20 transition-all",
@@ -380,6 +380,9 @@ export default function TransactionsView() {
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="md:hidden text-[9px] font-bold text-on-surface/40 uppercase tracking-widest">
+                              {formatDate(tx.date)}
+                            </span>
                             <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest font-mono">
                               ID: TX-{tx.seqId || 'N/A'}
                             </span>
@@ -388,21 +391,21 @@ export default function TransactionsView() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 lg:px-10 py-5 lg:py-7 hidden lg:table-cell">
+                    <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7 hidden lg:table-cell">
                       <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest">{categoryName}</span>
                     </td>
-                    <td className="px-6 lg:px-10 py-5 lg:py-7 hidden md:table-cell">
+                    <td className="px-4 md:px-6 lg:px-10 py-4 lg:py-7 hidden md:table-cell">
                       <span className="px-3 lg:px-4 py-1.5 glass-dark rounded-lg text-[9px] font-bold text-on-surface/60 border border-on-surface/5 uppercase tracking-[0.2em] inline-flex items-center gap-1.5">
                         {wallet?.name || 'Unknown'} {tx.type === 'transfer' && tx.toWalletId && <><ArrowRight size={10} className="opacity-50" /> {getWalletById(tx.toWalletId)?.name}</>}
                       </span>
                     </td>
                     <td className={cn(
-                      "px-6 lg:px-10 py-5 lg:py-7 text-right text-base lg:text-lg font-bold font-display tracking-tighter whitespace-nowrap",
+                      "px-4 md:px-6 lg:px-10 py-4 lg:py-7 text-right text-base lg:text-lg font-bold font-display tracking-tighter whitespace-nowrap",
                       tx.type === 'income' ? "text-primary" : tx.type === 'transfer' ? "text-secondary" : "text-on-surface/80"
                     )}>
                       {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
                     </td>
-                    <td className="px-4 lg:px-6 py-5 lg:py-7">
+                    <td className="px-2 md:px-4 lg:px-6 py-4 lg:py-7">
                       <button
                         onClick={() => setDeleteId(tx.id)}
                         className="text-on-surface/10 hover:text-error transition-colors p-1"
