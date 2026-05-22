@@ -232,7 +232,7 @@ export default function TransactionsView() {
               <option value="lowest">Lowest</option>
             </select>
           </div>
-          <div className="flex gap-1.5 glass-dark p-1 rounded-full border border-on-surface/5">
+          <div className="flex gap-1.5 glass-dark p-1 rounded-full border border-on-surface/5 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(['all', 'income', 'expense'] as const).map((tab) => (
               <button
                 key={tab}

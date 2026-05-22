@@ -141,7 +141,7 @@ export default function LedgerView() {
           </div>
 
           {/* Sub Menu Tabs */}
-          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full lg:w-auto justify-center overflow-x-auto whitespace-nowrap">
+          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full max-w-full lg:w-auto justify-start lg:justify-center overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(['all', 'normal', 'reversed'] as const).map((tab) => (
               <button
                 key={tab}
