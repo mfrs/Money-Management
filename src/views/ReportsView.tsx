@@ -320,9 +320,9 @@ export default function ReportsView() {
           <p className="text-on-surface/40 mt-3 text-sm uppercase tracking-widest font-medium">{t('reports.subtitle')}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="flex p-1 bg-on-surface/5 rounded-full border border-on-surface/5">
-            <button onClick={() => setActiveTab('analytics')} className={cn("px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'analytics' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.analytics')}</button>
-            <button onClick={() => setActiveTab('journal')} className={cn("px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'journal' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.walletJournal')}</button>
+          <div className="flex w-full sm:w-auto p-1 bg-on-surface/5 rounded-full border border-on-surface/5">
+            <button onClick={() => setActiveTab('analytics')} className={cn("flex-1 px-4 sm:px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'analytics' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.analytics')}</button>
+            <button onClick={() => setActiveTab('journal')} className={cn("flex-1 px-4 sm:px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all", activeTab === 'journal' ? "bg-primary text-on-surface shadow-md" : "text-on-surface/50 hover:text-on-surface")}>{t('reports.walletJournal')}</button>
           </div>
           <button
             onClick={exportToPDF}
@@ -541,7 +541,7 @@ export default function ReportsView() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left hidden md:table">
               <thead>
                 <tr className="border-b border-on-surface/5 text-[9px] font-bold text-on-surface/20 uppercase tracking-[0.3em] bg-on-surface/[0.01]">
                   <th className="px-6 lg:px-8 py-5">{t('reports.date')}</th>
@@ -585,6 +585,53 @@ export default function ReportsView() {
                 )}
               </tbody>
             </table>
+            
+            {/* Mobile Layout */}
+            <div className="md:hidden flex flex-col">
+              {journalEntries.map((entry) => (
+                <div key={entry.id} className="p-5 border-b border-on-surface/5 hover:bg-on-surface/[0.02] transition-colors flex flex-col gap-3">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mb-1">
+                        {new Date(entry.date).toLocaleDateString('en-GB')}
+                      </p>
+                      <p className="text-sm font-bold text-on-surface leading-snug">{entry.description}</p>
+                      {entry.type === 'transfer' && (
+                        <p className="text-[10px] text-on-surface/40 uppercase tracking-widest mt-1">
+                          {entry.walletId === selectedWalletId ? t('reports.transferOut') : t('reports.transferIn')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-end mt-2 pt-3 border-t border-on-surface/5">
+                    <div className="flex gap-4">
+                      {entry.debit > 0 && (
+                        <div>
+                          <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-0.5">{t('reports.debit')}</p>
+                          <p className="text-sm font-bold text-secondary tabular-nums tracking-tighter">+{formatCurrency(entry.debit)}</p>
+                        </div>
+                      )}
+                      {entry.credit > 0 && (
+                        <div>
+                          <p className="text-[9px] font-bold text-on-surface/30 uppercase tracking-[0.2em] mb-0.5">{t('reports.credit')}</p>
+                          <p className="text-sm font-bold text-on-surface/80 tabular-nums tracking-tighter">-{formatCurrency(entry.credit)}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-bold text-primary/50 uppercase tracking-[0.2em] mb-0.5">{t('reports.balance')}</p>
+                      <p className="text-base font-bold text-primary tabular-nums tracking-tighter">{formatCurrency(entry.runningBalance)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {journalEntries.length === 0 && (
+                <div className="px-8 py-16 text-center text-on-surface/20 text-sm uppercase tracking-widest">
+                  {t('reports.noTransactions')}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
