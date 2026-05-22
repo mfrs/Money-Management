@@ -268,6 +268,25 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Budget Alerts */}
+      {alerts.length > 0 && (
+        <section className="space-y-3">
+          {alerts.map(alert => (
+            <div key={alert.id} className="bg-tertiary/10 border border-tertiary/20 rounded-[20px] p-5 flex items-center gap-5">
+              <div className="p-2.5 bg-tertiary text-on-surface rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-on-surface uppercase tracking-widest">Budget Alert</h4>
+                <p className="text-sm text-on-surface/60 mt-1">
+                  Category <span className="text-on-surface font-bold">{alert.name}</span> has reached {alert.percentage}% of budget limit.
+                </p>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
       {/* Stats Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
         <div className="glass rounded-[24px] p-6 flex flex-col justify-between h-44 group hover:bg-on-surface/[0.06] transition-colors">
@@ -327,25 +346,6 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
-
-      {/* Budget Alerts */}
-      {alerts.length > 0 && (
-        <section className="space-y-3">
-          {alerts.map(alert => (
-            <div key={alert.id} className="bg-tertiary/10 border border-tertiary/20 rounded-[20px] p-5 flex items-center gap-5">
-              <div className="p-2.5 bg-tertiary text-on-surface rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.4)]">
-                <AlertTriangle size={18} />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-on-surface uppercase tracking-widest">Budget Alert</h4>
-                <p className="text-sm text-on-surface/60 mt-1">
-                  Category <span className="text-on-surface font-bold">{alert.name}</span> has reached {alert.percentage}% of budget limit.
-                </p>
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
 
       {/* Budget Flow + Monthly Activity + Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
