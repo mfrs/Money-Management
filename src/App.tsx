@@ -129,7 +129,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30">
+    <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30 w-full max-w-[100vw] overflow-x-hidden">
       <Sidebar />
 
       <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full">
