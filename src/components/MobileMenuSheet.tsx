@@ -49,18 +49,18 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose} 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            className="absolute inset-0 bg-black/80" 
           />
           
           {/* Sheet */}
           <motion.div
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="w-full bg-surface/95 backdrop-blur-2xl border-t border-on-surface/10 rounded-t-[32px] p-6 pb-[calc(env(safe-area-inset-bottom,0px)+24px)] relative z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex flex-col max-h-[85vh]"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.3 }}
+            className="w-full bg-[#12141c] border-t border-on-surface/10 rounded-t-[32px] p-6 pb-[calc(env(safe-area-inset-bottom,0px)+24px)] relative z-10 shadow-2xl flex flex-col max-h-[85vh] will-change-transform"
           >
             {/* Header & Drag Handle Indicator */}
             <div className="flex flex-col items-center mb-6 shrink-0">
