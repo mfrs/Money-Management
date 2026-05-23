@@ -121,7 +121,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
+    <header className="fixed top-0 left-0 right-0 lg:top-[calc(env(safe-area-inset-top,0px)+20px)] lg:right-5 lg:left-[300px] lg:h-16 glass bg-surface/95 lg:bg-transparent rounded-none lg:rounded-[24px] px-5 lg:px-8 pt-[calc(env(safe-area-inset-top,0px)+16px)] pb-4 lg:py-4 flex justify-between items-center z-40 border-b border-on-surface/5 lg:border-none shadow-sm lg:shadow-none">
       {/* Mobile Profile */}
       <div className="lg:hidden flex items-center gap-3">
         <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/30 bg-primary/20 flex items-center justify-center">

@@ -896,7 +896,7 @@ export default function AIChatAssistant() {
       {/* Floating Chat Bubble Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-[80] w-14 h-14 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-white shadow-[0_8px_30px_rgb(139,92,246,0.3)] hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+        className="fixed bottom-[160px] right-6 lg:bottom-8 lg:right-8 z-[80] w-14 h-14 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-white shadow-[0_8px_30px_rgb(139,92,246,0.3)] hover:scale-110 active:scale-95 transition-all cursor-pointer group"
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
