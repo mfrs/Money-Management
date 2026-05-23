@@ -107,6 +107,7 @@ export interface AssetType {
   id: string;
   name: string;
   isMandatory: boolean;
+  color?: string;
 }
 
 export interface Asset {

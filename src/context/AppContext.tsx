@@ -121,8 +121,8 @@ interface AppContextType {
 
   // Asset Types CRUD
   assetTypes: AssetType[];
-  addAssetType: (name: string) => void;
-  updateAssetType: (id: string, name: string) => void;
+  addAssetType: (name: string, color?: string) => void;
+  updateAssetType: (id: string, name: string, color?: string) => void;
   deleteAssetType: (id: string) => void;
 
   // Assets CRUD
@@ -219,16 +219,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [assetTypes, setAssetTypes] = useState<AssetType[]>(() => {
     const saved = localStorage.getItem('wm_asset_types');
     const mandatoryTypes: AssetType[] = [
-      { id: 'INVESTMENT', name: 'Investasi / Saham', isMandatory: true },
-      { id: 'PROPERTY', name: 'Properti / Rumah', isMandatory: true },
-      { id: 'VEHICLE', name: 'Kendaraan', isMandatory: true },
-      { id: 'GOLD', name: 'Emas / Logam Mulia', isMandatory: true },
-      { id: 'OTHER', name: 'Aset Lainnya', isMandatory: true }
+      { id: 'investment', name: 'Investasi / Saham', isMandatory: true },
+      { id: 'property', name: 'Properti / Rumah', isMandatory: true },
+      { id: 'vehicle', name: 'Kendaraan', isMandatory: true },
+      { id: 'gold', name: 'Emas / Logam Mulia', isMandatory: true },
+      { id: 'other', name: 'Aset Lainnya', isMandatory: true }
     ];
 
     if (saved) {
       try {
         let parsed = JSON.parse(saved) as AssetType[];
+        
+        // Migrate uppercase IDs to lowercase if they exist
+        parsed = parsed.map(t => {
+          if (['INVESTMENT', 'PROPERTY', 'VEHICLE', 'GOLD', 'OTHER'].includes(t.id)) {
+            return { ...t, id: t.id.toLowerCase() };
+          }
+          return t;
+        });
+
         // Only keep user-defined types (isMandatory: false) or mandatory types that match our legacy list
         parsed = parsed.filter(t => !t.isMandatory || mandatoryTypes.some(mt => mt.id === t.id));
         
@@ -670,22 +679,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [loadAllData, addToast]);
 
   // ===================== ASSET TYPES =====================
-  const addAssetType = useCallback((name: string) => {
+  const addAssetType = useCallback((name: string, color?: string) => {
     setAssetTypes(prev => {
-      const next = [...prev, { id: generateId(), name, isMandatory: false }];
+      const next = [...prev, { id: crypto.randomUUID(), name, isMandatory: false, color }];
       localStorage.setItem('wm_asset_types', JSON.stringify(next));
       return next;
     });
-    addToast('Asset type added');
+    addToast('Asset Type created');
   }, [addToast]);
 
-  const updateAssetType = useCallback((id: string, name: string) => {
+  const updateAssetType = useCallback((id: string, name: string, color?: string) => {
     setAssetTypes(prev => {
-      const next = prev.map(t => t.id === id ? { ...t, name } : t);
+      const next = prev.map(t => t.id === id ? { ...t, name, color } : t);
       localStorage.setItem('wm_asset_types', JSON.stringify(next));
       return next;
     });
-    addToast('Asset type updated');
+    addToast('Asset Type updated');
   }, [addToast]);
 
   const deleteAssetType = useCallback((id: string) => {

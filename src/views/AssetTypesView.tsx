@@ -20,15 +20,18 @@ export default function AssetTypesView() {
 
   // Form state
   const [formName, setFormName] = useState('');
+  const [formColor, setFormColor] = useState('#3B82F6');
 
   const resetForm = () => {
     setFormName('');
+    setFormColor('#3B82F6');
     setEditingId(null);
     setShowForm(false);
   };
 
   const startEdit = (type: AssetType) => {
     setFormName(type.name);
+    setFormColor(type.color || '#3B82F6');
     setEditingId(type.id);
     setShowForm(true);
   };
@@ -37,9 +40,9 @@ export default function AssetTypesView() {
     if (!formName.trim()) return;
     try {
       if (editingId) {
-        updateAssetType(editingId, formName);
+        updateAssetType(editingId, formName, formColor);
       } else {
-        addAssetType(formName);
+        addAssetType(formName, formColor);
       }
       resetForm();
     } catch (err) {
@@ -78,7 +81,10 @@ export default function AssetTypesView() {
             className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col gap-8 lg:gap-10 group transition-all duration-500 border border-on-surface/5 hover:border-on-surface/20 relative overflow-hidden"
           >
             <div className="flex justify-between items-start relative z-10">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center glass-dark border border-on-surface/10 group-hover:scale-110 transition-all duration-500 text-primary">
+              <div 
+                className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center glass-dark border border-on-surface/10 group-hover:scale-110 transition-all duration-500"
+                style={{ color: type.color || '#3B82F6' }}
+              >
                 <Diamond size={24} />
               </div>
               <div className="flex gap-1">
@@ -140,6 +146,19 @@ export default function AssetTypesView() {
                     placeholder="e.g. Saham Luar Negeri"
                     className="w-full px-6 py-4 bg-on-surface/[0.02] border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-primary/50 transition-all placeholder:text-on-surface/20"
                   />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 block mb-3">Theme Color</label>
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="color"
+                      value={formColor}
+                      onChange={(e) => setFormColor(e.target.value)}
+                      className="w-14 h-14 p-1 bg-on-surface/[0.02] border border-on-surface/5 rounded-2xl cursor-pointer"
+                    />
+                    <div className="text-sm font-medium text-on-surface/60 uppercase tracking-widest">{formColor}</div>
+                  </div>
                 </div>
 
                 <div className="pt-4 flex gap-4">

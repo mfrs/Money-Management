@@ -83,8 +83,14 @@ const ASSET_TYPE_CONFIG = {
   liquid: { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' }
 };
 
-const getAssetConfig = (typeId: string) => {
+const getAssetConfig = (typeId: string, assetTypes: any[]) => {
   const normalized = typeId.toLowerCase();
+  
+  const customType = assetTypes.find(t => t.id === typeId || t.id.toLowerCase() === normalized);
+  if (customType && customType.color) {
+    return { color: customType.color, icon: Gem, bg: `${customType.color}1A` };
+  }
+
   if (normalized === 'liquid') return { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' };
   if (['kas', 'deposito', 'obligasi', 'reksadana', 'saham', 'investment'].includes(normalized)) return { color: '#6366F1', icon: TrendingUp, bg: 'rgba(99, 102, 241, 0.1)' };
   if (['properti', 'property'].includes(normalized)) return { color: '#3B82F6', icon: Home, bg: 'rgba(59, 130, 246, 0.1)' };
@@ -163,7 +169,7 @@ export default function AssetsView() {
         name,
         value: val,
         percentage,
-        config: getAssetConfig(key)
+        config: getAssetConfig(key, assetTypes)
       };
     }).sort((a, b) => b.value - a.value);
   }, [assets, totalBalance, netWorth, assetTypes, activeLoc]);
@@ -321,7 +327,7 @@ export default function AssetsView() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {assets.map((asset) => {
-            const config = getAssetConfig(asset.type);
+            const config = getAssetConfig(asset.type, assetTypes);
             const Icon = config.icon;
             const assetTypeObj = assetTypes.find(t => t.id === asset.type);
             let assetTypeName = assetTypeObj ? assetTypeObj.name : asset.type;
