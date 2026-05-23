@@ -32,7 +32,7 @@ export class GeminiLiveClient {
         // 3. Send setup message
         this.ws?.send(JSON.stringify({
           setup: {
-            model: 'models/gemini-2.0-flash-exp',
+            model: 'models/gemini-2.0-flash',
             systemInstruction: {
               parts: [{
                 text: `You are Stashly's AI Voice Assistant, an intelligent financial advisor. 
@@ -84,7 +84,8 @@ Keep your verbal responses relatively short and conversational. Do not read out 
         }
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
+        console.error("Gemini WS Closed:", event.code, event.reason);
         this.stop();
       };
 
@@ -128,24 +129,16 @@ Keep your verbal responses relatively short and conversational. Do not read out 
         }
         const base64 = btoa(binary);
 
-        // Send to Gemini
+        // Send to Gemini using realtimeInput
         if (this.ws?.readyState === WebSocket.OPEN) {
           this.ws.send(JSON.stringify({
-            clientContent: {
-              turns: [
+            realtimeInput: {
+              mediaChunks: [
                 {
-                  role: "user",
-                  parts: [
-                    {
-                      inlineData: {
-                        mimeType: "audio/pcm;rate=16000",
-                        data: base64
-                      }
-                    }
-                  ]
+                  mimeType: "audio/pcm;rate=16000",
+                  data: base64
                 }
-              ],
-              turnComplete: true
+              ]
             }
           }));
         }
