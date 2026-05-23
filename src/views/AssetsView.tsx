@@ -84,15 +84,17 @@ const ASSET_TYPE_CONFIG = {
 };
 
 const getAssetConfig = (typeId: string) => {
-  if (typeId === 'liquid') return { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' };
-  if (typeId === 'kas' || typeId === 'deposito' || typeId === 'obligasi' || typeId === 'reksadana' || typeId === 'saham') return { color: '#6366F1', icon: TrendingUp, bg: 'rgba(99, 102, 241, 0.1)' };
-  if (typeId === 'properti') return { color: '#3B82F6', icon: Home, bg: 'rgba(59, 130, 246, 0.1)' };
+  const normalized = typeId.toLowerCase();
+  if (normalized === 'liquid') return { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' };
+  if (['kas', 'deposito', 'obligasi', 'reksadana', 'saham', 'investment'].includes(normalized)) return { color: '#6366F1', icon: TrendingUp, bg: 'rgba(99, 102, 241, 0.1)' };
+  if (['properti', 'property'].includes(normalized)) return { color: '#3B82F6', icon: Home, bg: 'rgba(59, 130, 246, 0.1)' };
+  if (['kendaraan', 'vehicle'].includes(normalized)) return { color: '#F59E0B', icon: Car, bg: 'rgba(245, 158, 11, 0.1)' };
+  if (['emas', 'gold'].includes(normalized)) return { color: '#FBBF24', icon: Gem, bg: 'rgba(251, 191, 36, 0.1)' };
   
   const defaultColors = [
-    { color: '#F59E0B', icon: Car, bg: 'rgba(245, 158, 11, 0.1)' },
-    { color: '#FBBF24', icon: Gem, bg: 'rgba(251, 191, 36, 0.1)' },
     { color: '#EC4899', icon: Briefcase, bg: 'rgba(236, 72, 153, 0.1)' },
     { color: '#8B5CF6', icon: Briefcase, bg: 'rgba(139, 92, 246, 0.1)' },
+    { color: '#14B8A6', icon: Briefcase, bg: 'rgba(20, 184, 166, 0.1)' },
   ];
   let hash = 0;
   for (let i = 0; i < typeId.length; i++) {
@@ -129,32 +131,42 @@ export default function AssetsView() {
   }, [totalBalance, totalAssetsCurrentVal]);
 
   const categoryBreakdown = useMemo(() => {
-    const breakdown: Record<string, number> = {
-      liquid: totalBalance,
-    };
-
-    assetTypes.forEach(t => {
-      breakdown[t.id] = 0;
-    });
+    let breakdown: Record<string, number> = { liquid: totalBalance };
+    assetTypes.forEach(t => { breakdown[t.id] = 0; });
 
     assets.forEach(asset => {
       if (asset.type in breakdown) {
         breakdown[asset.type] += asset.currentPrice;
       } else {
-        breakdown['lainnya'] = (breakdown['lainnya'] || 0) + asset.currentPrice;
+        const typeNormalized = asset.type.toUpperCase();
+        if (['GOLD', 'INVESTMENT', 'PROPERTY', 'VEHICLE'].includes(typeNormalized)) {
+          breakdown[asset.type] = (breakdown[asset.type] || 0) + asset.currentPrice;
+        } else {
+          breakdown['lainnya'] = (breakdown['lainnya'] || 0) + asset.currentPrice;
+        }
       }
     });
 
     return Object.entries(breakdown).map(([key, val]) => {
       const percentage = netWorth > 0 ? (val / netWorth) * 100 : 0;
+      let name = key === 'liquid' ? activeLoc.totalLiquid : 
+                 key === 'lainnya' ? activeLoc.types.other : key;
+      const foundType = assetTypes.find(t => t.id === key);
+      if (foundType) {
+        name = foundType.name;
+      } else if (['GOLD', 'INVESTMENT', 'PROPERTY', 'VEHICLE'].includes(key.toUpperCase())) {
+        name = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+      }
+      
       return {
         key,
+        name,
         value: val,
         percentage,
         config: getAssetConfig(key)
       };
     }).sort((a, b) => b.value - a.value);
-  }, [assets, totalBalance, netWorth, assetTypes]);
+  }, [assets, totalBalance, netWorth, assetTypes, activeLoc]);
 
   const formatPercentage = (val: number) => {
     if (val === Math.round(val)) return `${val}%`;
@@ -312,7 +324,10 @@ export default function AssetsView() {
             const config = getAssetConfig(asset.type);
             const Icon = config.icon;
             const assetTypeObj = assetTypes.find(t => t.id === asset.type);
-            const assetTypeName = assetTypeObj ? assetTypeObj.name : asset.type;
+            let assetTypeName = assetTypeObj ? assetTypeObj.name : asset.type;
+            if (!assetTypeObj && ['GOLD', 'INVESTMENT', 'PROPERTY', 'VEHICLE'].includes(asset.type.toUpperCase())) {
+              assetTypeName = asset.type.charAt(0).toUpperCase() + asset.type.slice(1).toLowerCase();
+            }
             const gainLossVal = asset.currentPrice - asset.purchasePrice;
             const gainLossPct = asset.purchasePrice > 0 ? (gainLossVal / asset.purchasePrice) * 100 : 0;
             const isProfit = gainLossVal >= 0;
