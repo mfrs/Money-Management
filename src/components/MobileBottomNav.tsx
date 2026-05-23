@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayoutDashboard, Wallet, Receipt, LayoutGrid, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
+import MobileMenuSheet from './MobileMenuSheet';
 
 export default function MobileBottomNav() {
   const { currentView, setCurrentView, setIsQuickEntryOpen, t } = useApp();
+  const [isMenuSheetOpen, setIsMenuSheetOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dasbor', icon: LayoutDashboard },
@@ -42,7 +44,13 @@ export default function MobileBottomNav() {
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentView(item.id as any)}
+              onClick={() => {
+                if (item.isMenu) {
+                  setIsMenuSheetOpen(true);
+                } else {
+                  setCurrentView(item.id as any);
+                }
+              }}
               className="flex flex-col items-center justify-center gap-1.5 p-2 min-w-[64px]"
             >
               <item.icon
@@ -64,6 +72,8 @@ export default function MobileBottomNav() {
           );
         })}
       </div>
+      
+      <MobileMenuSheet isOpen={isMenuSheetOpen} onClose={() => setIsMenuSheetOpen(false)} />
     </nav>
   );
 }

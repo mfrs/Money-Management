@@ -213,66 +213,6 @@ export default function SettingsView() {
                   </div>
                 </div>
 
-                {/* MOBILE MENU HUB (Only visible on lg:hidden) */}
-                <div className="lg:hidden mb-10">
-                  <h4 className="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">Menu Utama</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => setCurrentView('goals')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Target size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Target</span>
-                    </button>
-                    <button onClick={() => setCurrentView('assets')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-secondary/20 text-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Diamond size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Aset</span>
-                    </button>
-                    <button onClick={() => setCurrentView('debts')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-error/20 text-error flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Handshake size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Hutang</span>
-                    </button>
-                    <button onClick={() => setCurrentView('achievements')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-tertiary/20 text-tertiary flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Award size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Pencapaian</span>
-                    </button>
-                    <button onClick={() => setCurrentView('transactions')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <ArrowLeftRight size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Transaksi</span>
-                    </button>
-                    <button onClick={() => setCurrentView('ledger')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                      <div className="w-10 h-10 rounded-full bg-blue-400/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <BookOpen size={20} />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Jurnal</span>
-                    </button>
-                    
-                    {user?.role === 'admin' && (
-                      <>
-                        <button onClick={() => setCurrentView('admin')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                          <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <ShieldCheck size={20} />
-                          </div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Admin</span>
-                        </button>
-                        <button onClick={() => setCurrentView('pg_monitor')} className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/10 hover:bg-on-surface/10 transition-all active:scale-95 gap-3 group">
-                          <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Database size={20} />
-                          </div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface">Monitor</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Full Name</label>
