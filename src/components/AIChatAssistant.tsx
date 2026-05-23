@@ -27,6 +27,7 @@ import { useApp } from '../context/AppContext';
 import { toolsApi } from '../lib/api';
 import { cn, compressImage, formatCurrency, getLocalDateString } from '../lib/utils';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import GeminiLiveVoiceModal from './GeminiLiveVoiceModal';
 
 interface ChatMessage {
   id: string;
@@ -74,100 +75,16 @@ export default function AIChatAssistant() {
   };
 
   // AI Voice & Speech Recognition state
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const finalTranscriptRef = useRef('');
-
-  // Initialize Speech Recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.lang = 'id-ID'; // Diatur secara eksplisit ke Bahasa Indonesia (id-ID) untuk akurasi perekaman maksimal
-
-      rec.onstart = () => {
-        setIsListening(true);
-        finalTranscriptRef.current = '';
-      };
-
-      rec.onend = () => {
-        setIsListening(false);
-      };
-
-      rec.onerror = (e: any) => {
-        console.error('Speech recognition error', e);
-        setIsListening(false);
-      };
-
-      rec.onresult = (event: any) => {
-        let interimTranscript = '';
-        let newFinalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcriptSegment = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            newFinalTranscript += transcriptSegment;
-          } else {
-            interimTranscript += transcriptSegment;
-          }
-        }
-
-        if (newFinalTranscript) {
-          finalTranscriptRef.current += newFinalTranscript;
-        }
-
-        const fullText = finalTranscriptRef.current + interimTranscript;
-        if (fullText.trim()) {
-          setInput(fullText);
-        }
-      };
-
-      recognitionRef.current = rec;
-    }
-  }, [language]);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const toggleListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      addToast(
-        language === 'id'
-          ? 'Browser Anda (Firefox/Brave) tidak mendukung fitur ini. Silakan gunakan Google Chrome, Safari, atau Edge.'
-          : 'Your browser (Firefox/Brave) does not support voice input. Please use Google Chrome, Safari, or Edge.',
-        'error'
-      );
-      return;
-    }
-
-    if (!recognitionRef.current) {
-      addToast(
-        language === 'id' 
-          ? 'Perekaman suara dinonaktifkan (butuh koneksi aman HTTPS / localhost).' 
-          : 'Voice input disabled (requires secure connection HTTPS / localhost).', 
-        'info'
-      );
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      try {
-        setInput('');
-        finalTranscriptRef.current = '';
-        recognitionRef.current.start();
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    setIsVoiceModalOpen(true);
   };
 
   // Text-To-Speech function
   const speakText = (text: string) => {
-    if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+    // Disabled in chat mode since Voice Modal handles its own speaking
+    return;
 
     // Stop current speaking
     window.speechSynthesis.cancel();
@@ -1073,7 +990,14 @@ export default function AIChatAssistant() {
                   <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold">Online</p>
                 </div>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsVoiceModalOpen(true)}
+                  title={language === 'id' ? "Panggilan Suara AI" : "AI Voice Call"}
+                  className="p-2 rounded-xl transition-all bg-secondary/10 text-secondary hover:bg-secondary/20 flex items-center gap-2"
+                >
+                  <Mic size={16} />
+                </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-on-surface/5 rounded-xl transition-all"
@@ -1583,6 +1507,11 @@ export default function AIChatAssistant() {
           </motion.div>
         )}
       </AnimatePresence>
+
+    <GeminiLiveVoiceModal 
+      isOpen={isVoiceModalOpen} 
+      onClose={() => setIsVoiceModalOpen(false)} 
+    />
     </>
   );
 }

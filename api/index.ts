@@ -17,6 +17,10 @@ import webhooksRouter from './_routes/webhooks.js';
 import aiRouter from './_routes/ai.js';
 import commonRouter from './_routes/common.js';
 
+import http from 'http';
+import { WebSocketServer } from 'ws';
+import { setupGeminiLiveProxy } from './_routes/gemini-live-proxy.js';
+
 const app = express();
 const PORT = 3001;
 
@@ -40,13 +44,21 @@ app.use('/api/webhooks', webhooksRouter);
 app.use('/api', aiRouter); // Matches /api/scan-receipt and /api/chat-entry
 app.use('/api', commonRouter); // Matches /api/reset and /api/health
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Setup WebSocket Server for Gemini Live API Proxy
+const wss = new WebSocketServer({ server, path: '/api/gemini-live' });
+setupGeminiLiveProxy(wss);
+
 // Start Listening locally if not in production/serverless environment
 if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Stashly Modular API running at http://localhost:${PORT}`);
     console.log(`🔐 Authentication & Custom Middlewares active`);
     console.log(`🤖 Gemini Intelligent NLP and Vision tools enabled`);
+    console.log(`🎙️  Gemini Multimodal Live WebSockets enabled on /api/gemini-live`);
   });
 }
 
-export default app;
+export default server;
