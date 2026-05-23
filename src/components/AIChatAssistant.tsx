@@ -835,7 +835,7 @@ export default function AIChatAssistant() {
         addToast(language === 'id' ? 'Pembayaran berhasil!' : 'Payment successful!', 'success');
       } else if (parsedData.action === 'create_wallets') {
         parsedData.wallets.forEach((w: any) => {
-          addWallet({ name: w.name, type: 'CASH', balance: w.balance || 0, currency: user?.currency || 'IDR', color: '#10B981', icon: 'Wallet' });
+          addWallet({ name: w.name, type: 'cash', account: '', balance: w.balance || 0, color: '#10B981', icon: 'Wallet' });
         });
         setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
         setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `${parsedData.wallets.length} dompet berhasil dibuat! 💳` : `${parsedData.wallets.length} wallets created successfully! 💳`, timestamp: new Date() }]);
