@@ -25,7 +25,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { toolsApi } from '../lib/api';
-import { cn, compressImage, getLocalDateString } from '../lib/utils';
+import { cn, compressImage, formatCurrency, getLocalDateString } from '../lib/utils';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface ChatMessage {
   id: string;
@@ -49,8 +50,9 @@ export default function AIChatAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [categoryLimits, setCategoryLimits] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Edit Mode State
   const [editingData, setEditingData] = useState<Record<string, boolean>>({});
@@ -314,9 +316,121 @@ export default function AIChatAssistant() {
     } finally {
       setIsTyping(false);
       // Clear input value
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+      setShowSourcePicker(false);
     }
   };
+  const handleNativeCamera = async () => {
+    setShowSourcePicker(false);
+    
+    try {
+      const image = await CapacitorCamera.getPhoto({
+        quality: 80,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera
+      });
+
+      if (!image.base64String) return;
+
+      const userMsgId = Math.random().toString();
+      setIsTyping(true);
+
+      const dataUrl = `data:image/${image.format || 'jpeg'};base64,${image.base64String}`;
+      
+      setMessages(prev => [
+        ...prev,
+        {
+          id: userMsgId,
+          sender: 'user',
+          text: language === 'id' ? "Memindai struk pembayaran... 🔍" : "Scanning receipt... 🔍",
+          image: dataUrl,
+          timestamp: new Date()
+        }
+      ]);
+
+      addToast(language === 'id' ? 'Memproses struk...' : 'Processing receipt...', 'info');
+      const mimeType = `image/${image.format || 'jpeg'}`;
+      const receipt = await toolsApi.scanReceipt(image.base64String, mimeType);
+
+      if (!receipt || (!receipt.merchantName && !receipt.totalAmount)) {
+        throw new Error('Could not read receipt data');
+      }
+
+      const dateStr = receipt.date || getLocalDateString();
+      const merchant = receipt.merchantName || 'Merchant';
+      const amount = receipt.totalAmount || 0;
+
+      const generatedCommand = language === 'id'
+        ? `Beli ${merchant} sebesar ${amount} tanggal ${dateStr}`
+        : `Bought ${merchant} for ${amount} on ${dateStr}`;
+
+      const data = await toolsApi.chatEntry(
+        generatedCommand,
+        wallets.map(w => ({ id: w.id, name: w.name, balance: w.balance })),
+        categories.map(c => ({ id: c.id, name: c.name, type: c.type, budgetLimit: c.budgetLimit })),
+        goals.map(g => ({ id: g.id, name: g.name, currentAmount: g.currentAmount, targetAmount: g.targetAmount })),
+        new Date().toISOString(),
+        {
+          assets: assets.map(a => ({ id: a.id, name: a.name, type: a.type, purchasePrice: a.purchasePrice, currentPrice: a.currentPrice })),
+          debts: debts.map(d => ({ id: d.id, title: d.title, type: d.type, contact: d.contact, amount: d.amount, remainingAmount: d.remainingAmount, dueDate: d.dueDate, interestRate: d.interestRate, status: d.status })),
+          fixedExpenses: budget.fixedExpenses.map(fe => ({ name: fe.name, amount: fe.amount, dueDate: fe.dueDate, status: fe.status, lastPaid: fe.lastPaid })),
+          incomeSources: budget.incomeSources.map(is => ({ name: is.name, amount: is.amount }))
+        }
+      );
+
+      let msgText = language === 'id'
+        ? `Struk terdeteksi dari *${merchant}* sebesar *${formatCurrency(amount)}*.\nApakah Anda ingin mencatat pengeluaran ini?`
+        : `Receipt detected from *${merchant}* for *${formatCurrency(amount)}*.\nWould you like to record this expense?`;
+
+      if (data.duplicateAlert) msgText = `${data.duplicateAlert}\n\n${msgText}`;
+      if (data.budgetAlert) msgText = `${data.budgetAlert}\n\n${msgText}`;
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          sender: 'ai',
+          text: msgText,
+          timestamp: new Date(),
+          parsedData: data,
+          status: 'pending'
+        }
+      ]);
+      addToast(language === 'id' ? 'Struk terpindai!' : 'Receipt scanned!', 'success');
+
+      if (isVoiceEnabled) {
+        let spokenAlerts = "";
+        if (data.duplicateAlert) spokenAlerts += data.duplicateAlert + ". ";
+        if (data.budgetAlert) spokenAlerts += data.budgetAlert + ". ";
+        const baseSpoken = language === 'id'
+          ? `Struk terdeteksi dari ${merchant} sebesar ${amount} Rupiah. Apakah Anda ingin mencatat pengeluaran ini?`
+          : `Receipt detected from ${merchant} for ${formatCurrency(amount)}. Would you like to record this expense?`;
+        speakText(spokenAlerts + baseSpoken);
+      }
+    } catch (err: any) {
+      if (!err.message?.includes('User cancelled') && !err.message?.includes('cancelled')) {
+        console.error('Failed to scan receipt in chat:', err);
+        const errText = language === 'id'
+          ? "Maaf, saya kesulitan memindai struk tersebut. Pastikan foto struk terlihat jelas dan coba lagi ya."
+          : "Sorry, I had trouble scanning that receipt. Please ensure the photo is clear and try again.";
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: errText,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Gagal memindai struk' : 'Failed to scan receipt', 'error');
+        if (isVoiceEnabled) speakText(errText);
+      }
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1381,12 +1495,12 @@ export default function AIChatAssistant() {
               <input
                 type="file"
                 accept="image/*"
-                ref={fileInputRef}
+                ref={galleryInputRef}
                 onChange={handleImageUpload}
                 className="hidden"
               />
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowSourcePicker(true)}
                 disabled={isTyping}
                 title={language === 'id' ? "Unggah Foto Struk" : "Upload Receipt Image"}
                 className="w-10 h-10 rounded-2xl bg-on-surface/5 border border-on-surface/10 text-on-surface/60 flex items-center justify-center hover:bg-on-surface/10 hover:text-on-surface hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer shrink-0"
@@ -1414,6 +1528,58 @@ export default function AIChatAssistant() {
                 <Send size={16} />
               </button>
             </div>
+            
+            {/* File Source Picker Overlay */}
+            <AnimatePresence>
+              {showSourcePicker && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/60 z-[110] flex items-end lg:items-center justify-center p-4 lg:p-6"
+                >
+                  <motion.div 
+                    initial={{ y: 50, scale: 0.95 }}
+                    animate={{ y: 0, scale: 1 }}
+                    exit={{ y: 50, scale: 0.95 }}
+                    className="w-full max-w-sm bg-surface rounded-[28px] p-6 shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="font-display font-bold text-on-surface text-lg">Pilih Sumber Gambar</h4>
+                      <button onClick={() => setShowSourcePicker(false)} className="p-2 bg-on-surface/5 rounded-full hover:bg-on-surface/10 transition-colors">
+                        <X size={16} className="text-on-surface/60" />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <button 
+                        onClick={handleNativeCamera}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-tertiary/10 text-tertiary hover:bg-tertiary/20 transition-colors border border-tertiary/20"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-tertiary/20 flex items-center justify-center shrink-0">
+                          <Camera size={20} />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-sm">Jepret Kamera</p>
+                          <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">Langsung dari aplikasi</p>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors border border-secondary/20"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+                          <ArrowUpRight size={20} />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-sm">Pilih dari Galeri</p>
+                          <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">Upload file gambar</p>
+                        </div>
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

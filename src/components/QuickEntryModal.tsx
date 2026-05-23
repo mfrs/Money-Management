@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { cn, compressImage, getLocalDateString, combineDateAndTimeToISO } from '../lib/utils';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
@@ -33,9 +34,10 @@ export default function QuickEntryModal() {
   const [note, setNote] = useState('');
   const [description, setDescription] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [isProcessingChat, setIsProcessingChat] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const aiInputRef = useRef<HTMLInputElement>(null);
 
   const filteredCategories = categories.filter(c => c.type === type);
@@ -44,7 +46,8 @@ export default function QuickEntryModal() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    e.target.value = ''; // Reset input so same file can be picked again
+    setShowSourcePicker(false); // Close picker if open
 
     setIsScanning(true);
 
@@ -78,6 +81,49 @@ export default function QuickEntryModal() {
         err.message || (language === 'id' ? 'Gagal membaca struk' : 'Failed to scan receipt'),
         'error'
       );
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleNativeCamera = async () => {
+    try {
+      setShowSourcePicker(false);
+      
+      const image = await CapacitorCamera.getPhoto({
+        quality: 80,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera
+      });
+
+      if (!image.base64String) return;
+
+      setIsScanning(true);
+      addToast(
+        language === 'id' ? 'Menganalisis struk belanja...' : 'Analyzing receipt...',
+        'info'
+      );
+      
+      const mimeType = `image/${image.format || 'jpeg'}`;
+      const data = await toolsApi.scanReceipt(image.base64String, mimeType);
+      
+      if (data.totalAmount) setAmount(data.totalAmount.toString());
+      if (data.merchantName) setDescription(data.merchantName);
+      if (data.date) setDate(data.date);
+      
+      setEntryStep('form');
+      
+      addToast(
+        language === 'id' ? 'Berhasil membaca struk!' : 'Receipt scanned successfully!',
+        'success'
+      );
+    } catch (err: any) {
+      // Ignore user cancellation
+      if (!err.message?.includes('User cancelled') && !err.message?.includes('cancelled')) {
+        console.error('Camera error:', err);
+        addToast(language === 'id' ? 'Gagal membuka kamera' : 'Failed to open camera', 'error');
+      }
     } finally {
       setIsScanning(false);
     }
@@ -221,7 +267,7 @@ export default function QuickEntryModal() {
                 </div>
                 {entryStep === 'form' && type === 'expense' && (
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setShowSourcePicker(true)}
                     disabled={isScanning}
                     className="ml-auto mr-12 sm:mr-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-tertiary/10 hover:bg-tertiary/20 text-tertiary border border-tertiary/20 text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50"
                   >
@@ -229,7 +275,7 @@ export default function QuickEntryModal() {
                     <span className="hidden sm:inline">Scan</span>
                   </button>
                 )}
-                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleScanReceipt} />
+                <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={handleScanReceipt} />
               </div>
               <button
                 id="btn-close-quick-entry"
@@ -261,7 +307,7 @@ export default function QuickEntryModal() {
                   </button>
 
                   <button 
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setShowSourcePicker(true)}
                     disabled={isScanning}
                     className="flex flex-col items-center justify-center p-6 bg-surface border border-on-surface/10 rounded-3xl hover:bg-on-surface/5 hover:border-tertiary/30 transition-all gap-3 group shadow-sm hover:shadow-md disabled:opacity-50"
                   >
@@ -270,7 +316,7 @@ export default function QuickEntryModal() {
                     </div>
                     <div className="space-y-1 text-center">
                       <p className="font-bold text-on-surface text-sm">Foto struk</p>
-                      <p className="text-[10px] text-on-surface/50 font-medium">Pindai nota otomatis</p>
+                      <p className="text-[10px] text-on-surface/50 font-medium">Kamera atau galeri</p>
                     </div>
                   </button>
 
@@ -497,6 +543,58 @@ export default function QuickEntryModal() {
                 </button>
               </div>
             )}
+
+            {/* File Source Picker Overlay */}
+            <AnimatePresence>
+              {showSourcePicker && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/60 z-50 flex items-end lg:items-center justify-center p-4 lg:p-6"
+                >
+                  <motion.div 
+                    initial={{ y: 50, scale: 0.95 }}
+                    animate={{ y: 0, scale: 1 }}
+                    exit={{ y: 50, scale: 0.95 }}
+                    className="w-full max-w-sm bg-surface rounded-[28px] p-6 shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="font-display font-bold text-on-surface text-lg">Pilih Sumber Gambar</h4>
+                      <button onClick={() => setShowSourcePicker(false)} className="p-2 bg-on-surface/5 rounded-full hover:bg-on-surface/10 transition-colors">
+                        <X size={16} className="text-on-surface/60" />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <button 
+                        onClick={handleNativeCamera}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-tertiary/10 text-tertiary hover:bg-tertiary/20 transition-colors border border-tertiary/20"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-tertiary/20 flex items-center justify-center shrink-0">
+                          <Camera size={20} />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-sm">Jepret Kamera</p>
+                          <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">Langsung dari aplikasi</p>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors border border-secondary/20"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+                          <ArrowUpRight size={20} />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-sm">Pilih dari Galeri</p>
+                          <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">Upload file gambar</p>
+                        </div>
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       )}
