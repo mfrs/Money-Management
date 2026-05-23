@@ -218,20 +218,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [assetTypes, setAssetTypes] = useState<AssetType[]>(() => {
     const saved = localStorage.getItem('wm_asset_types');
+    const mandatoryTypes: AssetType[] = [
+      { id: 'INVESTMENT', name: 'Investasi / Saham', isMandatory: true },
+      { id: 'PROPERTY', name: 'Properti / Rumah', isMandatory: true },
+      { id: 'VEHICLE', name: 'Kendaraan', isMandatory: true },
+      { id: 'GOLD', name: 'Emas / Logam Mulia', isMandatory: true },
+      { id: 'OTHER', name: 'Aset Lainnya', isMandatory: true }
+    ];
+
     if (saved) {
       try {
-        return JSON.parse(saved);
+        let parsed = JSON.parse(saved) as AssetType[];
+        // Remove the temporary Indonesian defaults if they haven't been used, 
+        // or just ensure the legacy mandatory ones are present.
+        parsed = parsed.filter(t => !['kas', 'deposito', 'obligasi', 'reksadana', 'saham', 'properti', 'lainnya'].includes(t.id));
+        
+        mandatoryTypes.forEach(mt => {
+          if (!parsed.find(p => p.id === mt.id)) {
+            parsed.push(mt);
+          }
+        });
+        return parsed;
       } catch (e) {}
     }
-    return [
-      { id: 'kas', name: 'Kas & Setara Kas', isMandatory: true },
-      { id: 'deposito', name: 'Deposito', isMandatory: true },
-      { id: 'obligasi', name: 'Obligasi/SBN', isMandatory: true },
-      { id: 'reksadana', name: 'Reksadana', isMandatory: true },
-      { id: 'saham', name: 'Saham', isMandatory: true },
-      { id: 'properti', name: 'Properti', isMandatory: true },
-      { id: 'lainnya', name: 'Lainnya', isMandatory: true }
-    ];
+    return mandatoryTypes;
   });
   const [debts, setDebts] = useState<Debt[]>([]);
 
