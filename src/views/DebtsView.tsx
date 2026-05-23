@@ -440,12 +440,12 @@ export default function DebtsView() {
       {/* Main Loan Add/Edit Modal */}
       <AnimatePresence>
         {isAdding && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg glass-dark rounded-[32px] p-8 border border-on-surface/10 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="w-full max-w-lg glass-dark rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl relative max-h-[90vh] overflow-y-auto"
             >
               <button onClick={() => setIsAdding(false)} className="absolute top-6 right-6 text-on-surface/40 hover:text-on-surface">
                 <X size={20} />
@@ -586,12 +586,12 @@ export default function DebtsView() {
       {/* instalment Repayment Modal */}
       <AnimatePresence>
         {payingDebtId && selectedPayingDebt && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md glass-dark rounded-[32px] p-8 border border-on-surface/10 shadow-2xl relative"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="w-full max-w-md glass-dark rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl relative"
             >
               <button onClick={() => setPayingDebtId(null)} className="absolute top-6 right-6 text-on-surface/40 hover:text-on-surface">
                 <X size={20} />

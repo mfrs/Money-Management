@@ -230,13 +230,13 @@ export default function CategoriesView() {
       {/* Add/Edit Form Modal */}
       <AnimatePresence>
         {showForm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-6">
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="glass rounded-[32px] p-8 lg:p-10 w-full max-w-md relative z-10 border border-on-surface/10 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="glass rounded-t-[32px] lg:rounded-[32px] p-8 lg:p-10 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-10 w-full max-w-md relative z-10 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-8">
                 <h3 className="font-display text-xl font-bold text-on-surface">{editingId ? 'Edit Category' : 'New Category'}</h3>

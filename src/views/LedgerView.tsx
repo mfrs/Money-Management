@@ -317,7 +317,7 @@ export default function LedgerView() {
       {/* Detail Journal Modal */}
       <AnimatePresence>
         {selectedJournal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-6">
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -327,10 +327,10 @@ export default function LedgerView() {
             />
             
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface-dim w-full max-w-4xl rounded-[32px] shadow-2xl relative z-10 border border-on-surface/10 flex flex-col max-h-[90vh] overflow-hidden"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="bg-surface-dim w-full max-w-4xl rounded-t-[32px] lg:rounded-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl overflow-hidden relative z-10 border-t lg:border border-on-surface/10 flex flex-col max-h-[90vh] pb-[env(safe-area-inset-bottom,2rem)] lg:pb-0"
             >
               {/* Toolbar */}
               <div className="px-8 py-6 flex items-center justify-between border-b border-on-surface/5 bg-on-surface/[0.02]">

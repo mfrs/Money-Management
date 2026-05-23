@@ -304,13 +304,13 @@ export default function BudgetView() {
       {/* Add Fixed Expense Modal */}
       <AnimatePresence>
         {showExpenseForm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-6">
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowExpenseForm(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="glass rounded-[32px] p-8 w-full max-w-sm relative z-10 border border-on-surface/10"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="glass rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 w-full max-w-sm relative z-10 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-display text-lg font-bold text-on-surface">{t('budget.addFixed')}</h3>

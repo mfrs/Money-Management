@@ -161,7 +161,7 @@ export default function QuickEntryModal() {
   return (
     <AnimatePresence>
       {isQuickEntryOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-6">
+        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -171,10 +171,10 @@ export default function QuickEntryModal() {
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-surface w-full max-w-lg rounded-[32px] lg:rounded-[40px] shadow-2xl overflow-hidden relative z-10 border border-on-surface/10 max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            className="bg-surface w-full max-w-lg rounded-t-[32px] lg:rounded-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl overflow-hidden relative z-10 border-t lg:border border-on-surface/10 max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom,1rem)] lg:pb-0"
           >
             <div className="px-8 lg:px-10 py-6 lg:py-8 flex items-center justify-between border-b border-on-surface/5">
               <div className="flex items-center gap-4">

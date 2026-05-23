@@ -15,7 +15,7 @@ export default function ConfirmDialog({ isOpen, title, message, confirmLabel = '
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[150] flex items-end lg:items-center justify-center p-0 lg:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -24,10 +24,10 @@ export default function ConfirmDialog({ isOpen, title, message, confirmLabel = '
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="glass rounded-[32px] p-8 max-w-md w-full relative z-10 border border-on-surface/10"
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            className="glass rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 max-w-md w-full relative z-10 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-none"
           >
             <div className="flex items-start gap-5 mb-6">
               <div className="w-12 h-12 rounded-xl bg-error-container flex items-center justify-center text-error shrink-0">

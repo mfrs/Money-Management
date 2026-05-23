@@ -50,12 +50,12 @@ export default function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
             className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 p-4"
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            className="fixed bottom-0 left-0 right-0 lg:bottom-auto lg:inset-x-auto lg:left-1/2 lg:top-1/2 z-50 w-full lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 p-0 lg:p-4"
           >
-            <div className="bg-surface border border-on-surface/10 shadow-2xl rounded-[32px] overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="bg-surface lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl rounded-t-[32px] lg:rounded-[32px] overflow-hidden flex flex-col max-h-[85vh] pb-[env(safe-area-inset-bottom,2rem)] lg:pb-0">
               {/* Header */}
               <div className="flex items-center justify-between p-6 bg-on-surface/[0.02] border-b border-on-surface/5 shrink-0">
                 <div className="flex items-center gap-3">
