@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff, Megaphone, X } from 'lucide-react';
-import { isExpensePaidForCurrentTerm } from '../lib/utils';
+import { isExpensePaidForCurrentTerm, cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrencyShort } from '../lib/types';
 import { AnimatePresence, motion } from 'motion/react';
@@ -123,18 +123,24 @@ export default function TopBar() {
   return (
     <header className="fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
       {/* Mobile hamburger */}
-      {!isSearchExpanded && (
-        <button
-          onClick={() => setIsMobileSidebarOpen(true)}
-          className="lg:hidden p-2 text-on-surface/40 hover:text-on-surface transition-colors rounded-xl"
-        >
-          <Menu size={20} />
-        </button>
-      )}
+      <button
+        onClick={() => setIsMobileSidebarOpen(true)}
+        className={cn(
+          "lg:hidden text-on-surface/40 hover:text-on-surface transition-all duration-300 ease-in-out rounded-xl flex items-center justify-center",
+          isSearchExpanded ? "w-0 opacity-0 overflow-hidden p-0 -ml-2" : "w-10 p-2 opacity-100"
+        )}
+      >
+        <Menu size={20} className="shrink-0" />
+      </button>
 
       {/* Search */}
-      <div className={`flex-1 max-w-md ${isSearchExpanded ? 'ml-0' : 'ml-2 lg:ml-0'} ${!isSearchExpanded ? 'hidden lg:block' : 'block'}`}>
-        <form onSubmit={handleSearch} className="relative group flex items-center gap-2 w-full">
+      <div 
+        className={cn(
+          "max-w-md transition-all duration-300 ease-in-out lg:flex-1 lg:opacity-100 lg:w-auto lg:overflow-visible lg:ml-0 lg:scale-100",
+          isSearchExpanded ? "flex-1 opacity-100 ml-0 scale-100" : "w-0 opacity-0 overflow-hidden scale-95"
+        )}
+      >
+        <form onSubmit={handleSearch} className="relative group flex items-center gap-2 w-full min-w-[200px] lg:min-w-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40 group-focus-within:text-on-surface transition-colors" size={16} />
             <input
@@ -154,7 +160,7 @@ export default function TopBar() {
                 setIsSearchExpanded(false);
                 setSearchQuery('');
               }} 
-              className="p-2 lg:hidden text-on-surface/60 hover:text-on-surface"
+              className="p-2 lg:hidden text-on-surface/60 hover:text-on-surface shrink-0"
             >
               <X size={20} />
             </button>
@@ -162,15 +168,18 @@ export default function TopBar() {
         </form>
       </div>
 
-      <div className={`items-center gap-3 lg:gap-6 ${isSearchExpanded ? 'hidden lg:flex' : 'flex'}`}>
-        {!isSearchExpanded && (
-          <button 
-            onClick={() => setIsSearchExpanded(true)} 
-            className="lg:hidden p-2.5 text-on-surface hover:bg-th-input-focus bg-th-input rounded-full border border-th-input transition-all"
-          >
-            <Search size={16} />
-          </button>
+      <div 
+        className={cn(
+          "items-center gap-3 lg:gap-6 transition-all duration-300 ease-in-out lg:flex lg:opacity-100 lg:w-auto lg:overflow-visible lg:translate-x-0",
+          isSearchExpanded ? "w-0 opacity-0 overflow-hidden translate-x-4 flex" : "flex opacity-100 translate-x-0"
         )}
+      >
+        <button 
+          onClick={() => setIsSearchExpanded(true)} 
+          className="lg:hidden p-2.5 text-on-surface hover:bg-th-input-focus bg-th-input rounded-full border border-th-input transition-all shrink-0"
+        >
+          <Search size={16} />
+        </button>
         <button
           onClick={() => {
             setShowWhatsNew(true);
