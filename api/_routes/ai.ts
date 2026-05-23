@@ -555,4 +555,14 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
   }
 });
 
+// Authenticated endpoint to fetch the Gemini API key for Live WebSockets directly on the frontend
+// (Required because Vercel Serverless Functions do not support WebSocket Proxies)
+router.get('/gemini-key', authMiddleware, (req: AuthRequest, res: Response) => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
+  }
+  res.json({ key });
+});
+
 export default router;
