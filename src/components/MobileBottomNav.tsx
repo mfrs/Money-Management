@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Wallet, Receipt, User, Plus } from 'lucide-react';
+import { LayoutDashboard, Wallet, Receipt, LayoutGrid, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
 
@@ -11,7 +11,7 @@ export default function MobileBottomNav() {
     { id: 'wallets', label: 'Dompet', icon: Wallet },
     { id: 'quick-add', label: '', icon: Plus, isAction: true },
     { id: 'budget', label: 'Anggaran', icon: Receipt },
-    { id: 'settings', label: 'Profil', icon: User },
+    { id: 'settings', label: 'Menu', icon: LayoutGrid, isMenu: true },
   ];
 
   return (
@@ -32,7 +32,12 @@ export default function MobileBottomNav() {
             );
           }
 
-          const isActive = currentView === item.id;
+          // Main tabs are strictly active on their specific views. 
+          // The Menu tab acts as a hub for all secondary views.
+          const isMainTab = ['dashboard', 'wallets', 'budget'].includes(currentView);
+          const isActive = item.isMenu 
+            ? !isMainTab // Menu is active if we are NOT on a main tab
+            : currentView === item.id;
 
           return (
             <button
