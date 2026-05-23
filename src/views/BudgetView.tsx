@@ -369,14 +369,14 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
       </div>
       <div className="flex-1 text-right">
         <label className="block text-[9px] font-bold text-on-surface/20 uppercase tracking-widest mb-2 mr-1">Amount</label>
-        <div className="relative inline-flex items-center">
-          <span className="text-on-surface/30 font-display text-base lg:text-lg mr-1">Rp</span>
+        <div className="relative flex justify-end items-center">
+          <span className="text-on-surface/30 font-display text-base lg:text-lg mr-2 shrink-0">Rp</span>
           <input
             type="number"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== source.amount) onUpdate(source.id, { amount: v }); }}
-            className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-28 lg:w-32 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
+            className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-full max-w-[150px] lg:max-w-[200px] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
       </div>
