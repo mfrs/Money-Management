@@ -122,22 +122,18 @@ export default function TopBar() {
 
   return (
     <header className="fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setIsMobileSidebarOpen(true)}
-        className={cn(
-          "lg:hidden text-on-surface/40 hover:text-on-surface transition-all duration-300 ease-in-out rounded-xl flex items-center justify-center",
-          isSearchExpanded ? "w-0 opacity-0 overflow-hidden p-0 -ml-2" : "w-10 p-2 opacity-100"
-        )}
-      >
-        <Menu size={20} className="shrink-0" />
-      </button>
+      {/* Mobile Profile */}
+      <div className="lg:hidden flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full overflow-hidden border border-primary/30 bg-primary/20 flex items-center justify-center">
+          <span className="text-xs font-bold text-primary">{initials}</span>
+        </div>
+        <span className="font-display text-sm font-bold tracking-widest uppercase text-on-surface">{user?.name || 'USER'}</span>
+      </div>
 
       {/* Search */}
       <div 
         className={cn(
-          "max-w-md transition-all duration-300 ease-in-out lg:flex-1 lg:opacity-100 lg:w-auto lg:overflow-visible lg:ml-0 lg:scale-100",
-          isSearchExpanded ? "flex-1 opacity-100 ml-0 scale-100" : "w-0 opacity-0 overflow-hidden scale-95"
+          "hidden lg:block max-w-md transition-all duration-300 ease-in-out flex-1",
         )}
       >
         <form onSubmit={handleSearch} className="relative group flex items-center gap-2 w-full min-w-[200px] lg:min-w-0">
@@ -174,18 +170,13 @@ export default function TopBar() {
           isSearchExpanded ? "w-0 opacity-0 overflow-hidden translate-x-4 flex" : "flex opacity-100 translate-x-0"
         )}
       >
-        <button 
-          onClick={() => setIsSearchExpanded(true)} 
-          className="lg:hidden p-2.5 text-on-surface hover:bg-th-input-focus bg-th-input rounded-full border border-th-input transition-all shrink-0"
-        >
-          <Search size={16} />
-        </button>
+        {/* Mobile Search Toggle Removed */}
         <button
           onClick={() => {
             setShowWhatsNew(true);
             setHasNewChangelog(false);
           }}
-          className="relative flex items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full"
+          className="hidden lg:flex relative items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full"
           title="What's New"
         >
           <Megaphone size={16} />
@@ -197,7 +188,7 @@ export default function TopBar() {
         <button
           id="btn-quick-entry"
           onClick={() => setIsQuickEntryOpen(true)}
-          className="flex items-center gap-2 bg-primary text-on-surface px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95 duration-200"
+          className="hidden lg:flex items-center gap-2 bg-primary text-on-surface px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-primary/80 transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95 duration-200"
         >
           <Plus size={14} />
           <span className="hidden sm:inline">{t('topbar.quickAdd')}</span>
@@ -206,7 +197,7 @@ export default function TopBar() {
         <button
           id="btn-toggle-sensor"
           onClick={toggleSensored}
-          className="flex items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full relative"
+          className="hidden lg:flex items-center justify-center p-2.5 bg-th-input text-on-surface hover:bg-th-input-focus transition-all active:scale-95 duration-200 border border-th-input rounded-full relative"
           title={isSensored ? "Show balances" : "Hide balances"}
         >
           {isSensored ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -267,7 +258,7 @@ export default function TopBar() {
           </AnimatePresence>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3 bg-th-input px-3 py-1.5 rounded-full border border-th-input">
+        <div className="hidden lg:flex items-center gap-3 bg-th-input px-3 py-1.5 rounded-full border border-th-input">
           <div className="w-6 h-6 rounded-full overflow-hidden border border-primary/30 bg-primary/20 flex items-center justify-center">
             <span className="text-[10px] font-bold text-primary">{initials}</span>
           </div>

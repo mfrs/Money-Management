@@ -19,6 +19,7 @@ import AssetsView from './views/AssetsView';
 import DebtsView from './views/DebtsView';
 import PGMonitorView from './views/PGMonitorView';
 import QuickEntryModal from './components/QuickEntryModal';
+import MobileBottomNav from './components/MobileBottomNav';
 import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
 import { AnimatePresence } from 'motion/react';
@@ -140,7 +141,7 @@ function AppContent() {
 
       <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full w-full">
         <TopBar />
-        <div className="pt-[calc(env(safe-area-inset-top,0px)+104px)] lg:pt-[calc(env(safe-area-inset-top,0px)+112px)] px-4 lg:px-10 w-full max-w-[1440px] mx-auto min-h-screen min-w-0">
+        <div className="pt-[calc(env(safe-area-inset-top,0px)+104px)] pb-[calc(env(safe-area-inset-bottom,0px)+80px)] lg:pb-0 lg:pt-[calc(env(safe-area-inset-top,0px)+112px)] px-4 lg:px-10 w-full max-w-[1440px] mx-auto min-h-screen min-w-0">
           <AnimatePresence mode="wait">
             <React.Fragment key={currentView}>
               {renderView()}
@@ -149,6 +150,7 @@ function AppContent() {
         </div>
       </main>
 
+      <MobileBottomNav />
       <QuickEntryModal />
       <AIChatAssistant />
       <ToastContainer />
