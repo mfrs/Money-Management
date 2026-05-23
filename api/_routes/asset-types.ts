@@ -7,10 +7,32 @@ const router = Router();
 // GET all asset types for user
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const assetTypes = await prisma.assetType.findMany({
+    let assetTypes = await prisma.assetType.findMany({
       where: { userId: req.userId! },
       orderBy: { createdAt: 'asc' }
     });
+
+    // Auto-seed mandatory types if missing (e.g. for users who registered before this feature)
+    const hasMandatory = assetTypes.some(t => t.isMandatory);
+    if (!hasMandatory) {
+      const defaultAssetTypes = [
+        { id: 'investment', name: 'Investasi / Saham', isMandatory: true, color: '#6366F1' },
+        { id: 'property', name: 'Properti / Rumah', isMandatory: true, color: '#3B82F6' },
+        { id: 'vehicle', name: 'Kendaraan', isMandatory: true, color: '#F59E0B' },
+        { id: 'gold', name: 'Emas / Logam Mulia', isMandatory: true, color: '#FBBF24' },
+        { id: 'other', name: 'Aset Lainnya', isMandatory: true, color: '#EC4899' },
+      ];
+      await prisma.assetType.createMany({
+        data: defaultAssetTypes.map(t => ({ ...t, userId: req.userId! })),
+        skipDuplicates: true
+      });
+      // Re-fetch after seeding
+      assetTypes = await prisma.assetType.findMany({
+        where: { userId: req.userId! },
+        orderBy: { createdAt: 'asc' }
+      });
+    }
+
     res.json(assetTypes);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch asset types' });
