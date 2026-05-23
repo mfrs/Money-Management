@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff, Megaphone } from 'lucide-react';
+import { Search, Bell, Plus, Menu, AlertCircle, Calendar, Eye, EyeOff, Megaphone, X } from 'lucide-react';
 import { isExpensePaidForCurrentTerm } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { formatCurrencyShort } from '../lib/types';
@@ -11,6 +11,7 @@ export default function TopBar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [hasNewChangelog, setHasNewChangelog] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,29 +123,54 @@ export default function TopBar() {
   return (
     <header className="fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-5 left-5 lg:left-[300px] h-16 glass rounded-[24px] px-4 lg:px-8 py-4 flex justify-between items-center z-40">
       {/* Mobile hamburger */}
-      <button
-        onClick={() => setIsMobileSidebarOpen(true)}
-        className="lg:hidden p-2 text-on-surface/40 hover:text-on-surface transition-colors rounded-xl"
-      >
-        <Menu size={20} />
-      </button>
+      {!isSearchExpanded && (
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="lg:hidden p-2 text-on-surface/40 hover:text-on-surface transition-colors rounded-xl"
+        >
+          <Menu size={20} />
+        </button>
+      )}
 
       {/* Search */}
-      <div className="flex-1 max-w-md ml-2 lg:ml-0">
-        <form onSubmit={handleSearch} className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40 group-focus-within:text-on-surface transition-colors" size={16} />
-          <input
-            id="search-input"
-            type="text"
-            placeholder={t('topbar.search')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-th-input border border-th-input rounded-full text-xs focus:outline-none focus:border-th-input-focus transition-all text-on-surface placeholder:text-on-surface/30"
-          />
+      <div className={`flex-1 max-w-md ${isSearchExpanded ? 'ml-0' : 'ml-2 lg:ml-0'} ${!isSearchExpanded ? 'hidden lg:block' : 'block'}`}>
+        <form onSubmit={handleSearch} className="relative group flex items-center gap-2 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40 group-focus-within:text-on-surface transition-colors" size={16} />
+            <input
+              id="search-input"
+              type="text"
+              placeholder={t('topbar.search')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus={isSearchExpanded}
+              className="w-full pl-10 pr-4 py-2 bg-th-input border border-th-input rounded-full text-xs focus:outline-none focus:border-th-input-focus transition-all text-on-surface placeholder:text-on-surface/30"
+            />
+          </div>
+          {isSearchExpanded && (
+            <button 
+              type="button" 
+              onClick={() => {
+                setIsSearchExpanded(false);
+                setSearchQuery('');
+              }} 
+              className="p-2 lg:hidden text-on-surface/60 hover:text-on-surface"
+            >
+              <X size={20} />
+            </button>
+          )}
         </form>
       </div>
 
-      <div className="flex items-center gap-3 lg:gap-6">
+      <div className={`items-center gap-3 lg:gap-6 ${isSearchExpanded ? 'hidden lg:flex' : 'flex'}`}>
+        {!isSearchExpanded && (
+          <button 
+            onClick={() => setIsSearchExpanded(true)} 
+            className="lg:hidden p-2.5 text-on-surface hover:bg-th-input-focus bg-th-input rounded-full border border-th-input transition-all"
+          >
+            <Search size={16} />
+          </button>
+        )}
         <button
           onClick={() => {
             setShowWhatsNew(true);
