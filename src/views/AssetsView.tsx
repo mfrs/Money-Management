@@ -111,7 +111,7 @@ const getAssetConfig = (typeId: string, assetTypes: any[]) => {
 };
 
 export default function AssetsView() {
-  const { assets, assetTypes, addAsset, updateAsset, deleteAsset, totalBalance, language, isSensored } = useApp();
+  const { assets, assetTypes, addAsset, updateAsset, deleteAsset, totalBalance, language, isSensored, t } = useApp();
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -155,13 +155,13 @@ export default function AssetsView() {
 
     return Object.entries(breakdown).map(([key, val]) => {
       const percentage = netWorth > 0 ? (val / netWorth) * 100 : 0;
-      let name = key === 'liquid' ? activeLoc.totalLiquid : 
+      let name = key === 'liquid' ? t('assetType.liquidTotal') : 
                  key === 'lainnya' ? activeLoc.types.other : key;
       const foundType = assetTypes.find(t => t.id === key);
       if (foundType) {
-        name = foundType.name;
+        name = foundType.isMandatory ? (t(`assetType.${foundType.id}`) !== `assetType.${foundType.id}` ? t(`assetType.${foundType.id}`) : foundType.name) : foundType.name;
       } else if (['GOLD', 'INVESTMENT', 'PROPERTY', 'VEHICLE'].includes(key.toUpperCase())) {
-        name = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+        name = t(`assetType.${key.toLowerCase()}`) !== `assetType.${key.toLowerCase()}` ? t(`assetType.${key.toLowerCase()}`) : key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
       }
       
       return {
@@ -330,9 +330,11 @@ export default function AssetsView() {
             const config = getAssetConfig(asset.type, assetTypes);
             const Icon = config.icon;
             const assetTypeObj = assetTypes.find(t => t.id === asset.type);
-            let assetTypeName = assetTypeObj ? assetTypeObj.name : asset.type;
+            let assetTypeName = assetTypeObj ? 
+              (assetTypeObj.isMandatory ? (t(`assetType.${assetTypeObj.id}`) !== `assetType.${assetTypeObj.id}` ? t(`assetType.${assetTypeObj.id}`) : assetTypeObj.name) : assetTypeObj.name) 
+              : asset.type;
             if (!assetTypeObj && ['GOLD', 'INVESTMENT', 'PROPERTY', 'VEHICLE'].includes(asset.type.toUpperCase())) {
-              assetTypeName = asset.type.charAt(0).toUpperCase() + asset.type.slice(1).toLowerCase();
+              assetTypeName = t(`assetType.${asset.type.toLowerCase()}`) !== `assetType.${asset.type.toLowerCase()}` ? t(`assetType.${asset.type.toLowerCase()}`) : asset.type.charAt(0).toUpperCase() + asset.type.slice(1).toLowerCase();
             }
             const gainLossVal = asset.currentPrice - asset.purchasePrice;
             const gainLossPct = asset.purchasePrice > 0 ? (gainLossVal / asset.purchasePrice) * 100 : 0;
@@ -476,7 +478,7 @@ export default function AssetsView() {
                   >
                     {assetTypes.map((at) => (
                       <option key={at.id} value={at.id} className="bg-surface text-on-surface">
-                        {at.name}
+                        {at.isMandatory ? (t(`assetType.${at.id}`) !== `assetType.${at.id}` ? t(`assetType.${at.id}`) : at.name) : at.name}
                       </option>
                     ))}
                   </select>

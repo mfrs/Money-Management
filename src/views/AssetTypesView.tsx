@@ -13,10 +13,11 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { AssetType } from '../lib/types';
 
 export default function AssetTypesView() {
-  const { assetTypes, addAssetType, updateAssetType, deleteAssetType, language } = useApp();
+  const { assetTypes, addAssetType, updateAssetType, deleteAssetType, t } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingIsMandatory, setEditingIsMandatory] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -26,13 +27,15 @@ export default function AssetTypesView() {
     setFormName('');
     setFormColor('#3B82F6');
     setEditingId(null);
+    setEditingIsMandatory(false);
     setShowForm(false);
   };
 
   const startEdit = (type: AssetType) => {
-    setFormName(type.name);
+    setFormName(type.isMandatory ? (t(`assetType.${type.id}`) !== `assetType.${type.id}` ? t(`assetType.${type.id}`) : type.name) : type.name);
     setFormColor(type.color || '#3B82F6');
     setEditingId(type.id);
+    setEditingIsMandatory(type.isMandatory || false);
     setShowForm(true);
   };
 
@@ -106,8 +109,9 @@ export default function AssetTypesView() {
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-on-surface truncate tracking-tight">{type.name}</h3>
-              {type.isMandatory && (
+              <h3 className="font-display font-bold text-on-surface text-lg">
+                {type.isMandatory ? (t(`assetType.${type.id}`) !== `assetType.${type.id}` ? t(`assetType.${type.id}`) : type.name) : type.name}
+              </h3> {type.isMandatory && (
                 <span className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest mt-2 block">System</span>
               )}
             </div>
@@ -143,9 +147,13 @@ export default function AssetTypesView() {
                     type="text"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
+                    disabled={editingIsMandatory}
                     placeholder="e.g. Saham Luar Negeri"
-                    className="w-full px-6 py-4 bg-on-surface/[0.02] border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-primary/50 transition-all placeholder:text-on-surface/20"
+                    className={`w-full px-6 py-4 border rounded-2xl text-sm font-bold text-on-surface focus:outline-none transition-all placeholder:text-on-surface/20 ${editingIsMandatory ? 'bg-on-surface/5 border-on-surface/10 cursor-not-allowed opacity-70' : 'bg-on-surface/[0.02] border-on-surface/5 focus:border-primary/50'}`}
                   />
+                  {editingIsMandatory && (
+                    <p className="text-xs text-on-surface/40 mt-2 ml-2">Name cannot be changed for default asset types.</p>
+                  )}
                 </div>
 
                 <div>

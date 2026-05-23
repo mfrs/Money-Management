@@ -19,6 +19,15 @@ export const translations: Record<Language, Dictionary> = {
     'nav.debts': 'Debts & Loans',
     'nav.ledger': 'General Ledger',
 
+    // Asset Types
+    'assetType.investment': 'Investment / Stocks',
+    'assetType.property': 'Property / Real Estate',
+    'assetType.vehicle': 'Vehicle',
+    'assetType.gold': 'Gold / Precious Metals',
+    'assetType.other': 'Other Assets',
+    'assetType.liquid': 'Liquid Assets',
+    'assetType.liquidTotal': 'Total Liquid',
+
     // TopBar
     'topbar.search': 'Search transactions...',
     'topbar.quickAdd': 'Quick Add',
@@ -201,6 +210,15 @@ export const translations: Record<Language, Dictionary> = {
     'nav.assets': 'Aset',
     'nav.debts': 'Hutang & Piutang',
     'nav.ledger': 'Jurnal Umum',
+
+    // Asset Types
+    'assetType.investment': 'Investasi / Saham',
+    'assetType.property': 'Properti / Rumah',
+    'assetType.vehicle': 'Kendaraan',
+    'assetType.gold': 'Emas / Logam Mulia',
+    'assetType.other': 'Aset Lainnya',
+    'assetType.liquid': 'Aset Likuid',
+    'assetType.liquidTotal': 'Total Likuid',
 
     // TopBar
     'topbar.search': 'Cari transaksi...',
