@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   ArrowUpRight,
@@ -10,7 +10,11 @@ import {
   ChevronDown,
   Camera,
   Loader2,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  Bot,
+  Mic,
+  PenLine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -19,6 +23,7 @@ import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
   const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, goals, addJournal, addToast, language } = useApp();
+  const [entryStep, setEntryStep] = useState<'selection' | 'form'>('selection');
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
@@ -30,7 +35,8 @@ export default function QuickEntryModal() {
   const [isScanning, setIsScanning] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [isProcessingChat, setIsProcessingChat] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const aiInputRef = useRef<HTMLInputElement>(null);
 
   const filteredCategories = categories.filter(c => c.type === type);
 
@@ -59,6 +65,8 @@ export default function QuickEntryModal() {
       if (data.totalAmount) setAmount(data.totalAmount.toString());
       if (data.merchantName) setDescription(data.merchantName);
       if (data.date) setDate(data.date);
+      
+      setEntryStep('form');
       
       addToast(
         language === 'id' ? 'Berhasil membaca struk!' : 'Receipt scanned successfully!',
@@ -142,8 +150,9 @@ export default function QuickEntryModal() {
   };
 
   // Set defaults when opening
-  React.useEffect(() => {
+  useEffect(() => {
     if (isQuickEntryOpen) {
+      setEntryStep('selection');
       if (!walletId && wallets.length > 0) setWalletId(wallets[0].id);
       if (!toWalletId && wallets.length > 1) setToWalletId(wallets[1].id);
       if (!categoryId && filteredCategories.length > 0) setCategoryId(filteredCategories[0].id);
@@ -152,11 +161,18 @@ export default function QuickEntryModal() {
   }, [isQuickEntryOpen]);
 
   // Update category when type changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (filteredCategories.length > 0 && !filteredCategories.find(c => c.id === categoryId)) {
       setCategoryId(filteredCategories[0].id);
     }
   }, [type]);
+
+  const openFormForChat = () => {
+    setEntryStep('form');
+    setTimeout(() => {
+      aiInputRef.current?.focus();
+    }, 100);
+  };
 
   return (
     <AnimatePresence>
@@ -176,23 +192,41 @@ export default function QuickEntryModal() {
             exit={{ opacity: 0, y: "100%" }}
             className="bg-surface w-full max-w-lg rounded-t-[32px] lg:rounded-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl overflow-hidden relative z-10 border-t lg:border border-on-surface/10 max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom,1rem)] lg:pb-0"
           >
-            <div className="px-8 lg:px-10 py-6 lg:py-8 flex items-center justify-between border-b border-on-surface/5">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shadow-low",
-                  type === 'expense' ? "bg-tertiary/20 text-tertiary" : type === 'transfer' ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"
-                )}>
-                  {type === 'expense' ? <ArrowUpRight size={20} /> : type === 'transfer' ? <ArrowUpRight className="rotate-45" size={20} /> : <ArrowDownLeft size={20} />}
+            {/* Header */}
+            <div className="px-6 lg:px-10 py-5 lg:py-8 flex items-center justify-between border-b border-on-surface/5 relative">
+              <div className="flex items-center gap-3">
+                {entryStep === 'form' && (
+                  <button 
+                    onClick={() => setEntryStep('selection')} 
+                    className="p-2 -ml-2 hover:bg-on-surface/5 rounded-xl transition-colors shrink-0"
+                  >
+                    <ArrowLeft size={20} className="text-on-surface/60" />
+                  </button>
+                )}
+                {entryStep === 'form' ? (
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shadow-low shrink-0 hidden sm:flex",
+                    type === 'expense' ? "bg-tertiary/20 text-tertiary" : type === 'transfer' ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"
+                  )}>
+                    {type === 'expense' ? <ArrowUpRight size={20} /> : type === 'transfer' ? <ArrowUpRight className="rotate-45" size={20} /> : <ArrowDownLeft size={20} />}
+                  </div>
+                ) : null}
+                <div className="flex flex-col">
+                  {entryStep === 'selection' ? null : (
+                    <span className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest sm:hidden">Quick Entry</span>
+                  )}
+                  <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
+                    {entryStep === 'selection' ? 'Pilih cara mencatat' : 'Quick Entry'}
+                  </h3>
                 </div>
-                <h3 className="font-display text-xl lg:text-2xl font-bold text-on-surface tracking-tight">Quick Entry</h3>
-                {type === 'expense' && (
+                {entryStep === 'form' && type === 'expense' && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isScanning}
-                    className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-tertiary/10 hover:bg-tertiary/20 text-tertiary border border-tertiary/20 text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50"
+                    className="ml-auto mr-12 sm:mr-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-tertiary/10 hover:bg-tertiary/20 text-tertiary border border-tertiary/20 text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50"
                   >
                     {isScanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                    <span className="hidden sm:inline">Scan Struk</span>
+                    <span className="hidden sm:inline">Scan</span>
                   </button>
                 )}
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleScanReceipt} />
@@ -200,203 +234,269 @@ export default function QuickEntryModal() {
               <button
                 id="btn-close-quick-entry"
                 onClick={() => setIsQuickEntryOpen(false)}
-                className="p-3 hover:bg-on-surface/5 rounded-2xl transition-all group"
+                className="absolute right-6 lg:right-8 p-2.5 hover:bg-on-surface/5 rounded-2xl transition-all group"
               >
                 <X size={24} className="text-on-surface/40 group-hover:text-on-surface group-hover:rotate-90 transition-all duration-300" />
               </button>
             </div>
 
-            <div className="p-8 lg:p-10 space-y-6 lg:space-y-8">
-              {/* Magic Chat Input */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  {isProcessingChat ? <Loader2 size={18} className="text-secondary animate-spin" /> : <Sparkles size={18} className="text-secondary group-focus-within:text-secondary/80 transition-colors" />}
-                </div>
-                <input
-                  type="text"
-                  value={aiInput}
-                  onChange={e => setAiInput(e.target.value)}
-                  onKeyDown={handleChatEntry}
-                  disabled={isProcessingChat}
-                  placeholder="Ketik lalu Enter (misal: Beli kopi 50rb pake BCA)"
-                  className="w-full bg-secondary/5 border border-secondary/20 hover:border-secondary/40 focus:border-secondary text-on-surface text-sm lg:text-base rounded-2xl py-4 pl-14 pr-6 transition-all outline-none placeholder:text-on-surface/30 focus:bg-secondary/10"
-                />
-                <div className="absolute top-0 right-0 h-full w-full pointer-events-none rounded-2xl shadow-[0_0_15px_rgba(var(--color-secondary),0.1)] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              </div>
+            {entryStep === 'selection' ? (
+              <div className="p-8 lg:p-10 space-y-8">
+                <p className="text-center text-on-surface/60 text-sm font-medium">
+                  Chat, foto struk, suara, atau form manual.
+                </p>
 
-              {/* Type Toggle */}
-              <div className="flex p-1.5 bg-on-surface/5 rounded-[20px] lg:rounded-[24px] border border-on-surface/5">
-                <button
-                  type="button"
-                  onClick={() => setType('expense')}
-                  className={cn(
-                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
-                    type === 'expense' ? "bg-tertiary/20 text-tertiary shadow-md border border-tertiary/20" : "text-on-surface/30 hover:text-on-surface/60"
-                  )}
-                >
-                  Expense
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('income')}
-                  className={cn(
-                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
-                    type === 'income' ? "bg-primary/20 text-primary shadow-md border border-primary/20" : "text-on-surface/30 hover:text-on-surface/60"
-                  )}
-                >
-                  Income
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('transfer')}
-                  className={cn(
-                    "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
-                    type === 'transfer' ? "bg-secondary/20 text-secondary shadow-md border border-secondary/20" : "text-on-surface/30 hover:text-on-surface/60"
-                  )}
-                >
-                  Transfer
-                </button>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={openFormForChat}
+                    className="flex flex-col items-center justify-center p-6 bg-surface border border-on-surface/10 rounded-3xl hover:bg-on-surface/5 hover:border-primary/30 transition-all gap-3 group shadow-sm hover:shadow-md"
+                  >
+                    <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-on-primary transition-all duration-300">
+                      <Bot size={28} />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="font-bold text-on-surface text-sm">Chat AI</p>
+                      <p className="text-[10px] text-on-surface/50 font-medium">Ketik transaksi</p>
+                    </div>
+                  </button>
 
-              {/* Amount */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between px-2">
-                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Amount</label>
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">IDR</span>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanning}
+                    className="flex flex-col items-center justify-center p-6 bg-surface border border-on-surface/10 rounded-3xl hover:bg-on-surface/5 hover:border-tertiary/30 transition-all gap-3 group shadow-sm hover:shadow-md disabled:opacity-50"
+                  >
+                    <div className="w-14 h-14 bg-tertiary/10 text-tertiary rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-tertiary group-hover:text-on-primary transition-all duration-300">
+                      {isScanning ? <Loader2 size={28} className="animate-spin" /> : <Camera size={28} />}
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="font-bold text-on-surface text-sm">Foto struk</p>
+                      <p className="text-[10px] text-on-surface/50 font-medium">Pindai nota otomatis</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                       addToast(language === 'id' ? 'Fitur suara akan segera hadir!' : 'Voice feature coming soon!', 'info');
+                    }}
+                    className="flex flex-col items-center justify-center p-6 bg-surface border border-on-surface/10 rounded-3xl hover:bg-on-surface/5 hover:border-secondary/30 transition-all gap-3 group shadow-sm hover:shadow-md"
+                  >
+                    <div className="w-14 h-14 bg-secondary/10 text-secondary rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-secondary group-hover:text-on-primary transition-all duration-300">
+                      <Mic size={28} />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="font-bold text-on-surface text-sm">Voice</p>
+                      <p className="text-[10px] text-on-surface/50 font-medium">Catat pakai suara</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setEntryStep('form')}
+                    className="flex flex-col items-center justify-center p-6 bg-surface border border-on-surface/10 rounded-3xl hover:bg-on-surface/5 hover:border-on-surface/30 transition-all gap-3 group shadow-sm hover:shadow-md"
+                  >
+                    <div className="w-14 h-14 bg-on-surface/5 text-on-surface/60 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-on-surface/80 group-hover:text-surface transition-all duration-300">
+                      <PenLine size={28} />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="font-bold text-on-surface text-sm">Manual</p>
+                      <p className="text-[10px] text-on-surface/50 font-medium">Form input lengkap</p>
+                    </div>
+                  </button>
                 </div>
+              </div>
+            ) : (
+              <div className="p-6 lg:p-10 space-y-6 lg:space-y-8">
+                {/* Magic Chat Input */}
                 <div className="relative group">
-                  <span className="absolute left-5 lg:left-6 top-1/2 -translate-y-1/2 font-display text-xl lg:text-2xl font-bold text-on-surface/20 group-focus-within:text-primary transition-colors">Rp</span>
+                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    {isProcessingChat ? <Loader2 size={18} className="text-secondary animate-spin" /> : <Sparkles size={18} className="text-secondary group-focus-within:text-secondary/80 transition-colors" />}
+                  </div>
                   <input
-                    id="input-amount"
-                    type="number"
-                    placeholder="0"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-14 lg:pl-16 pr-6 lg:pr-8 py-6 lg:py-8 bg-on-surface/5 border border-on-surface/5 rounded-[24px] lg:rounded-[32px] font-display text-3xl lg:text-5xl font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-on-surface placeholder:text-on-surface/10 transition-all outline-none"
+                    ref={aiInputRef}
+                    type="text"
+                    value={aiInput}
+                    onChange={e => setAiInput(e.target.value)}
+                    onKeyDown={handleChatEntry}
+                    disabled={isProcessingChat}
+                    placeholder="Ketik lalu Enter (misal: Beli kopi 50rb pake BCA)"
+                    className="w-full bg-secondary/5 border border-secondary/20 hover:border-secondary/40 focus:border-secondary text-on-surface text-sm lg:text-base rounded-2xl py-4 pl-14 pr-6 transition-all outline-none placeholder:text-on-surface/30 focus:bg-secondary/10"
                   />
+                  <div className="absolute top-0 right-0 h-full w-full pointer-events-none rounded-2xl shadow-[0_0_15px_rgba(var(--color-secondary),0.1)] opacity-0 group-focus-within:opacity-100 transition-opacity" />
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                  <StickyNote size={12} />
-                  Description
-                </label>
-                <input
-                  id="input-description"
-                  type="text"
-                  placeholder="e.g. Warung Nasi Padang"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-medium text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/15"
-                />
-              </div>
+                {/* Type Toggle */}
+                <div className="flex p-1.5 bg-on-surface/5 rounded-[20px] lg:rounded-[24px] border border-on-surface/5">
+                  <button
+                    type="button"
+                    onClick={() => setType('expense')}
+                    className={cn(
+                      "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
+                      type === 'expense' ? "bg-tertiary/20 text-tertiary shadow-md border border-tertiary/20" : "text-on-surface/30 hover:text-on-surface/60"
+                    )}
+                  >
+                    Expense
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType('income')}
+                    className={cn(
+                      "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
+                      type === 'income' ? "bg-primary/20 text-primary shadow-md border border-primary/20" : "text-on-surface/30 hover:text-on-surface/60"
+                    )}
+                  >
+                    Income
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType('transfer')}
+                    className={cn(
+                      "flex-1 py-3 lg:py-3.5 px-2 rounded-[16px] lg:rounded-[20px] text-[10px] lg:text-xs font-bold uppercase tracking-widest transition-all",
+                      type === 'transfer' ? "bg-secondary/20 text-secondary shadow-md border border-secondary/20" : "text-on-surface/30 hover:text-on-surface/60"
+                    )}
+                  >
+                    Transfer
+                  </button>
+                </div>
 
-              {/* Wallet & Category */}
-              <div className="grid grid-cols-2 gap-4 lg:gap-6">
+                {/* Amount */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                    <Wallet size={12} />
-                    {type === 'transfer' ? 'From Wallet' : 'Wallet'}
-                  </label>
+                  <div className="flex items-center justify-between px-2">
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em]">Amount</label>
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">IDR</span>
+                  </div>
                   <div className="relative group">
-                    <select
-                      id="select-wallet"
-                      value={walletId}
-                      onChange={(e) => setWalletId(e.target.value)}
-                      className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
-                    >
-                      {wallets.map(w => (
-                        <option key={w.id} value={w.id} className="bg-surface text-on-surface">{w.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
+                    <span className="absolute left-5 lg:left-6 top-1/2 -translate-y-1/2 font-display text-xl lg:text-2xl font-bold text-on-surface/20 group-focus-within:text-primary transition-colors">Rp</span>
+                    <input
+                      id="input-amount"
+                      type="number"
+                      placeholder="0"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full pl-14 lg:pl-16 pr-6 lg:pr-8 py-6 lg:py-8 bg-on-surface/5 border border-on-surface/5 rounded-[24px] lg:rounded-[32px] font-display text-3xl lg:text-5xl font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-on-surface placeholder:text-on-surface/10 transition-all outline-none"
+                    />
                   </div>
                 </div>
+
+                {/* Description */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                    {type === 'transfer' ? <Wallet size={12} /> : <Tag size={12} />}
-                    {type === 'transfer' ? 'To Wallet' : 'Category'}
+                    <StickyNote size={12} />
+                    Description
                   </label>
-                  <div className="relative group">
-                    {type === 'transfer' ? (
+                  <input
+                    id="input-description"
+                    type="text"
+                    placeholder="e.g. Warung Nasi Padang"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-medium text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all placeholder:text-on-surface/15"
+                  />
+                </div>
+
+                {/* Wallet & Category */}
+                <div className="grid grid-cols-2 gap-4 lg:gap-6">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                      <Wallet size={12} />
+                      {type === 'transfer' ? 'From Wallet' : 'Wallet'}
+                    </label>
+                    <div className="relative group">
                       <select
-                        id="select-to-wallet"
-                        value={toWalletId}
-                        onChange={(e) => setToWalletId(e.target.value)}
+                        id="select-wallet"
+                        value={walletId}
+                        onChange={(e) => setWalletId(e.target.value)}
                         className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                       >
                         {wallets.map(w => (
-                          <option key={w.id} value={w.id} disabled={w.id === walletId} className="bg-surface text-on-surface">{w.name}</option>
+                          <option key={w.id} value={w.id} className="bg-surface text-on-surface">{w.name}</option>
                         ))}
                       </select>
-                    ) : (
-                      <select
-                        id="select-category"
-                        value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
-                        className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
-                      >
-                        {filteredCategories.map(c => (
-                          <option key={c.id} value={c.id} className="bg-surface text-on-surface">{c.name}</option>
-                        ))}
-                      </select>
-                    )}
-                    <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
+                      <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                      {type === 'transfer' ? <Wallet size={12} /> : <Tag size={12} />}
+                      {type === 'transfer' ? 'To Wallet' : 'Category'}
+                    </label>
+                    <div className="relative group">
+                      {type === 'transfer' ? (
+                        <select
+                          id="select-to-wallet"
+                          value={toWalletId}
+                          onChange={(e) => setToWalletId(e.target.value)}
+                          className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
+                        >
+                          {wallets.map(w => (
+                            <option key={w.id} value={w.id} disabled={w.id === walletId} className="bg-surface text-on-surface">{w.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          id="select-category"
+                          value={categoryId}
+                          onChange={(e) => setCategoryId(e.target.value)}
+                          className="w-full px-4 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-[10px] lg:text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
+                        >
+                          {filteredCategories.map(c => (
+                            <option key={c.id} value={c.id} className="bg-surface text-on-surface">{c.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      <ChevronDown className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none" size={16} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Date */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                  <Calendar size={12} />
-                  Transaction Date
-                </label>
-                <input
-                  id="input-date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
-                />
-              </div>
+                {/* Date */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                    <Calendar size={12} />
+                    Transaction Date
+                  </label>
+                  <input
+                    id="input-date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-bold text-xs uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                  />
+                </div>
 
-              {/* Note */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                  <StickyNote size={12} />
-                  Note (Optional)
-                </label>
-                <textarea
-                  id="input-note"
-                  placeholder="What was this for?"
-                  rows={2}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-medium text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 resize-none transition-all placeholder:text-on-surface/15"
-                />
-              </div>
+                {/* Note */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                    <StickyNote size={12} />
+                    Note (Optional)
+                  </label>
+                  <textarea
+                    id="input-note"
+                    placeholder="What was this for?"
+                    rows={2}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full px-5 lg:px-6 py-3.5 lg:py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl font-medium text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/10 resize-none transition-all placeholder:text-on-surface/15"
+                  />
+                </div>
 
-              {/* Submit */}
-              <button
-                id="btn-save-transaction"
-                onClick={handleSubmit}
-                disabled={!amount || parseFloat(amount) <= 0 || !walletId || (type === 'transfer' ? !toWalletId : !categoryId)}
-                className={cn(
-                  "w-full py-5 lg:py-6 text-on-surface text-sm font-bold uppercase tracking-[0.3em] rounded-2xl lg:rounded-3xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 duration-200 mt-2",
-                  type === 'expense'
-                    ? "bg-tertiary hover:bg-tertiary/80 disabled:bg-tertiary/30"
-                    : type === 'transfer'
-                    ? "bg-secondary hover:bg-secondary/80 disabled:bg-secondary/30"
-                    : "bg-primary hover:bg-primary/80 disabled:bg-primary/30",
-                  (!amount || parseFloat(amount) <= 0) && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                Save {type === 'expense' ? 'Expense' : type === 'transfer' ? 'Transfer' : 'Income'}
-              </button>
-            </div>
+                {/* Submit */}
+                <button
+                  id="btn-save-transaction"
+                  onClick={handleSubmit}
+                  disabled={!amount || parseFloat(amount) <= 0 || !walletId || (type === 'transfer' ? !toWalletId : !categoryId)}
+                  className={cn(
+                    "w-full py-5 lg:py-6 text-on-surface text-sm font-bold uppercase tracking-[0.3em] rounded-2xl lg:rounded-3xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 duration-200 mt-2",
+                    type === 'expense'
+                      ? "bg-tertiary hover:bg-tertiary/80 disabled:bg-tertiary/30"
+                      : type === 'transfer'
+                      ? "bg-secondary hover:bg-secondary/80 disabled:bg-secondary/30"
+                      : "bg-primary hover:bg-primary/80 disabled:bg-primary/30",
+                    (!amount || parseFloat(amount) <= 0) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  Save {type === 'expense' ? 'Expense' : type === 'transfer' ? 'Transfer' : 'Income'}
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
       )}
