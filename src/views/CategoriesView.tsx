@@ -22,6 +22,7 @@ export default function CategoriesView() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -49,21 +50,28 @@ export default function CategoriesView() {
     setShowForm(true);
   };
 
-  const handleSubmit = () => {
-    if (!formName.trim()) return;
-    const data = {
-      name: formName,
-      type: activeTab as 'expense' | 'income',
-      icon: formIcon,
-      color: formColor,
-      budgetLimit: parseFloat(formBudget) || 0,
-    };
-    if (editingId) {
-      updateCategory(editingId, data);
-    } else {
-      addCategory(data);
+  const handleSubmit = async () => {
+    if (!formName.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const data = {
+        name: formName,
+        type: activeTab as 'expense' | 'income',
+        icon: formIcon,
+        color: formColor,
+        budgetLimit: parseFloat(formBudget) || 0,
+      };
+      if (editingId) {
+        await updateCategory(editingId, data);
+      } else {
+        await addCategory(data);
+      }
+      resetForm();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForm();
   };
 
   return (
@@ -311,11 +319,11 @@ export default function CategoriesView() {
 
                 <button
                   onClick={handleSubmit}
-                  disabled={!formName.trim()}
+                  disabled={!formName.trim() || isSubmitting}
                   className="w-full py-5 bg-primary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-primary/80 transition-all shadow-lg active:scale-95 duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   <Save size={16} />
-                  {editingId ? 'Update Category' : 'Create Category'}
+                  {isSubmitting ? 'Saving...' : (editingId ? 'Update Category' : 'Create Category')}
                 </button>
               </div>
             </motion.div>

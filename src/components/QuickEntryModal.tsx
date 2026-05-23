@@ -39,6 +39,7 @@ export default function QuickEntryModal() {
   const [isProcessingChat, setIsProcessingChat] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const aiInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredCategories = categories.filter(c => c.type === type);
 
@@ -170,29 +171,37 @@ export default function QuickEntryModal() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return;
     if (!walletId) return;
     if (type === 'transfer' && !toWalletId) return;
     if (type !== 'transfer' && !categoryId) return;
+    if (isSubmitting) return;
 
-    addJournal({
-      description: type === 'transfer' ? description || note || 'Transfer' : description || note || filteredCategories.find(c => c.id === categoryId)?.name || 'Transaction',
-      amount: numAmount,
-      type,
-      categoryId: type === 'transfer' ? undefined : categoryId,
-      walletId,
-      toWalletId: type === 'transfer' ? toWalletId : undefined,
-      date: combineDateAndTimeToISO(date),
-      note,
-    });
+    setIsSubmitting(true);
+    try {
+      await addJournal({
+        description: type === 'transfer' ? description || note || 'Transfer' : description || note || filteredCategories.find(c => c.id === categoryId)?.name || 'Transaction',
+        amount: numAmount,
+        type,
+        categoryId: type === 'transfer' ? undefined : categoryId,
+        walletId,
+        toWalletId: type === 'transfer' ? toWalletId : undefined,
+        date: combineDateAndTimeToISO(date),
+        note,
+      });
 
-    // Reset form
-    setAmount('');
-    setNote('');
-    setDescription('');
-    setIsQuickEntryOpen(false);
+      // Reset form
+      setAmount('');
+      setNote('');
+      setDescription('');
+      setIsQuickEntryOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Set defaults when opening
@@ -528,7 +537,7 @@ export default function QuickEntryModal() {
                 <button
                   id="btn-save-transaction"
                   onClick={handleSubmit}
-                  disabled={!amount || parseFloat(amount) <= 0 || !walletId || (type === 'transfer' ? !toWalletId : !categoryId)}
+                  disabled={!amount || parseFloat(amount) <= 0 || !walletId || (type === 'transfer' ? !toWalletId : !categoryId) || isSubmitting}
                   className={cn(
                     "w-full py-5 lg:py-6 text-on-surface text-sm font-bold uppercase tracking-[0.3em] rounded-2xl lg:rounded-3xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 duration-200 mt-2",
                     type === 'expense'
@@ -536,10 +545,11 @@ export default function QuickEntryModal() {
                       : type === 'transfer'
                       ? "bg-secondary hover:bg-secondary/80 disabled:bg-secondary/30"
                       : "bg-primary hover:bg-primary/80 disabled:bg-primary/30",
-                    (!amount || parseFloat(amount) <= 0) && "opacity-50 cursor-not-allowed"
+                    (!amount || parseFloat(amount) <= 0) && "opacity-50 cursor-not-allowed",
+                    isSubmitting && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  Save {type === 'expense' ? 'Expense' : type === 'transfer' ? 'Transfer' : 'Income'}
+                  {isSubmitting ? 'Saving...' : `Save ${type === 'expense' ? 'Expense' : type === 'transfer' ? 'Transfer' : 'Income'}`}
                 </button>
               </div>
             )}

@@ -9,6 +9,8 @@ import {
   X,
   Save,
   Check,
+  TrendingUp,
+  Bell,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -23,6 +25,8 @@ export default function BudgetView() {
     addIncomeSource, updateIncomeSource, deleteIncomeSource,
     addFixedExpense, updateFixedExpense, deleteFixedExpense,
     addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
+    autoInvestRules, addAutoInvestRule, updateAutoInvestRule, deleteAutoInvestRule,
+    investNotifications, clearInvestNotification, addJournal,
     setCurrentView, addToast, t, isSensored,
   } = useApp();
 
@@ -70,6 +74,51 @@ export default function BudgetView() {
     } else {
       addToast('All wallets already have allocations', 'info');
     }
+  };
+
+  // Add auto invest
+  const [showAutoInvestForm, setShowAutoInvestForm] = useState(false);
+  const [aiName, setAiName] = useState('');
+  const [aiType, setAiType] = useState<'nominal' | 'percentage'>('nominal');
+  const [aiAmount, setAiAmount] = useState('');
+  const [aiTriggerDate, setAiTriggerDate] = useState('25');
+
+  const [investNotifToConfirm, setInvestNotifToConfirm] = useState<any>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState('');
+
+  const processInvest = async () => {
+    if (!investNotifToConfirm || !selectedWalletId) return;
+    
+    try {
+      await addJournal({
+        date: new Date().toISOString(),
+        description: `Auto Invest: ${investNotifToConfirm.ruleName}`,
+        lines: [
+          { type: 'DEBIT', amount: investNotifToConfirm.amount, description: 'Investment / Target' },
+          { type: 'CREDIT', amount: investNotifToConfirm.amount, walletId: selectedWalletId, description: 'Source' }
+        ]
+      } as any);
+      clearInvestNotification(investNotifToConfirm.id);
+      setInvestNotifToConfirm(null);
+      setSelectedWalletId('');
+      addToast('Investment recorded successfully', 'success');
+    } catch {
+      addToast('Failed to record investment', 'error');
+    }
+  };
+
+  const handleAddAutoInvest = () => {
+    if (!aiName.trim()) return;
+    addAutoInvestRule({
+      name: aiName,
+      type: aiType,
+      amount: parseFloat(aiAmount) || 0,
+      triggerDate: parseInt(aiTriggerDate) || 25,
+      isActive: true,
+    });
+    setAiName('');
+    setAiAmount('');
+    setShowAutoInvestForm(false);
   };
 
   return (
@@ -215,8 +264,8 @@ export default function BudgetView() {
         </div>
 
         {/* Right Column: Wallet Allocation */}
-        <div className="xl:col-span-5">
-          <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 h-full flex flex-col">
+        <div className="xl:col-span-5 flex flex-col gap-8">
+          <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col min-h-[400px]">
             <div className="mb-8 lg:mb-10">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-on-surface/5 border border-on-surface/10 flex items-center justify-center text-tertiary">
@@ -252,6 +301,64 @@ export default function BudgetView() {
                 <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{t('budget.addAllocation')}</span>
               </button>
+            </div>
+          </div>
+
+          {/* Auto Invest Rules */}
+          <div className="glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 flex flex-col min-h-[400px]">
+            <div className="flex justify-between items-start mb-8 lg:mb-10">
+              <div>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-on-surface/5 border border-on-surface/10 flex items-center justify-center text-secondary">
+                    <TrendingUp size={20} />
+                  </div>
+                  <h4 className="font-display text-base lg:text-lg font-bold text-on-surface uppercase tracking-widest">Auto Invest</h4>
+                </div>
+                <p className="text-sm text-on-surface/40 leading-relaxed font-medium max-w-[200px]">
+                  Set automated scheduled investment targets to build your wealth effortlessly.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAutoInvestForm(true)}
+                className="text-[10px] font-bold text-on-surface/30 hover:text-on-surface uppercase tracking-widest px-4 py-2 bg-on-surface/5 rounded-full border border-on-surface/5 transition-all flex items-center gap-2"
+              >
+                <Plus size={14} /> {t('common.add')}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-1">
+              {investNotifications?.map(notif => (
+                <div key={notif.id} className="p-5 lg:p-6 rounded-2xl border border-secondary/20 bg-secondary/5 flex flex-col gap-4 relative overflow-hidden group">
+                  <div className="flex items-center gap-3 text-secondary">
+                    <Bell size={16} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Action Required</span>
+                  </div>
+                  <p className="text-sm font-bold text-on-surface">
+                    Confirm automated investment of <span className="text-secondary"><CensoredAmount amount={notif.amount} isSensored={isSensored} /></span> for target <span className="text-primary">{notif.ruleName}</span> today?
+                  </p>
+                  <div className="flex gap-3 mt-2">
+                    <button onClick={() => setInvestNotifToConfirm(notif)} className="flex-1 py-3 bg-secondary text-on-surface rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-secondary/90 transition-all">
+                      Confirm
+                    </button>
+                    <button onClick={() => clearInvestNotification(notif.id)} className="flex-1 py-3 bg-on-surface/5 text-on-surface/60 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-on-surface/10 hover:text-on-surface transition-all">
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {autoInvestRules?.map((rule) => (
+                <AutoInvestRow 
+                  key={rule.id}
+                  rule={rule}
+                  onUpdate={updateAutoInvestRule}
+                  onDelete={deleteAutoInvestRule}
+                  isSensored={isSensored}
+                />
+              ))}
+              {(!autoInvestRules || autoInvestRules.length === 0) && (
+                <div className="py-8 text-center text-on-surface/20 text-sm uppercase tracking-widest">No rules setup</div>
+              )}
             </div>
           </div>
         </div>
@@ -334,6 +441,81 @@ export default function BudgetView() {
                 </div>
                 <button onClick={handleAddExpense} disabled={!expName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
                   <Save size={16} /> {t('common.save')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Auto Invest Modal */}
+      <AnimatePresence>
+        {showAutoInvestForm && (
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAutoInvestForm(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="glass rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 w-full max-w-sm relative z-10 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-display text-lg font-bold text-on-surface">New Auto Invest</h3>
+                <button onClick={() => setShowAutoInvestForm(false)} className="text-on-surface/30 hover:text-on-surface"><X size={18} /></button>
+              </div>
+              <div className="space-y-4">
+                <input type="text" value={aiName} onChange={(e) => setAiName(e.target.value)} placeholder="Target Name (e.g., SBN)" className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                <select value={aiType} onChange={(e) => setAiType(e.target.value as 'nominal'|'percentage')} className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none appearance-none cursor-pointer uppercase tracking-widest">
+                  <option value="nominal">Fixed Amount (Rp)</option>
+                  <option value="percentage">Percentage (%) of Inflow</option>
+                </select>
+                <div className="relative">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold">{aiType === 'nominal' ? 'Rp' : '%'}</span>
+                  <input type="number" value={aiAmount} onChange={(e) => setAiAmount(e.target.value)} placeholder="0" className="w-full pl-12 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">Trigger Date</span>
+                  <input type="number" min="1" max="31" value={aiTriggerDate} onChange={(e) => setAiTriggerDate(e.target.value)} placeholder="1" className="w-full pl-36 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                </div>
+                <button onClick={handleAddAutoInvest} disabled={!aiName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
+                  <Save size={16} /> {t('common.save')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Confirm Auto Invest Modal */}
+      <AnimatePresence>
+        {investNotifToConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setInvestNotifToConfirm(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="glass rounded-t-[32px] lg:rounded-[32px] p-8 pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-8 w-full max-w-sm relative z-10 border-t lg:border border-on-surface/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] lg:shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-display text-lg font-bold text-on-surface">Confirm Investment</h3>
+                <button onClick={() => setInvestNotifToConfirm(null)} className="text-on-surface/30 hover:text-on-surface"><X size={18} /></button>
+              </div>
+              <div className="space-y-4">
+                <p className="text-xs text-on-surface/60 font-medium">Select a wallet to fund this automated investment for <span className="font-bold text-on-surface">{investNotifToConfirm.ruleName}</span>.</p>
+                <div className="p-4 rounded-xl bg-on-surface/5 flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest">Amount</span>
+                  <span className="font-bold text-secondary">
+                    {formatCurrency(investNotifToConfirm.amount, isSensored)}
+                  </span>
+                </div>
+                <select value={selectedWalletId} onChange={(e) => setSelectedWalletId(e.target.value)} className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none appearance-none cursor-pointer tracking-widest">
+                  <option value="" disabled>Select Wallet</option>
+                  {wallets.map(w => (
+                    <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, isSensored)})</option>
+                  ))}
+                </select>
+                <button onClick={processInvest} disabled={!selectedWalletId} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2 mt-2">
+                  <Check size={16} /> Confirm & Record
                 </button>
               </div>
             </motion.div>
@@ -426,6 +608,60 @@ function WalletAllocationRow({ alloc, wallet, isSensored, onUpdate, onDelete }: 
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== alloc.amount) onUpdate(alloc.id, { amount: v }); }}
             className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline editable row for Auto Invest
+function AutoInvestRow({ rule, onUpdate, onDelete, isSensored }: { rule: any; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void; isSensored: boolean }) {
+  const [localAmount, setLocalAmount] = useState(rule.amount?.toString() || '');
+
+  React.useEffect(() => {
+    setLocalAmount(rule.amount?.toString() || '');
+  }, [rule.amount]);
+
+  return (
+    <div className="p-5 lg:p-6 rounded-2xl border border-on-surface/5 bg-on-surface/[0.01] flex flex-col gap-4 relative overflow-hidden group hover:bg-on-surface/[0.04] hover:border-on-surface/10 transition-all">
+      <div className="flex justify-between items-center pl-2 text-on-surface">
+        <div className="flex items-center gap-3">
+          <TrendingUp className="text-secondary opacity-80" size={16} />
+          <span className="text-xs font-bold text-on-surface tracking-widest uppercase">{rule.name}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
+            Due Day: {rule.triggerDate}
+          </span>
+          <button
+            onClick={() => onUpdate(rule.id, { isActive: !rule.isActive })}
+            className={cn(
+              "w-7 h-4 rounded-full relative transition-colors duration-300 focus:outline-none border border-on-surface/5 mx-2",
+              rule.isActive ? "bg-secondary" : "bg-on-surface/5"
+            )}
+          >
+            <div className={cn(
+              "absolute top-0.5 w-3 h-3 bg-on-surface rounded-full transition-all duration-300 shadow-sm",
+              rule.isActive ? "left-[14px]" : "left-[2px]"
+            )} />
+          </button>
+          <button onClick={() => onDelete(rule.id)} className="text-on-surface/10 hover:text-error transition-colors p-1">
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 pl-2">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold text-sm">
+            {rule.type === 'nominal' ? 'Rp' : '%'}
+          </span>
+          <input
+            type="number"
+            value={localAmount}
+            onChange={(e) => setLocalAmount(e.target.value)}
+            onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== rule.amount) onUpdate(rule.id, { amount: v }); }}
+            className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && rule.type === 'nominal' && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
       </div>

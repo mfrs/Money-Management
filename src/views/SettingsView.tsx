@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import CategoriesView from './CategoriesView';
+import AssetTypesView from './AssetTypesView';
 import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -150,6 +151,7 @@ export default function SettingsView() {
     { id: 'profile', label: t('settings.profile'), icon: User },
     { id: 'security', label: t('settings.security'), icon: Lock },
     { id: 'categories', label: 'Categories', icon: Database },
+    { id: 'assetTypes', label: 'Asset Types', icon: Diamond },
     { id: 'appearance', label: t('settings.preferences'), icon: Sun },
     { id: 'backup', label: 'Backup & Restore', icon: RotateCcw },
   ];
@@ -192,6 +194,10 @@ export default function SettingsView() {
           {/* CATEGORIES TAB */}
           {activeTab === 'categories' ? (
             <CategoriesView />
+
+          /* ASSET TYPES TAB */
+          ) : activeTab === 'assetTypes' ? (
+            <AssetTypesView />
 
           /* PROFILE TAB */
           ) : activeTab === 'profile' ? (

@@ -9,6 +9,7 @@ import { getIcon } from '../lib/icons';
 export default function GoalsView() {
   const { goals, addGoal, updateGoal, deleteGoal, t } = useApp();
   const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
@@ -38,25 +39,32 @@ export default function GoalsView() {
     setIsAdding(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !targetAmount) return;
+    if (!name || !targetAmount || isSubmitting) return;
 
-    const data = {
-      name,
-      targetAmount: parseFloat(targetAmount) || 0,
-      currentAmount: parseFloat(currentAmount) || 0,
-      deadline: deadline || undefined,
-      icon: 'Target',
-      color,
-    };
+    setIsSubmitting(true);
+    try {
+      const data = {
+        name,
+        targetAmount: parseFloat(targetAmount) || 0,
+        currentAmount: parseFloat(currentAmount) || 0,
+        deadline: deadline || undefined,
+        icon: 'Target',
+        color,
+      };
 
-    if (editingId) {
-      updateGoal(editingId, data);
-    } else {
-      addGoal(data as any);
+      if (editingId) {
+        await updateGoal(editingId, data);
+      } else {
+        await addGoal(data as any);
+      }
+      setIsAdding(false);
+    } catch (err) {
+      console.error('Failed to save goal', err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsAdding(false);
   };
 
   return (
@@ -113,9 +121,14 @@ export default function GoalsView() {
 
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
-                  <span className="text-2xl font-display font-bold tabular-nums text-on-surface tracking-tighter">
-                    {formatCurrencyShort(goal.currentAmount)}
-                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-display font-bold tabular-nums text-on-surface tracking-tighter">
+                      {formatCurrencyShort(goal.currentAmount)}
+                    </span>
+                    <span className="text-sm font-bold text-on-surface/60 tabular-nums">
+                      {progress}%
+                    </span>
+                  </div>
                   <span className="text-xs font-bold text-on-surface/40 uppercase tracking-widest tabular-nums">
                     / {formatCurrencyShort(goal.targetAmount)}
                   </span>
@@ -227,8 +240,8 @@ export default function GoalsView() {
                   </div>
                 </div>
 
-                <button type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl">
-                  {editingId ? t('goals.update') : t('goals.save')}
+                <button disabled={isSubmitting} type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? (language === 'id' ? 'Menyimpan...' : 'Saving...') : (editingId ? t('goals.update') : t('goals.save'))}
                 </button>
               </form>
             </motion.div>

@@ -91,6 +91,7 @@ const loc = {
 export default function DebtsView() {
   const { debts, addDebt, updateDebt, deleteDebt, payDebt, wallets, language, isSensored } = useApp();
   const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
   // Payment Modal State
@@ -178,38 +179,52 @@ export default function DebtsView() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !contact || !amount) return;
+    if (!title || !contact || !amount || isSubmitting) return;
 
-    const data = {
-      title,
-      type,
-      contact,
-      amount: parseFloat(amount),
-      dueDate: dueDate || undefined,
-      interestRate: parseFloat(interestRate) || 0,
-      notes,
-      walletId: walletId || undefined,
-    };
+    setIsSubmitting(true);
+    try {
+      const data = {
+        title,
+        type,
+        contact,
+        amount: parseFloat(amount),
+        dueDate: dueDate || undefined,
+        interestRate: parseFloat(interestRate) || 0,
+        notes,
+        walletId: walletId || undefined,
+      };
 
-    if (editingId) {
-      await updateDebt(editingId, data as any);
-    } else {
-      await addDebt(data);
+      if (editingId) {
+        await updateDebt(editingId, data as any);
+      } else {
+        await addDebt(data);
+      }
+      setIsAdding(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsAdding(false);
   };
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!payingDebtId || !paymentAmount || !paymentWalletId) return;
+    if (!payingDebtId || !paymentAmount || !paymentWalletId || isSubmitting) return;
 
-    await payDebt(payingDebtId, {
-      walletId: paymentWalletId,
-      amount: parseFloat(paymentAmount),
-      date: paymentDate,
-      note: paymentNote,
-    });
-    setPayingDebtId(null);
+    setIsSubmitting(true);
+    try {
+      await payDebt(payingDebtId, {
+        walletId: paymentWalletId,
+        amount: parseFloat(paymentAmount),
+        date: paymentDate,
+        note: paymentNote,
+      });
+      setPayingDebtId(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectedPayingDebt = useMemo(() => {
@@ -574,8 +589,8 @@ export default function DebtsView() {
                   />
                 </div>
 
-                <button type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl">
-                  {editingId ? activeLoc.updateDebt : activeLoc.saveDebt}
+                <button disabled={isSubmitting} type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? (language === 'id' ? 'Menyimpan...' : 'Saving...') : (editingId ? activeLoc.updateDebt : activeLoc.saveDebt)}
                 </button>
               </form>
             </motion.div>
@@ -666,8 +681,8 @@ export default function DebtsView() {
                   />
                 </div>
 
-                <button type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl">
-                  {activeLoc.recordPayment}
+                <button disabled={isSubmitting} type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? (language === 'id' ? 'Menyimpan...' : 'Saving...') : activeLoc.recordPayment}
                 </button>
               </form>
             </motion.div>

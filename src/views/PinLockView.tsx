@@ -48,6 +48,22 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
     setPin(prev => prev.slice(0, -1));
   };
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in some inputs (though pin view has no inputs, just safe practice)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key >= '0' && e.key <= '9') {
+        handleKeyPress(e.key);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        handleDelete();
+      }
+    };
+    
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [pin, step]); // re-bind when pin/step changes because handleKeyPress depends on it
+
   const processCompletedPin = (enteredPin: string) => {
     setTimeout(() => {
       if (step === 'setup') {
@@ -177,8 +193,8 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
           ))}
         </motion.div>
 
-        {/* Keypad */}
-        <div className="w-full grid grid-cols-3 gap-y-4 gap-x-6 max-w-[280px] mx-auto mb-10">
+        {/* Keypad - Hidden on desktop (xl), visible on mobile/tablet */}
+        <div className="w-full grid grid-cols-3 gap-y-4 gap-x-6 max-w-[280px] mx-auto mb-10 xl:hidden">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
             <button
               key={num}

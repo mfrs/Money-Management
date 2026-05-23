@@ -83,14 +83,34 @@ const ASSET_TYPE_CONFIG = {
   liquid: { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' }
 };
 
+const getAssetConfig = (typeId: string) => {
+  if (typeId === 'liquid') return { color: '#10B981', icon: Landmark, bg: 'rgba(16, 185, 129, 0.1)' };
+  if (typeId === 'kas' || typeId === 'deposito' || typeId === 'obligasi' || typeId === 'reksadana' || typeId === 'saham') return { color: '#6366F1', icon: TrendingUp, bg: 'rgba(99, 102, 241, 0.1)' };
+  if (typeId === 'properti') return { color: '#3B82F6', icon: Home, bg: 'rgba(59, 130, 246, 0.1)' };
+  
+  const defaultColors = [
+    { color: '#F59E0B', icon: Car, bg: 'rgba(245, 158, 11, 0.1)' },
+    { color: '#FBBF24', icon: Gem, bg: 'rgba(251, 191, 36, 0.1)' },
+    { color: '#EC4899', icon: Briefcase, bg: 'rgba(236, 72, 153, 0.1)' },
+    { color: '#8B5CF6', icon: Briefcase, bg: 'rgba(139, 92, 246, 0.1)' },
+  ];
+  let hash = 0;
+  for (let i = 0; i < typeId.length; i++) {
+    hash = typeId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % defaultColors.length;
+  return defaultColors[index];
+};
+
 export default function AssetsView() {
-  const { assets, addAsset, updateAsset, deleteAsset, totalBalance, language, isSensored } = useApp();
+  const { assets, assetTypes, addAsset, updateAsset, deleteAsset, totalBalance, language, isSensored } = useApp();
   const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState('');
-  const [type, setType] = useState<'investment' | 'property' | 'vehicle' | 'gold' | 'other'>('investment');
+  const [type, setType] = useState(assetTypes[0]?.id || '');
   const [purchasePrice, setPurchasePrice] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
@@ -109,37 +129,42 @@ export default function AssetsView() {
   }, [totalBalance, totalAssetsCurrentVal]);
 
   const categoryBreakdown = useMemo(() => {
-    const breakdown = {
+    const breakdown: Record<string, number> = {
       liquid: totalBalance,
-      investment: 0,
-      property: 0,
-      vehicle: 0,
-      gold: 0,
-      other: 0,
     };
+
+    assetTypes.forEach(t => {
+      breakdown[t.id] = 0;
+    });
 
     assets.forEach(asset => {
       if (asset.type in breakdown) {
         breakdown[asset.type] += asset.currentPrice;
       } else {
-        breakdown.other += asset.currentPrice;
+        breakdown['lainnya'] = (breakdown['lainnya'] || 0) + asset.currentPrice;
       }
     });
 
     return Object.entries(breakdown).map(([key, val]) => {
-      const percentage = netWorth > 0 ? Math.round((val / netWorth) * 100) : 0;
+      const percentage = netWorth > 0 ? (val / netWorth) * 100 : 0;
       return {
-        key: key as keyof typeof ASSET_TYPE_CONFIG,
+        key,
         value: val,
         percentage,
-        config: ASSET_TYPE_CONFIG[key as keyof typeof ASSET_TYPE_CONFIG]
+        config: getAssetConfig(key)
       };
     }).sort((a, b) => b.value - a.value);
-  }, [assets, totalBalance, netWorth]);
+  }, [assets, totalBalance, netWorth, assetTypes]);
+
+  const formatPercentage = (val: number) => {
+    if (val === Math.round(val)) return `${val}%`;
+    const str = val.toFixed(2).replace(/\.?0+$/, '');
+    return `${language === 'id' ? str.replace('.', ',') : str}%`;
+  };
 
   const openAdd = () => {
     setName('');
-    setType('investment');
+    setType(assetTypes[0]?.id || '');
     setPurchasePrice('');
     setCurrentPrice('');
     setPurchaseDate(getLocalDateString());
@@ -163,24 +188,31 @@ export default function AssetsView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !purchasePrice || !currentPrice) return;
+    if (!name || !purchasePrice || !currentPrice || isSubmitting) return;
 
-    const data = {
-      name,
-      type,
-      purchasePrice: parseFloat(purchasePrice),
-      currentPrice: parseFloat(currentPrice),
-      purchaseDate: purchaseDate || new Date().toISOString(),
-      estimatedRate: parseFloat(estimatedRate) || 0,
-      notes
-    };
+    setIsSubmitting(true);
+    try {
+      const data = {
+        name,
+        type,
+        purchasePrice: parseFloat(purchasePrice),
+        currentPrice: parseFloat(currentPrice),
+        purchaseDate: purchaseDate || new Date().toISOString(),
+        estimatedRate: parseFloat(estimatedRate) || 0,
+        notes
+      };
 
-    if (editingId) {
-      await updateAsset(editingId, data);
-    } else {
-      await addAsset(data);
+      if (editingId) {
+        await updateAsset(editingId, data);
+      } else {
+        await addAsset(data);
+      }
+      setIsAdding(false);
+    } catch (err) {
+      console.error('Failed to save asset', err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsAdding(false);
   };
 
   return (
@@ -256,11 +288,11 @@ export default function AssetsView() {
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.config.color }} />
                   <span className="text-[9px] font-bold text-on-surface/40 uppercase tracking-wider truncate max-w-[80px]">
-                    {item.key === 'liquid' ? (language === 'id' ? 'Likuid' : 'Liquid') : activeLoc.types[item.key as 'investment']}
+                    {item.name}
                   </span>
                 </div>
                 <p className="text-sm font-bold text-on-surface tabular-nums">
-                  {item.percentage}%
+                  {formatPercentage(item.percentage)}
                 </p>
                 <p className="text-[10px] text-on-surface/30 truncate">
                   {formatCurrencyShort(item.value, isSensored)}
@@ -277,8 +309,10 @@ export default function AssetsView() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {assets.map((asset) => {
-            const config = ASSET_TYPE_CONFIG[asset.type as keyof typeof ASSET_TYPE_CONFIG] || ASSET_TYPE_CONFIG.other;
+            const config = getAssetConfig(asset.type);
             const Icon = config.icon;
+            const assetTypeObj = assetTypes.find(t => t.id === asset.type);
+            const assetTypeName = assetTypeObj ? assetTypeObj.name : asset.type;
             const gainLossVal = asset.currentPrice - asset.purchasePrice;
             const gainLossPct = asset.purchasePrice > 0 ? (gainLossVal / asset.purchasePrice) * 100 : 0;
             const isProfit = gainLossVal >= 0;
@@ -306,7 +340,7 @@ export default function AssetsView() {
                 <div>
                   <h4 className="font-bold text-lg text-on-surface uppercase tracking-widest truncate">{asset.name}</h4>
                   <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-on-surface/5 text-on-surface/50 uppercase tracking-widest inline-block mt-1.5">
-                    {activeLoc.types[asset.type as keyof typeof activeLoc.types]}
+                    {assetTypeName}
                   </span>
                 </div>
 
@@ -416,12 +450,12 @@ export default function AssetsView() {
                   <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{activeLoc.assetType}</label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as any)}
+                    onChange={(e) => setType(e.target.value)}
                     className="w-full px-5 py-4 bg-th-input border border-th-input rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-th-input-focus transition-all appearance-none cursor-pointer"
                   >
-                    {Object.keys(activeLoc.types).map((k) => (
-                      <option key={k} value={k} className="bg-surface text-on-surface">
-                        {activeLoc.types[k as keyof typeof activeLoc.types]}
+                    {assetTypes.map((at) => (
+                      <option key={at.id} value={at.id} className="bg-surface text-on-surface">
+                        {at.name}
                       </option>
                     ))}
                   </select>
@@ -497,8 +531,8 @@ export default function AssetsView() {
                   />
                 </div>
 
-                <button type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl">
-                  {editingId ? activeLoc.updateAsset : activeLoc.saveAsset}
+                <button disabled={isSubmitting} type="submit" className="w-full py-4 mt-4 bg-primary text-on-surface rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? (language === 'id' ? 'Menyimpan...' : 'Saving...') : (editingId ? activeLoc.updateAsset : activeLoc.saveAsset)}
                 </button>
               </form>
             </motion.div>

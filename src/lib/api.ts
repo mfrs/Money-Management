@@ -151,6 +151,17 @@ export const goalsApi = {
   delete: (id: string) => request<any>(`/goals/${id}`, { method: 'DELETE' }),
 };
 
+// ===================== ASSET TYPES =====================
+export interface AssetType {
+  id: string;
+  name: string;
+  isMandatory: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+
+
 // ===================== ASSETS =====================
 export interface Asset {
   id: string;

@@ -9,7 +9,10 @@ import type {
   WalletAllocation,
   Goal,
   Asset,
+  AssetType,
   Debt,
+  AutoInvestRule,
+  InvestNotification,
 } from '../lib/types';
 import { generateId } from '../lib/types';
 import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, debtApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
@@ -89,9 +92,21 @@ interface AppContextType {
   deleteJournal: (id: string) => void;
 
   // Budget CRUD
-  addIncomeSource: (source: Omit<IncomeSource, 'id'>) => void;
-  updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void;
-  deleteIncomeSource: (id: string) => void;
+  addIncomeSource: (source: Omit<IncomeSource, 'id'>) => Promise<void>;
+  updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => Promise<void>;
+  deleteIncomeSource: (id: string) => Promise<void>;
+
+  // Auto Invest CRUD
+  autoInvestRules: AutoInvestRule[];
+  addAutoInvestRule: (rule: Omit<AutoInvestRule, 'id'>) => void;
+  updateAutoInvestRule: (id: string, updates: Partial<AutoInvestRule>) => void;
+  deleteAutoInvestRule: (id: string) => void;
+
+  investNotifications: InvestNotification[];
+  updateInvestNotification: (id: string, status: 'confirmed' | 'rejected') => void;
+  clearInvestNotification: (id: string) => void;
+
+  // Fixed Expense CRUD
   addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void;
   updateFixedExpense: (id: string, updates: Partial<FixedExpense>) => void;
   deleteFixedExpense: (id: string) => void;
@@ -103,6 +118,12 @@ interface AppContextType {
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
+
+  // Asset Types CRUD
+  assetTypes: AssetType[];
+  addAssetType: (name: string) => void;
+  updateAssetType: (id: string, name: string) => void;
+  deleteAssetType: (id: string) => void;
 
   // Assets CRUD
   assets: Asset[];
@@ -183,8 +204,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [walletAllocations, setWalletAllocations] = useState<WalletAllocation[]>([]);
+
+  const [autoInvestRules, setAutoInvestRules] = useState<AutoInvestRule[]>(() => {
+    const saved = localStorage.getItem('wm_auto_invest');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [investNotifications, setInvestNotifications] = useState<InvestNotification[]>(() => {
+    const saved = localStorage.getItem('wm_invest_notifs');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [goals, setGoals] = useState<Goal[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>(() => {
+    const saved = localStorage.getItem('wm_asset_types');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { id: 'kas', name: 'Kas & Setara Kas', isMandatory: true },
+      { id: 'deposito', name: 'Deposito', isMandatory: true },
+      { id: 'obligasi', name: 'Obligasi/SBN', isMandatory: true },
+      { id: 'reksadana', name: 'Reksadana', isMandatory: true },
+      { id: 'saham', name: 'Saham', isMandatory: true },
+      { id: 'properti', name: 'Properti', isMandatory: true },
+      { id: 'lainnya', name: 'Lainnya', isMandatory: true }
+    ];
+  });
   const [debts, setDebts] = useState<Debt[]>([]);
 
   // ===================== THEME & LANGUAGE =====================
@@ -493,6 +541,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     catch { addToast('Failed to delete allocation', 'error'); }
   }, [addToast]);
 
+  // ===================== AUTO INVEST =====================
+  const addAutoInvestRule = useCallback((rule: Omit<AutoInvestRule, 'id'>) => {
+    setAutoInvestRules(prev => {
+      const next = [...prev, { id: generateId(), ...rule }];
+      localStorage.setItem('wm_auto_invest', JSON.stringify(next));
+      return next;
+    });
+    addToast('Auto invest rule added');
+  }, [addToast]);
+
+  const updateAutoInvestRule = useCallback((id: string, updates: Partial<AutoInvestRule>) => {
+    setAutoInvestRules(prev => {
+      const next = prev.map(r => r.id === id ? { ...r, ...updates } : r);
+      localStorage.setItem('wm_auto_invest', JSON.stringify(next));
+      return next;
+    });
+    addToast('Auto invest rule updated');
+  }, [addToast]);
+
+  const deleteAutoInvestRule = useCallback((id: string) => {
+    setAutoInvestRules(prev => {
+      const next = prev.filter(r => r.id !== id);
+      localStorage.setItem('wm_auto_invest', JSON.stringify(next));
+      return next;
+    });
+    addToast('Auto invest rule deleted', 'info');
+  }, [addToast]);
+
+  const updateInvestNotification = useCallback((id: string, status: 'confirmed' | 'rejected') => {
+    setInvestNotifications(prev => {
+      const next = prev.map(n => n.id === id ? { ...n, status } : n);
+      localStorage.setItem('wm_invest_notifs', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const clearInvestNotification = useCallback((id: string) => {
+    setInvestNotifications(prev => {
+      const next = prev.filter(n => n.id !== id);
+      localStorage.setItem('wm_invest_notifs', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   // ===================== GOALS =====================
   const addGoal = useCallback(async (goal: Omit<Goal, 'id' | 'createdAt'>) => {
     try { const c = await goalsApi.create(goal); setGoals(prev => [c, ...prev]); addToast(`Goal "${goal.name}" created`); }
@@ -567,6 +659,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { addToast('Failed to record payment', 'error'); }
   }, [loadAllData, addToast]);
 
+  // ===================== ASSET TYPES =====================
+  const addAssetType = useCallback((name: string) => {
+    setAssetTypes(prev => {
+      const next = [...prev, { id: generateId(), name, isMandatory: false }];
+      localStorage.setItem('wm_asset_types', JSON.stringify(next));
+      return next;
+    });
+    addToast('Asset type added');
+  }, [addToast]);
+
+  const updateAssetType = useCallback((id: string, name: string) => {
+    setAssetTypes(prev => {
+      const next = prev.map(t => t.id === id ? { ...t, name } : t);
+      localStorage.setItem('wm_asset_types', JSON.stringify(next));
+      return next;
+    });
+    addToast('Asset type updated');
+  }, [addToast]);
+
+  const deleteAssetType = useCallback((id: string) => {
+    setAssetTypes(prev => {
+      const target = prev.find(t => t.id === id);
+      if (target?.isMandatory) {
+        addToast('Cannot delete mandatory asset type', 'error');
+        return prev;
+      }
+      const next = prev.filter(t => t.id !== id);
+      localStorage.setItem('wm_asset_types', JSON.stringify(next));
+      return next;
+    });
+    addToast('Asset type deleted');
+  }, [addToast]);
+
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);
   const now = new Date();
@@ -622,6 +747,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { addToast('Failed to reset data', 'error'); }
   }, [addToast, loadAllData]);
 
+  // ===================== AUTO INVEST TRIGGER =====================
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const today = new Date();
+    const date = today.getDate();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    let rulesUpdated = false;
+    autoInvestRules.forEach(rule => {
+      if (rule.isActive && rule.triggerDate === date && rule.lastTriggered !== todayStr) {
+        const amount = rule.type === 'nominal' ? rule.amount : (totalIncome * (rule.amount / 100));
+        if (amount > 0) {
+          const notif: InvestNotification = {
+            id: generateId(),
+            ruleId: rule.id,
+            ruleName: rule.name,
+            amount,
+            date: todayStr,
+            status: 'pending'
+          };
+          setInvestNotifications(prev => {
+            const next = [notif, ...prev];
+            localStorage.setItem('wm_invest_notifs', JSON.stringify(next));
+            return next;
+          });
+          
+          setAutoInvestRules(prev => {
+            const next = prev.map(r => r.id === rule.id ? { ...r, lastTriggered: todayStr } : r);
+            localStorage.setItem('wm_auto_invest', JSON.stringify(next));
+            return next;
+          });
+          rulesUpdated = true;
+          addToast(`Auto Invest Triggered: ${rule.name}`, 'info');
+        }
+      }
+    });
+  }, [isAuthenticated, autoInvestRules, totalIncome, addToast]);
+
   // ===================== NATIVE BRIDGE (CAPACITOR) =====================
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -662,7 +825,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addIncomeSource, updateIncomeSource, deleteIncomeSource,
       addFixedExpense, updateFixedExpense, deleteFixedExpense,
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,
+      autoInvestRules, addAutoInvestRule, updateAutoInvestRule, deleteAutoInvestRule,
+      investNotifications, updateInvestNotification, clearInvestNotification,
       addGoal, updateGoal, deleteGoal,
+      assetTypes, addAssetType, updateAssetType, deleteAssetType,
       assets, addAsset, updateAsset, deleteAsset,
       debts, addDebt, updateDebt, deleteDebt, payDebt,
       totalBalance, totalIncome, totalExpenses,

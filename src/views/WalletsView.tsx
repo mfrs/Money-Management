@@ -31,6 +31,7 @@ export default function WalletsView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -63,23 +64,30 @@ export default function WalletsView() {
     setMenuOpenId(null);
   };
 
-  const handleSubmit = () => {
-    if (!formName.trim()) return;
-    const walletData = {
-      name: formName,
-      type: formType,
-      account: formAccount,
-      balance: parseFloat(formBalance) || 0,
-      icon: formType === 'bank' ? 'Landmark' : formType === 'ewallet' ? 'Smartphone' : formType === 'savings' ? 'PiggyBank' : 'Wallet',
-      color: formColor,
-      goal: formGoal ? parseFloat(formGoal) : undefined,
-    };
-    if (editingId) {
-      updateWallet(editingId, walletData);
-    } else {
-      addWallet(walletData);
+  const handleSubmit = async () => {
+    if (!formName.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const walletData = {
+        name: formName,
+        type: formType,
+        account: formAccount,
+        balance: parseFloat(formBalance) || 0,
+        icon: formType === 'bank' ? 'Landmark' : formType === 'ewallet' ? 'Smartphone' : formType === 'savings' ? 'PiggyBank' : 'Wallet',
+        color: formColor,
+        goal: formGoal ? parseFloat(formGoal) : undefined,
+      };
+      if (editingId) {
+        await updateWallet(editingId, walletData);
+      } else {
+        await addWallet(walletData);
+      }
+      resetForm();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForm();
   };
 
   // Liquidity = non-savings wallets
@@ -365,11 +373,11 @@ export default function WalletsView() {
 
                 <button
                   onClick={handleSubmit}
-                  disabled={!formName.trim()}
+                  disabled={!formName.trim() || isSubmitting}
                   className="w-full py-5 bg-primary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-primary/80 transition-all shadow-lg active:scale-95 duration-200 disabled:opacity-30 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-3"
                 >
                   <Save size={16} />
-                  {editingId ? 'Update Vault' : 'Create Vault'}
+                  {isSubmitting ? 'Saving...' : (editingId ? 'Update Vault' : 'Create Vault')}
                 </button>
               </div>
             </motion.div>

@@ -19,6 +19,26 @@ export default function LedgerView() {
   const [selectedJournal, setSelectedJournal] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'normal' | 'reversed'>('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [startMonth, setStartMonth] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+
+  const handleEndMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (startMonth && val) {
+      const dStart = new Date(`${startMonth}-01`);
+      const dEnd = new Date(`${val}-01`);
+      const monthsDiff = (dEnd.getFullYear() - dStart.getFullYear()) * 12 + (dEnd.getMonth() - dStart.getMonth());
+      if (monthsDiff > 1) {
+        addToast(language === 'id' ? 'Filter maksimal 2 bulan' : 'Max filter range is 2 months', 'error');
+        return;
+      }
+      if (monthsDiff < 0) {
+        setStartMonth(val);
+      }
+    }
+    setEndMonth(val);
+  };
 
   // Map journals into a sortable array with total amount
   const ledgerJournals = useMemo(() => {
@@ -28,12 +48,25 @@ export default function LedgerView() {
         ...j,
         totalAmount
       };
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [journals]);
+    }).sort((a, b) => {
+      const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      return sortOrder === 'newest' ? diff : -diff;
+    });
+  }, [journals, sortOrder]);
 
   // Filter journals based on active tab and search
   const filteredJournals = useMemo(() => {
     let result = [...ledgerJournals];
+
+    if (startMonth) {
+      const start = new Date(`${startMonth}-01T00:00:00`).getTime();
+      result = result.filter(j => new Date(j.date).getTime() >= start);
+    }
+    if (endMonth) {
+      const [year, month] = endMonth.split('-');
+      const end = new Date(Number(year), Number(month), 0, 23, 59, 59).getTime();
+      result = result.filter(j => new Date(j.date).getTime() <= end);
+    }
 
     if (activeTab === 'normal') {
       result = result.filter(j => !j.isReversed && !j.description.startsWith('[REVERSAL]'));
@@ -47,7 +80,7 @@ export default function LedgerView() {
       j.description.toLowerCase().includes(lowerQuery) ||
       j.id.toLowerCase().includes(lowerQuery)
     );
-  }, [ledgerJournals, searchQuery, activeTab]);
+  }, [ledgerJournals, searchQuery, activeTab, startMonth, endMonth]);
 
   const exportDetailToPDF = async () => {
     setIsExporting(true);
@@ -125,52 +158,84 @@ export default function LedgerView() {
       {/* Main Ledger Table */}
       <div className="glass rounded-[24px] lg:rounded-[32px] overflow-hidden border border-on-surface/5 flex flex-col">
         {/* Toolbar */}
-        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col lg:flex-row gap-6 justify-between items-center min-w-0 w-full">
-          <div className="flex items-center gap-4 w-full lg:w-auto">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
-              <BookOpen size={20} />
+        <div className="p-6 lg:p-8 border-b border-on-surface/5 bg-on-surface/[0.02] flex flex-col gap-6 justify-between items-start min-w-0 w-full">
+          <div className="flex flex-col lg:flex-row gap-4 w-full justify-between items-start lg:items-center">
+            <div className="flex items-center gap-4 w-full lg:w-auto">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+                <BookOpen size={20} />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">
+                  {t('ledger.list')}
+                </h3>
+                <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">
+                  {filteredJournals.length} {t('ledger.entriesCount')}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-on-surface uppercase tracking-widest">
-                {t('ledger.list')}
-              </h3>
-              <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-medium mt-0.5">
-                {filteredJournals.length} {t('ledger.entriesCount')}
-              </p>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 w-full lg:w-auto justify-start lg:justify-end">
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as any)}
+                className="px-5 py-2.5 rounded-full border border-on-surface/5 glass-dark text-[10px] font-bold text-on-surface/60 uppercase tracking-[0.2em] appearance-none cursor-pointer focus:outline-none"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+              
+              <div className="flex gap-2 items-center glass-dark px-4 py-2 rounded-full border border-on-surface/5">
+                <input 
+                  type="month" 
+                  value={startMonth}
+                  onChange={(e) => setStartMonth(e.target.value)}
+                  className="bg-transparent text-[10px] text-on-surface/80 uppercase focus:outline-none cursor-pointer w-[110px]"
+                />
+                <span className="text-on-surface/40">-</span>
+                <input 
+                  type="month" 
+                  value={endMonth}
+                  onChange={handleEndMonthChange}
+                  className="bg-transparent text-[10px] text-on-surface/80 uppercase focus:outline-none cursor-pointer w-[110px]"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Sub Menu Tabs */}
-          <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full min-w-0 max-w-full lg:w-auto justify-start lg:justify-center overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {(['all', 'normal', 'reversed'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-4 lg:px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all",
-                  activeTab === tab 
-                    ? "bg-on-surface text-surface shadow-lg" 
-                    : "text-on-surface/30 hover:text-on-surface"
-                )}
-              >
-                {tab === 'all' 
-                  ? (language === 'id' ? 'Semua Jurnal' : 'All Journals') 
-                  : tab === 'normal' 
-                    ? (language === 'id' ? 'Normal Journal Entry' : 'Normal Journal Entry') 
-                    : (language === 'id' ? 'Reversed Journal' : 'Reversed Journal')}
-              </button>
-            ))}
-          </div>
-          
-          <div className="relative w-full lg:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 group-focus-within:text-primary transition-colors" size={16} />
-            <input
-              type="text"
-              placeholder={t('ledger.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20 uppercase tracking-widest"
-            />
+          <div className="flex flex-col lg:flex-row gap-4 w-full justify-between items-start lg:items-center">
+            {/* Sub Menu Tabs */}
+            <div className="flex gap-1.5 glass-dark p-1.5 rounded-full border border-on-surface/5 w-full min-w-0 max-w-full lg:w-auto justify-start lg:justify-center overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {(['all', 'normal', 'reversed'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "px-4 lg:px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all",
+                    activeTab === tab 
+                      ? "bg-on-surface text-surface shadow-lg" 
+                      : "text-on-surface/30 hover:text-on-surface"
+                  )}
+                >
+                  {tab === 'all' 
+                    ? (language === 'id' ? 'Semua Jurnal' : 'All Journals') 
+                    : tab === 'normal' 
+                      ? (language === 'id' ? 'Normal Journal Entry' : 'Normal Journal Entry') 
+                      : (language === 'id' ? 'Reversed Journal' : 'Reversed Journal')}
+                </button>
+              ))}
+            </div>
+            
+            <div className="relative w-full lg:w-80 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 group-focus-within:text-primary transition-colors" size={16} />
+              <input
+                type="text"
+                placeholder={t('ledger.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20 uppercase tracking-widest"
+              />
+            </div>
           </div>
         </div>
 

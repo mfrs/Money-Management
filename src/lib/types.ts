@@ -65,10 +65,31 @@ export interface WalletAllocation {
   amount: number;
 }
 
+export interface AutoInvestRule {
+  id: string;
+  name: string;
+  type: 'nominal' | 'percentage';
+  amount: number;
+  triggerDate: number; // 1-31
+  lastTriggered?: string;
+  isActive: boolean;
+}
+
+export interface InvestNotification {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  amount: number;
+  date: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+}
+
 export interface Budget {
   incomeSources: IncomeSource[];
   fixedExpenses: FixedExpense[];
   walletAllocations: WalletAllocation[];
+  autoInvestRules?: AutoInvestRule[];
+  investNotifications?: InvestNotification[];
 }
 
 export interface Goal {
@@ -82,10 +103,16 @@ export interface Goal {
   createdAt: string;
 }
 
+export interface AssetType {
+  id: string;
+  name: string;
+  isMandatory: boolean;
+}
+
 export interface Asset {
   id: string;
   name: string;
-  type: 'investment' | 'property' | 'vehicle' | 'gold' | 'other';
+  type: string; // AssetType ID or literal string
   purchasePrice: number;
   currentPrice: number;
   purchaseDate: string;
