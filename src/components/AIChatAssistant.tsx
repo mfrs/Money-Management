@@ -19,7 +19,8 @@ import {
   Volume2,
   VolumeX,
   HandCoins,
-  CreditCard
+  CreditCard,
+  PenLine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
@@ -50,6 +51,25 @@ export default function AIChatAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit Mode State
+  const [editingData, setEditingData] = useState<Record<string, boolean>>({});
+  
+  const handleEditItem = (messageId: string, index: number, field: string, value: any, listKey: 'transactions' | 'wallets') => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === messageId && m.parsedData) {
+        const newList = [...(m.parsedData[listKey] || [])];
+        newList[index] = { ...newList[index], [field]: value };
+        return { ...m, parsedData: { ...m.parsedData, [listKey]: newList } };
+      }
+      return m;
+    }));
+  };
+  
+  const toggleEditMode = (messageId: string, index: number) => {
+    const key = `${messageId}-${index}`;
+    setEditingData(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // AI Voice & Speech Recognition state
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
@@ -486,10 +506,10 @@ export default function AIChatAssistant() {
             timestamp: new Date()
           }
         ]);
-      } else if (data.action === 'create_wallet') {
+      } else if (data.action === 'create_wallets') {
         spokenText = language === 'id'
-          ? `Saya mendeteksi permintaan untuk membuat dompet baru bernama "${data.name}". Apakah Anda ingin membuatnya?`
-          : `I detected a request to create a new wallet named "${data.name}". Would you like to create it?`;
+          ? `Saya mendeteksi permintaan untuk membuat ${data.wallets?.length || 1} dompet baru. Apakah Anda ingin membuatnya?`
+          : `I detected a request to create ${data.wallets?.length || 1} new wallets. Would you like to create them?`;
         setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_goal') {
         spokenText = language === 'id'
@@ -511,26 +531,26 @@ export default function AIChatAssistant() {
           ? `Saya mendeteksi pengeluaran rutin "${data.name}" sebesar ${formatCurrency(data.amount)} tiap tanggal ${data.dueDate || 1}. Apakah Anda ingin menambahkannya?`
           : `I detected a new fixed expense "${data.name}" for ${formatCurrency(data.amount)} due on the ${data.dueDate || 1}. Would you like to add it?`;
         setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
-      } else {
-        // Fallback or "create" action
+      } else if (data.action === 'create_transactions') {
         let msgText = language === 'id'
-          ? "Saya mendeteksi rincian transaksi berikut. Apakah datanya sudah sesuai?"
-          : "I detected the following transaction details. Does this look correct?";
+          ? `Saya mendeteksi rincian ${data.transactions?.length || 1} transaksi berikut. Apakah datanya sudah sesuai?`
+          : `I detected the following ${data.transactions?.length || 1} transaction details. Does this look correct?`;
 
         let spokenAlerts = "";
-        if (data.duplicateAlert) {
-          msgText = `${data.duplicateAlert}\n\n${msgText}`;
-          spokenAlerts += data.duplicateAlert + ". ";
-        }
-
-        if (data.budgetAlert) {
-          msgText = `${data.budgetAlert}\n\n${msgText}`;
-          spokenAlerts += data.budgetAlert + ". ";
-        }
+        data.transactions?.forEach((tx: any, idx: number) => {
+          if (tx.duplicateAlert) {
+            msgText = `Transaksi ${idx + 1}: ${tx.duplicateAlert}\n\n${msgText}`;
+            spokenAlerts += tx.duplicateAlert + ". ";
+          }
+          if (tx.budgetAlert) {
+            msgText = `Transaksi ${idx + 1}: ${tx.budgetAlert}\n\n${msgText}`;
+            spokenAlerts += tx.budgetAlert + ". ";
+          }
+        });
 
         spokenText = spokenAlerts + (language === 'id'
-          ? `Saya mendeteksi rincian transaksi ${data.description || 'ini'}. Apakah sudah sesuai?`
-          : `I detected transaction details for ${data.description || 'this'}. Is it correct?`);
+          ? `Saya mendeteksi rincian ${data.transactions?.length || 1} transaksi. Apakah sudah sesuai?`
+          : `I detected transaction details for ${data.transactions?.length || 1} items. Is it correct?`);
 
         setMessages(prev => [
           ...prev,
@@ -692,6 +712,39 @@ export default function AIChatAssistant() {
         } else {
           addToast(language === 'id' ? 'Kategori berhasil dibuat!' : 'Category created!', 'success');
         }
+      } else if (parsedData.action === 'create_transactions') {
+        // Create multiple transactions
+        parsedData.transactions.forEach((tx: any) => {
+          addJournal({
+            description: tx.description,
+            amount: tx.amount,
+            type: tx.type || 'expense',
+            categoryId: tx.type === 'transfer' ? undefined : tx.categoryId,
+            walletId: tx.walletId,
+            toWalletId: tx.type === 'transfer' ? tx.toWalletId : undefined,
+            date: tx.date,
+            note: `Recorded via AI Assistant Chat`,
+          });
+        });
+
+        // Update message status
+        setMessages(prev =>
+          prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m))
+        );
+
+        // Push success message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: 'ai',
+            text: language === 'id'
+              ? `Mantap! ${parsedData.transactions.length} transaksi berhasil disimpan ke dompet Anda! 🎉`
+              : `Success! ${parsedData.transactions.length} transactions have been recorded! 🎉`,
+            timestamp: new Date()
+          }
+        ]);
+        addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transactions recorded!', 'success');
       } else if (!parsedData.action || parsedData.action === 'create') {
         // Create transaction
         addJournal({
@@ -780,11 +833,13 @@ export default function AIChatAssistant() {
           }
         ]);
         addToast(language === 'id' ? 'Pembayaran berhasil!' : 'Payment successful!', 'success');
-      } else if (parsedData.action === 'create_wallet') {
-        addWallet({ name: parsedData.name, type: 'CASH', balance: parsedData.balance || 0, currency: user?.currency || 'IDR', color: '#10B981', icon: 'Wallet' });
+      } else if (parsedData.action === 'create_wallets') {
+        parsedData.wallets.forEach((w: any) => {
+          addWallet({ name: w.name, type: 'CASH', balance: w.balance || 0, currency: user?.currency || 'IDR', color: '#10B981', icon: 'Wallet' });
+        });
         setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `Dompet "${parsedData.name}" berhasil dibuat! 💳` : `Wallet "${parsedData.name}" created successfully! 💳`, timestamp: new Date() }]);
-        addToast(language === 'id' ? 'Dompet dibuat!' : 'Wallet created!', 'success');
+        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: language === 'id' ? `${parsedData.wallets.length} dompet berhasil dibuat! 💳` : `${parsedData.wallets.length} wallets created successfully! 💳`, timestamp: new Date() }]);
+        addToast(language === 'id' ? 'Dompet dibuat!' : 'Wallets created!', 'success');
       } else if (parsedData.action === 'create_goal') {
         addGoal({ name: parsedData.name, targetAmount: parsedData.targetAmount, currentAmount: parsedData.currentAmount || 0, color: '#3B82F6', icon: 'Target', deadline: parsedData.deadline || undefined });
         setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, status: 'confirmed' } : m)));
@@ -1023,6 +1078,159 @@ export default function AIChatAssistant() {
                           >
                             <Ban size={12} />
                             {language === 'id' ? 'Batal' : 'Cancel'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : msg.parsedData.action === 'create_transactions' ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border border-secondary/25 transition-all"
+                      >
+                        <div className="flex items-center gap-1.5 border-b border-on-surface/5 pb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
+                          <Check size={12} />
+                          {language === 'id' ? `KONFIRMASI ${msg.parsedData.transactions?.length || 0} TRANSAKSI` : `CONFIRM ${msg.parsedData.transactions?.length || 0} TRANSACTIONS`}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {msg.parsedData.transactions?.map((tx: any, idx: number) => {
+                            const editKey = `${msg.id}-${idx}`;
+                            const isEditing = editingData[editKey];
+                            return (
+                              <div key={idx} className={cn("p-3 rounded-xl border relative", tx.budgetAlert || tx.duplicateAlert ? "border-amber-500/40 bg-amber-500/5" : "border-on-surface/10 bg-on-surface/5")}>
+                                {/* Header / Actions */}
+                                <div className="absolute top-2 right-2 flex gap-1">
+                                  <button onClick={() => toggleEditMode(msg.id, idx)} className="p-1.5 rounded-lg bg-surface text-on-surface/50 hover:text-primary hover:bg-primary/10 transition-colors shadow-sm">
+                                    <PenLine size={12} />
+                                  </button>
+                                </div>
+
+                                {isEditing ? (
+                                  <div className="space-y-2 pr-8 mt-1">
+                                    <div className="flex gap-2">
+                                      <input 
+                                        type="text" 
+                                        value={tx.description} 
+                                        onChange={(e) => handleEditItem(msg.id, idx, 'description', e.target.value, 'transactions')} 
+                                        className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-on-surface/10 bg-surface outline-none focus:border-primary text-on-surface"
+                                        placeholder="Description"
+                                      />
+                                      <input 
+                                        type="number" 
+                                        value={tx.amount || ''} 
+                                        onChange={(e) => handleEditItem(msg.id, idx, 'amount', Number(e.target.value), 'transactions')} 
+                                        className="w-24 px-2 py-1.5 text-xs rounded-lg border border-on-surface/10 bg-surface outline-none focus:border-primary text-on-surface"
+                                        placeholder="Amount"
+                                      />
+                                    </div>
+                                    <select 
+                                      value={tx.type} 
+                                      onChange={(e) => handleEditItem(msg.id, idx, 'type', e.target.value, 'transactions')}
+                                      className="w-full px-2 py-1.5 text-xs rounded-lg border border-on-surface/10 bg-surface outline-none focus:border-primary text-on-surface"
+                                    >
+                                      <option value="expense">Expense / Pengeluaran</option>
+                                      <option value="income">Income / Pemasukan</option>
+                                      <option value="transfer">Transfer</option>
+                                    </select>
+                                    {/* Warnings if any */}
+                                    {tx.duplicateAlert && <p className="text-[9px] text-amber-500 mt-1">{tx.duplicateAlert}</p>}
+                                    {tx.budgetAlert && <p className="text-[9px] text-amber-500 mt-1">{tx.budgetAlert}</p>}
+                                  </div>
+                                ) : (
+                                  <div className="pr-8 space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="font-bold text-on-surface">{tx.description}</span>
+                                      <span className={cn("font-bold", tx.type === 'expense' ? "text-error" : tx.type === 'income' ? "text-success" : "text-secondary")}>
+                                        {formatCurrency(tx.amount)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-on-surface/50">
+                                      <span className="flex items-center gap-1"><Wallet size={10}/> {wallets.find(w => w.id === tx.walletId)?.name || 'Unknown'}</span>
+                                      {tx.type !== 'transfer' && tx.categoryId && (
+                                        <span className="flex items-center gap-1"><Tag size={10}/> {categories.find(c => c.id === tx.categoryId)?.name || 'Unknown'}</span>
+                                      )}
+                                    </div>
+                                    {tx.duplicateAlert && <p className="text-[9px] text-amber-500 mt-1">{tx.duplicateAlert}</p>}
+                                    {tx.budgetAlert && <p className="text-[9px] text-amber-500 mt-1">{tx.budgetAlert}</p>}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Confirmation Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button onClick={() => handleConfirm(msg.id, msg.parsedData)} className="flex-1 py-2 rounded-xl bg-success text-white font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer">
+                            <Check size={12} /> {language === 'id' ? 'Simpan Semua' : 'Save All'}
+                          </button>
+                          <button onClick={() => handleCancel(msg.id)} className="flex-1 py-2 rounded-xl bg-error/15 text-error border border-error/20 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer">
+                            <Ban size={12} /> {language === 'id' ? 'Batal' : 'Cancel'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : msg.parsedData.action === 'create_wallets' ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full bg-on-surface/5 rounded-2xl p-4 mt-2 space-y-3 shadow-md border border-primary/30 transition-all"
+                      >
+                        <div className="flex items-center gap-1.5 border-b border-on-surface/5 pb-2 text-[10px] font-bold uppercase tracking-widest text-primary">
+                          <Wallet size={12} />
+                          {language === 'id' ? `BUAT ${msg.parsedData.wallets?.length || 0} DOMPET` : `CREATE ${msg.parsedData.wallets?.length || 0} WALLETS`}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {msg.parsedData.wallets?.map((w: any, idx: number) => {
+                            const editKey = `${msg.id}-${idx}`;
+                            const isEditing = editingData[editKey];
+                            return (
+                              <div key={idx} className="p-3 rounded-xl border border-on-surface/10 bg-on-surface/5 relative">
+                                <div className="absolute top-2 right-2 flex gap-1">
+                                  <button onClick={() => toggleEditMode(msg.id, idx)} className="p-1.5 rounded-lg bg-surface text-on-surface/50 hover:text-primary hover:bg-primary/10 transition-colors shadow-sm">
+                                    <PenLine size={12} />
+                                  </button>
+                                </div>
+
+                                {isEditing ? (
+                                  <div className="space-y-2 pr-8 mt-1">
+                                    <div className="flex gap-2">
+                                      <input 
+                                        type="text" 
+                                        value={w.name} 
+                                        onChange={(e) => handleEditItem(msg.id, idx, 'name', e.target.value, 'wallets')} 
+                                        className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-on-surface/10 bg-surface outline-none focus:border-primary text-on-surface"
+                                        placeholder="Wallet Name"
+                                      />
+                                      <input 
+                                        type="number" 
+                                        value={w.balance || ''} 
+                                        onChange={(e) => handleEditItem(msg.id, idx, 'balance', Number(e.target.value), 'wallets')} 
+                                        className="w-24 px-2 py-1.5 text-xs rounded-lg border border-on-surface/10 bg-surface outline-none focus:border-primary text-on-surface"
+                                        placeholder="Balance"
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="pr-8 space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="font-bold text-on-surface">{w.name}</span>
+                                      <span className="font-bold text-success">{formatCurrency(w.balance || 0)}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Confirmation Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button onClick={() => handleConfirm(msg.id, msg.parsedData)} className="flex-1 py-2 rounded-xl bg-success text-white font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer">
+                            <Check size={12} /> {language === 'id' ? 'Buat Semua' : 'Create All'}
+                          </button>
+                          <button onClick={() => handleCancel(msg.id)} className="flex-1 py-2 rounded-xl bg-error/15 text-error border border-error/20 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer">
+                            <Ban size={12} /> {language === 'id' ? 'Batal' : 'Cancel'}
                           </button>
                         </div>
                       </motion.div>

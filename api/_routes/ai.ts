@@ -356,37 +356,31 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        "message": "Transaksi tidak ditemukan di riwayat terbaru."
      }
 
-4. If the user wants to CREATE/ADD a transaction (either by voice/text or scanned receipt details):
-   - Resolve the transaction type:
-     * 'income': If money is coming in (e.g., "masuk uang", "terima", "gaji", "tambah saldo"). If only one wallet is mentioned, it is always 'income', NOT 'transfer'.
-     * 'expense': If money is going out (e.g., "bayar", "beli", "keluar uang", "kurang saldo").
-     * 'transfer': ONLY if money is being moved between two distinct wallets (e.g., "transfer dari BCA ke Jago").
-   - Resolve the amount:
-     * Parse the exact numeric amount as a positive JSON number (e.g., 10000000 instead of "10jt" or "NaN").
-     * If multiple numbers are mentioned (e.g., "masuk uang 10jt ke bank jago 20jt"), carefully identify the primary transaction amount. In "masuk uang 10jt ke bank jago 20jt", the transaction amount is 10000000, and "20jt" is the final balance.
-   - Resolve the wallet and category:
-     * Map the mentioned wallet (e.g., "bank jago" or "jago") to its corresponding UUID in Available Wallets.
-     * Map to a suitable Category UUID from Available Categories based on the type. If the user explicitly mentions a category name that does NOT exist in Available Categories (e.g. "kategori Kopi Baru"), stop and use Option 5 instead. Never leave categoryId null if the type is 'income' or 'expense'.
-   - If the amount is mentioned in a foreign currency (like $10 or 12 USD or 1000 JPY), automatically convert it to the user's primary currency (IDR, assuming $1 = 16000 IDR, 1 SGD = 12000 IDR, etc.).
-   - Check if this new transaction would exceed the matched category's budgetLimit, or push it above 80% of the limit.
-   - If so, generate a warning message in the "budgetAlert" field. Example: "Awas! Pengeluaran ini membuat kategori Makan kamu melebihi budget Rp 3.000.000 (terpakai Rp 3.150.000)." If not, leave "budgetAlert" as null.
-   - Check if a highly similar transaction has already been recorded in the "Recent Active Transactions" list to prevent double entry (deduplication). A highly similar transaction has:
-     * The exact same amount (or very close, within 2%).
-     * A very similar description or merchant name (e.g., "Starbucks" matches "Starbucks Coffee", "Solaria" matches "Makan solaria").
-     * A date very close to the target date (within 2 days).
-     * If a highly similar transaction exists, populate the "duplicateAlert" field with a warning. Example: "Peringatan: Transaksi serupa (Starbucks sebesar Rp 85.000 pada tanggal 18 Mei) sudah pernah dicatat sebelumnya di dompet BCA. Apakah Anda yakin ini bukan transaksi ganda? ⚠️". If no duplicate is detected, set "duplicateAlert" to null.
+4. If the user wants to CREATE/ADD one or multiple transactions (either by voice/text or scanned receipt details):
+   - Detect if the user mentioned multiple independent transactions (e.g. "makan 10k pakai BCA, bayar tambal ban 15k cash").
+   - For EACH transaction, resolve the transaction type:
+     * 'income': If money is coming in.
+     * 'expense': If money is going out.
+     * 'transfer': ONLY if money is being moved between two distinct wallets.
+   - For EACH transaction, resolve amount, description, walletId, categoryId, toWalletId, date.
+   - Map to suitable Category UUID from Available Categories based on type. Never leave categoryId null if type is 'income' or 'expense'. If they mention an entirely new category, use Option 5 instead.
+   - Generate "budgetAlert" and "duplicateAlert" per transaction exactly as before.
    - Return ONLY this structure:
      {
-       "action": "create",
-       "type": "expense", // or "income" or "transfer"
-       "amount": 150000, // resolved positive JSON number
-       "description": "Makan siang solaria", // a clear and descriptive description based on user input, never "Unknown"
-       "walletId": "uuid-of-wallet", // resolved UUID of the target wallet (e.g., Bank Jago UUID)
-       "toWalletId": "uuid-of-to-wallet", // only if type is transfer, else null
-       "categoryId": "uuid-of-category", // resolved UUID of the category (must match type: income or expense), never null
-       "date": "2024-05-18T12:00:00.000Z", // use ISO string
-       "budgetAlert": "Warning message if budget exceeded/near limit, else null",
-       "duplicateAlert": "Warning message if similar transaction found, else null"
+       "action": "create_transactions",
+       "transactions": [
+         {
+           "type": "expense",
+           "amount": 150000,
+           "description": "Makan siang solaria",
+           "walletId": "uuid-of-wallet",
+           "toWalletId": null,
+           "categoryId": "uuid-of-category",
+           "date": "2024-05-18T12:00:00.000Z",
+           "budgetAlert": null,
+           "duplicateAlert": null
+         }
+       ]
      }
 
 5. If the user mentions a category name that does NOT exist in the "Available Categories" list (either when explicitly trying to categorize something or when recording a transaction with a new category, e.g. "kategorikan kopi ke Kopi Baru", "catat belanja 200rb ke kategori Bulanan Baru"):
@@ -440,12 +434,16 @@ Determine the user's intent from the following options. Return ONLY a valid JSON
        "message": "Hutang/piutang tidak ditemukan di daftar aktif."
      }
 
-8. If the user wants to CREATE A NEW WALLET / ACCOUNT (e.g. "bikin dompet baru namanya OVO", "tambah rekening BCA dengan saldo 5 juta"):
+8. If the user wants to CREATE ONE OR MULTIPLE NEW WALLETS / ACCOUNTS (e.g. "bikin dompet baru namanya OVO, Gopay, dan BCA dengan saldo masing-masing 1jt"):
    - Return ONLY this structure:
      {
-       "action": "create_wallet",
-       "name": "OVO",
-       "balance": 0 // numeric value if mentioned, else 0
+       "action": "create_wallets",
+       "wallets": [
+         {
+           "name": "OVO",
+           "balance": 1000000
+         }
+       ]
      }
 
 9. If the user wants to CREATE A NEW SAVINGS GOAL (e.g. "bikin target tabungan liburan 10 juta", "saya mau nabung buat beli mobil 200jt"):
