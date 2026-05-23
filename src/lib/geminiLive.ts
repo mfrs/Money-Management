@@ -22,8 +22,8 @@ export class GeminiLiveClient {
       if (!resKey.ok) throw new Error('Failed to get Gemini Key');
       const { key } = await resKey.json();
 
-      // 2. Connect directly to Gemini Live API
-      const geminiWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${key}`;
+      // 2. Connect directly to Gemini Live API using v1beta (official GA release)
+      const geminiWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${key}`;
       this.ws = new WebSocket(geminiWsUrl);
       
       this.ws.onopen = async () => {
@@ -32,7 +32,7 @@ export class GeminiLiveClient {
         // 3. Send setup message
         this.ws?.send(JSON.stringify({
           setup: {
-            model: 'models/gemini-2.0-flash-exp',
+            model: 'models/gemini-2.0-flash',
             systemInstruction: {
               parts: [{
                 text: `You are Stashly's AI Voice Assistant, an intelligent financial advisor. 
