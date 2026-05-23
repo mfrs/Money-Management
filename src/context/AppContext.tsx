@@ -229,15 +229,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (saved) {
       try {
         let parsed = JSON.parse(saved) as AssetType[];
-        // Remove the temporary Indonesian defaults if they haven't been used, 
-        // or just ensure the legacy mandatory ones are present.
-        parsed = parsed.filter(t => !['kas', 'deposito', 'obligasi', 'reksadana', 'saham', 'properti', 'lainnya'].includes(t.id));
+        // Only keep user-defined types (isMandatory: false) or mandatory types that match our legacy list
+        parsed = parsed.filter(t => !t.isMandatory || mandatoryTypes.some(mt => mt.id === t.id));
         
         mandatoryTypes.forEach(mt => {
           if (!parsed.find(p => p.id === mt.id)) {
             parsed.push(mt);
           }
         });
+        localStorage.setItem('wm_asset_types', JSON.stringify(parsed));
         return parsed;
       } catch (e) {}
     }
