@@ -177,6 +177,14 @@ export interface Asset {
   userId: string;
 }
 
+export const assetTypeApi = {
+  getAll: () => request<AssetType[]>('/asset-types'),
+  create: (data: any) => request<AssetType>('/asset-types', { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (data: any) => request<AssetType[]>('/asset-types/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => request<AssetType>(`/asset-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<any>(`/asset-types/${id}`, { method: 'DELETE' }),
+};
+
 export const assetApi = {
   getAll: () => request<Asset[]>('/assets'),
   create: (data: any) => request<Asset>('/assets', { method: 'POST', body: JSON.stringify(data) }),

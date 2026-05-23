@@ -46,6 +46,18 @@ router.post('/register', async (req: Request, res: Response) => {
       data: defaultCategories.map(c => ({ ...c, userId: user.id })),
     });
 
+    // Create default asset types for new user
+    const defaultAssetTypes = [
+      { id: 'investment', name: 'Investasi / Saham', isMandatory: true, color: '#6366F1' },
+      { id: 'property', name: 'Properti / Rumah', isMandatory: true, color: '#3B82F6' },
+      { id: 'vehicle', name: 'Kendaraan', isMandatory: true, color: '#F59E0B' },
+      { id: 'gold', name: 'Emas / Logam Mulia', isMandatory: true, color: '#FBBF24' },
+      { id: 'other', name: 'Aset Lainnya', isMandatory: true, color: '#EC4899' },
+    ];
+    await prisma.assetType.createMany({
+      data: defaultAssetTypes.map(t => ({ ...t, userId: user.id })),
+    });
+
     const token = signToken(user.id);
     res.status(201).json({
       token,
@@ -173,6 +185,7 @@ router.get('/backup', authMiddleware, async (req: AuthRequest, res: Response) =>
     const walletAllocations = await prisma.walletAllocation.findMany({ where: { userId } });
     const goals = await prisma.goal.findMany({ where: { userId } });
     const assets = await prisma.asset.findMany({ where: { userId } });
+    const assetTypes = await prisma.assetType.findMany({ where: { userId } });
     const debts = await prisma.debt.findMany({ where: { userId } });
 
     const backupPayload = {
@@ -191,6 +204,7 @@ router.get('/backup', authMiddleware, async (req: AuthRequest, res: Response) =>
         walletAllocations,
         goals,
         assets,
+        assetTypes,
         debts
       }
     };
@@ -223,6 +237,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       walletAllocations,
       goals,
       assets,
+      assetTypes,
       debts
     } = backupData.data;
 
@@ -273,6 +288,7 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
       await tx.fixedExpense.deleteMany({ where: { userId } });
       await tx.goal.deleteMany({ where: { userId } });
       await tx.asset.deleteMany({ where: { userId } });
+      await tx.assetType.deleteMany({ where: { userId } });
       await tx.debt.deleteMany({ where: { userId } });
 
       // 2. Re-create wallets
@@ -429,6 +445,19 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response) 
           userId
         }));
         await tx.asset.createMany({ data: assetsData });
+      }
+
+      if (assetTypes && Array.isArray(assetTypes)) {
+        const assetTypesData = assetTypes.map((t) => ({
+          id: t.id, // Keeping original id since it's used as type in assets
+          name: t.name,
+          isMandatory: t.isMandatory,
+          color: t.color,
+          createdAt: t.createdAt ? new Date(t.createdAt) : undefined,
+          updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
+          userId
+        }));
+        await tx.assetType.createMany({ data: assetTypesData });
       }
 
       if (debts && Array.isArray(debts)) {

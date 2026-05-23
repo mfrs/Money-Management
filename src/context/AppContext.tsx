@@ -15,7 +15,7 @@ import type {
   InvestNotification,
 } from '../lib/types';
 import { generateId } from '../lib/types';
-import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, debtApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
+import { walletApi, categoryApi, journalApi, budgetApi, goalsApi, assetApi, debtApi, assetTypeApi, systemApi, authApi, setToken, clearToken, type AuthUser } from '../lib/api';
 import { translations, Language } from '../lib/i18n';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
@@ -216,42 +216,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [goals, setGoals] = useState<Goal[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [assetTypes, setAssetTypes] = useState<AssetType[]>(() => {
-    const saved = localStorage.getItem('wm_asset_types');
-    const mandatoryTypes: AssetType[] = [
-      { id: 'investment', name: 'Investasi / Saham', isMandatory: true },
-      { id: 'property', name: 'Properti / Rumah', isMandatory: true },
-      { id: 'vehicle', name: 'Kendaraan', isMandatory: true },
-      { id: 'gold', name: 'Emas / Logam Mulia', isMandatory: true },
-      { id: 'other', name: 'Aset Lainnya', isMandatory: true }
-    ];
-
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved) as AssetType[];
-        
-        // Migrate uppercase IDs to lowercase if they exist
-        parsed = parsed.map(t => {
-          if (['INVESTMENT', 'PROPERTY', 'VEHICLE', 'GOLD', 'OTHER'].includes(t.id)) {
-            return { ...t, id: t.id.toLowerCase() };
-          }
-          return t;
-        });
-
-        // Only keep user-defined types (isMandatory: false) or mandatory types that match our legacy list
-        parsed = parsed.filter(t => !t.isMandatory || mandatoryTypes.some(mt => mt.id === t.id));
-        
-        mandatoryTypes.forEach(mt => {
-          if (!parsed.find(p => p.id === mt.id)) {
-            parsed.push(mt);
-          }
-        });
-        localStorage.setItem('wm_asset_types', JSON.stringify(parsed));
-        return parsed;
-      } catch (e) {}
-    }
-    return mandatoryTypes;
-  });
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
 
   // ===================== THEME & LANGUAGE =====================
@@ -390,7 +355,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return;
     try {
       if (!silent) setIsLoading(true);
-      const [w, c, j, is, fe, wa, g, ast, dbt] = await Promise.all([
+      const [w, c, j, is, fe, wa, g, ast, dbt, assetTypesData] = await Promise.all([
         walletApi.getAll(),
         categoryApi.getAll(),
         journalApi.getAll(),
@@ -400,6 +365,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         goalsApi.getAll(),
         assetApi.getAll(),
         debtApi.getAll(),
+        assetTypeApi.getAll(),
       ]);
       setWallets(w);
       setCategories(c);
@@ -410,6 +376,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setGoals(g);
       setAssets(ast);
       setDebts(dbt);
+      // Perform local storage migration if applicable
+      const savedLocal = localStorage.getItem('wm_asset_types');
+      if (savedLocal) {
+        try {
+          const parsed = JSON.parse(savedLocal) as AssetType[];
+          // Filter only custom types to sync
+          const customToSync = parsed.filter(t => !t.isMandatory);
+          if (customToSync.length > 0) {
+            await assetTypeApi.bulkCreate(customToSync);
+            // Refresh asset types after sync
+            const syncedData = await assetTypeApi.getAll();
+            setAssetTypes(syncedData);
+          } else {
+            setAssetTypes(assetTypesData);
+          }
+          localStorage.removeItem('wm_asset_types'); // Clean up
+        } catch (e) {
+          setAssetTypes(assetTypesData);
+        }
+      } else {
+        setAssetTypes(assetTypesData);
+      }
+
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('token')) {
         // Suppress auto logout for unlimited session feature
@@ -553,7 +542,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [addToast]);
   const updateWalletAllocation = useCallback(async (id: string, updates: Partial<WalletAllocation>) => {
     try { const u = await budgetApi.updateWalletAllocation(id, updates); setWalletAllocations(prev => prev.map(a => a.id === id ? u : a)); }
-    catch { addToast('Failed to update allocation', 'error'); }
+    catch { addToast('Failed to add allocation', 'error'); }
   }, [addToast]);
   const deleteWalletAllocation = useCallback(async (id: string) => {
     try { await budgetApi.deleteWalletAllocation(id); setWalletAllocations(prev => prev.filter(a => a.id !== id)); }
@@ -679,37 +668,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [loadAllData, addToast]);
 
   // ===================== ASSET TYPES =====================
-  const addAssetType = useCallback((name: string, color?: string) => {
-    setAssetTypes(prev => {
-      const next = [...prev, { id: crypto.randomUUID(), name, isMandatory: false, color }];
-      localStorage.setItem('wm_asset_types', JSON.stringify(next));
-      return next;
-    });
-    addToast('Asset Type created');
+  const addAssetType = useCallback(async (name: string, color?: string) => {
+    try {
+      const created = await assetTypeApi.create({ name, color });
+      setAssetTypes(prev => [...prev, created]);
+      addToast(`Asset type "${name}" created`);
+    } catch { addToast('Failed to create asset type', 'error'); }
   }, [addToast]);
 
-  const updateAssetType = useCallback((id: string, name: string, color?: string) => {
-    setAssetTypes(prev => {
-      const next = prev.map(t => t.id === id ? { ...t, name, color } : t);
-      localStorage.setItem('wm_asset_types', JSON.stringify(next));
-      return next;
-    });
-    addToast('Asset Type updated');
+  const updateAssetType = useCallback(async (id: string, name: string, color?: string) => {
+    try {
+      const updated = await assetTypeApi.update(id, { name, color });
+      setAssetTypes(prev => prev.map(t => t.id === id ? updated : t));
+      addToast('Asset type updated');
+    } catch { addToast('Failed to update asset type', 'error'); }
   }, [addToast]);
 
-  const deleteAssetType = useCallback((id: string) => {
-    setAssetTypes(prev => {
-      const target = prev.find(t => t.id === id);
-      if (target?.isMandatory) {
-        addToast('Cannot delete mandatory asset type', 'error');
-        return prev;
-      }
-      const next = prev.filter(t => t.id !== id);
-      localStorage.setItem('wm_asset_types', JSON.stringify(next));
-      return next;
-    });
-    addToast('Asset type deleted');
-  }, [addToast]);
+  const deleteAssetType = useCallback(async (id: string) => {
+    const inUse = assets.some(a => a.type === id);
+    if (inUse) {
+      addToast('Cannot delete asset type that is in use', 'error');
+      return;
+    }
+    
+    const type = assetTypes.find(t => t.id === id);
+    if (type?.isMandatory) {
+      addToast('Cannot delete mandatory asset type', 'error');
+      return;
+    }
+
+    try {
+      await assetTypeApi.delete(id);
+      setAssetTypes(prev => prev.filter(t => t.id !== id));
+      addToast('Asset type deleted', 'info');
+    } catch { addToast('Failed to delete asset type', 'error'); }
+  }, [assets, assetTypes, addToast]);
 
   // ===================== COMPUTED =====================
   const totalBalance = useMemo(() => wallets.reduce((s, w) => s + w.balance, 0), [wallets]);

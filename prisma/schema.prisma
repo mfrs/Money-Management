@@ -28,6 +28,7 @@ model User {
   walletAllocations WalletAllocation[]
   goals            Goal[]
   assets           Asset[]
+  assetTypes       AssetType[]
   debts            Debt[]
 
   @@map("users")
@@ -217,4 +218,18 @@ model Changelog {
   updatedAt   DateTime @updatedAt
 
   @@map("changelogs")
+}
+
+model AssetType {
+  id          String   @id @default(cuid())
+  name        String
+  isMandatory Boolean  @default(false)
+  color       String?  @default("#3B82F6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("asset_types")
 }
