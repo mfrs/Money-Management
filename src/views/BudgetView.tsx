@@ -233,37 +233,15 @@ export default function BudgetView() {
               {budget.walletAllocations.map((alloc) => {
                 const wallet = wallets.find(w => w.id === alloc.walletId);
                 if (!wallet) return null;
-                const IconComp = getIcon(wallet.icon);
-
                 return (
-                  <div key={alloc.id} className="p-5 lg:p-6 rounded-2xl border border-on-surface/5 bg-on-surface/[0.01] flex flex-col gap-4 relative overflow-hidden group hover:bg-on-surface/[0.04] hover:border-on-surface/10 transition-all">
-                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: wallet.color, opacity: 0.5 }} />
-                    <div className="flex justify-between items-center pl-2 text-on-surface">
-                      <div className="flex items-center gap-3">
-                        <IconComp style={{ color: wallet.color }} className="opacity-60" size={16} />
-                        <span className="text-xs font-bold text-on-surface tracking-widest uppercase">{wallet.name}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
-                          <CensoredAmount amount={wallet.balance} isSensored={isSensored} />
-                        </span>
-                        <button onClick={() => deleteWalletAllocation(alloc.id)} className="text-on-surface/10 hover:text-error transition-colors p-1">
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 pl-2">
-                      <div className="relative flex-1">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold text-sm">Rp</span>
-                        <input
-                          type="number"
-                          value={alloc.amount || ''}
-                          onChange={(e) => updateWalletAllocation(alloc.id, { amount: parseFloat(e.target.value) || 0 })}
-                          className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums", isSensored && "blur-[6px] select-none pointer-events-none")}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <WalletAllocationRow 
+                    key={alloc.id} 
+                    alloc={alloc} 
+                    wallet={wallet} 
+                    isSensored={isSensored} 
+                    onUpdate={updateWalletAllocation} 
+                    onDelete={deleteWalletAllocation} 
+                  />
                 );
               })}
 
@@ -342,7 +320,7 @@ export default function BudgetView() {
                 <input type="text" value={expName} onChange={(e) => setExpName(e.target.value)} placeholder="Name" className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
                 <div className="relative">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold">Rp</span>
-                  <input type="number" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} placeholder="0" className="w-full pl-12 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                  <input type="number" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} placeholder="0" className="w-full pl-12 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                 </div>
                 <select value={expTerm} onChange={(e) => setExpTerm(e.target.value)} className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface focus:outline-none appearance-none cursor-pointer uppercase tracking-widest">
                   <option value="01-MONTH">{t('budget.monthly')}</option>
@@ -372,6 +350,11 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
   const [localName, setLocalName] = useState(source.name);
   const [localAmount, setLocalAmount] = useState(source.amount?.toString() || '');
 
+  React.useEffect(() => {
+    setLocalName(source.name);
+    setLocalAmount(source.amount?.toString() || '');
+  }, [source.name, source.amount]);
+
   return (
     <div className="flex items-end gap-4 lg:gap-6 p-4 lg:p-6 rounded-2xl bg-on-surface/[0.03] border border-on-surface/5 hover:border-on-surface/10 transition-all group">
       <div className="flex-1">
@@ -393,7 +376,7 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== source.amount) onUpdate(source.id, { amount: v }); }}
-            className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-28 lg:w-32 outline-none", isSensored && "blur-[6px] select-none pointer-events-none")}
+            className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right w-28 lg:w-32 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
       </div>
@@ -403,6 +386,48 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
       >
         <Trash2 size={16} />
       </button>
+    </div>
+  );
+}
+
+// Inline editable row that buffers changes and only calls API on blur for wallets
+function WalletAllocationRow({ alloc, wallet, isSensored, onUpdate, onDelete }: { alloc: any; wallet: any; isSensored: boolean; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void }) {
+  const IconComp = getIcon(wallet.icon);
+  const [localAmount, setLocalAmount] = useState(alloc.amount?.toString() || '');
+
+  React.useEffect(() => {
+    setLocalAmount(alloc.amount?.toString() || '');
+  }, [alloc.amount]);
+
+  return (
+    <div className="p-5 lg:p-6 rounded-2xl border border-on-surface/5 bg-on-surface/[0.01] flex flex-col gap-4 relative overflow-hidden group hover:bg-on-surface/[0.04] hover:border-on-surface/10 transition-all">
+      <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: wallet.color, opacity: 0.5 }} />
+      <div className="flex justify-between items-center pl-2 text-on-surface">
+        <div className="flex items-center gap-3">
+          <IconComp style={{ color: wallet.color }} className="opacity-60" size={16} />
+          <span className="text-xs font-bold text-on-surface tracking-widest uppercase">{wallet.name}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">
+            <CensoredAmount amount={wallet.balance} isSensored={isSensored} />
+          </span>
+          <button onClick={() => onDelete(alloc.id)} className="text-on-surface/10 hover:text-error transition-colors p-1">
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 pl-2">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold text-sm">Rp</span>
+          <input
+            type="number"
+            value={localAmount}
+            onChange={(e) => setLocalAmount(e.target.value)}
+            onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== alloc.amount) onUpdate(alloc.id, { amount: v }); }}
+            className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
+          />
+        </div>
+      </div>
     </div>
   );
 }
