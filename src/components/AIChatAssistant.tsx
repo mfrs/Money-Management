@@ -601,7 +601,11 @@ export default function AIChatAssistant() {
 
       // Automatically execute if requested via voice
       if (autoConfirm && data.action !== 'answer' && data.action !== 'delete_not_found') {
-        setTimeout(() => handleConfirm(aiMsgId, data), 100);
+        try {
+          await handleConfirm(aiMsgId, data);
+        } catch (e) {
+          console.error('Auto-confirm error:', e);
+        }
       }
     } catch (err: any) {
       console.error('Chat AI Assistant Error:', err);
@@ -755,8 +759,8 @@ export default function AIChatAssistant() {
         }
       } else if (parsedData.action === 'create_transactions') {
         // Create multiple transactions
-        parsedData.transactions.forEach((tx: any) => {
-          addJournal({
+        for (const tx of parsedData.transactions) {
+          await addJournal({
             description: tx.description,
             amount: tx.amount,
             type: tx.type || 'expense',
@@ -766,7 +770,7 @@ export default function AIChatAssistant() {
             date: tx.date,
             note: `Recorded via AI Assistant Chat`,
           });
-        });
+        }
 
         // Update message status
         setMessages(prev =>
@@ -785,10 +789,12 @@ export default function AIChatAssistant() {
             timestamp: new Date()
           }
         ]);
+        if (isVoiceEnabled) {
+          speakText(language === 'id' ? `Sip! ${parsedData.transactions.length} transaksi berhasil dicatat!` : `Success! ${parsedData.transactions.length} transactions have been recorded!`);
+        }
         addToast(language === 'id' ? 'Transaksi dicatat!' : 'Transactions recorded!', 'success');
-      } else if (!parsedData.action || parsedData.action === 'create') {
-        // Create transaction
-        addJournal({
+      } else if (!parsedData.action || parsedData.action === 'create_transaction' || parsedData.action === 'transfer' || parsedData.action === 'add' || parsedData.action === 'create') {
+        await addJournal({
           description: parsedData.description,
           amount: parsedData.amount,
           type: parsedData.type || 'expense',
