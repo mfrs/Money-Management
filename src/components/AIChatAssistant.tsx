@@ -392,11 +392,8 @@ export default function AIChatAssistant() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
-
-    const userText = input.trim();
-    setInput('');
+  const executeActionText = async (userText: string) => {
+    if (!userText || isTyping) return;
 
     // Add user message
     const userMsgId = Math.random().toString();
@@ -620,6 +617,13 @@ export default function AIChatAssistant() {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleSend = () => {
+    if (!input.trim() || isTyping) return;
+    const text = input.trim();
+    setInput('');
+    executeActionText(text);
   };
 
   const handleConfirm = async (messageId: string, parsedData: any) => {
@@ -1510,7 +1514,8 @@ export default function AIChatAssistant() {
 
     <GeminiLiveVoiceModal 
       isOpen={isVoiceModalOpen} 
-      onClose={() => setIsVoiceModalOpen(false)} 
+      onClose={() => setIsVoiceModalOpen(false)}
+      onActionExecute={executeActionText}
     />
     </>
   );

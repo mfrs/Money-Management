@@ -9,6 +9,7 @@ export class GeminiLiveClient {
   
   public onStateChange: (state: 'disconnected' | 'connecting' | 'connected' | 'listening') => void = () => {};
   public onAiSpeakingStateChange: (speaking: boolean) => void = () => {};
+  public onFunctionCall?: (call: { name: string, args: any }, respond: (res: any) => void) => void;
 
   constructor() {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
@@ -38,11 +39,32 @@ export class GeminiLiveClient {
         this.ws?.send(JSON.stringify({
           setup: {
             model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
+            tools: [
+              {
+                functionDeclarations: [
+                  {
+                    name: "execute_action",
+                    description: "Execute a user's financial action (like adding an expense, income, updating a wallet, etc). You MUST use this tool whenever the user asks you to record or change something.",
+                    parameters: {
+                      type: "OBJECT",
+                      properties: {
+                        action_text: {
+                          type: "STRING",
+                          description: "The clear English translation of what the user wants to do, e.g. 'Add $50 expense for lunch using cash wallet'."
+                        }
+                      },
+                      required: ["action_text"]
+                    }
+                  }
+                ]
+              }
+            ],
             systemInstruction: {
               parts: [{
                 text: `You are Stashly's AI Voice Assistant, an intelligent financial advisor. 
 You communicate concisely, naturally, and warmly in the user's spoken language. 
-Keep your verbal responses relatively short and conversational. Do not read out long lists of data or IDs. Be extremely brief but helpful.`
+When the user asks to record an expense, income, or make any financial change, you MUST call the execute_action tool. Do not just say you did it without calling the tool!
+Keep your verbal responses relatively short and conversational. Be extremely brief but helpful.`
               }]
             },
             generationConfig: {
@@ -80,6 +102,29 @@ Keep your verbal responses relatively short and conversational. Do not read out 
             for (const part of parts) {
               if (part.inlineData && part.inlineData.mimeType.includes('audio/pcm')) {
                 this.playPcmBase64(part.inlineData.data);
+              }
+              if (part.functionCall) {
+                if (this.onFunctionCall) {
+                  this.onFunctionCall(
+                    { name: part.functionCall.name, args: part.functionCall.args },
+                    (res) => {
+                      // Send tool response back to Gemini
+                      if (this.ws?.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({
+                          toolResponse: {
+                            functionResponses: [
+                              {
+                                id: part.functionCall.id,
+                                name: part.functionCall.name,
+                                response: res
+                              }
+                            ]
+                          }
+                        }));
+                      }
+                    }
+                  );
+                }
               }
             }
           }

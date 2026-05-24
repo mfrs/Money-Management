@@ -7,9 +7,10 @@ import { useApp } from '../context/AppContext';
 interface GeminiLiveVoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onActionExecute?: (actionText: string) => void;
 }
 
-export default function GeminiLiveVoiceModal({ isOpen, onClose }: GeminiLiveVoiceModalProps) {
+export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute }: GeminiLiveVoiceModalProps) {
   const { language } = useApp();
   const [state, setState] = useState<'disconnected' | 'connecting' | 'connected' | 'listening'>('disconnected');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -20,6 +21,14 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose }: GeminiLiveVoic
       const client = new GeminiLiveClient();
       client.onStateChange = (s) => setState(s);
       client.onAiSpeakingStateChange = (speaking) => setIsAiSpeaking(speaking);
+      client.onFunctionCall = (call, respond) => {
+        if (call.name === 'execute_action' && onActionExecute) {
+          onActionExecute(call.args.action_text);
+          respond({ result: "Success, backend processing." });
+        } else {
+          respond({ error: "Unknown function" });
+        }
+      };
       
       const token = localStorage.getItem('wm_token');
       if (token) {
