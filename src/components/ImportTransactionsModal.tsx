@@ -35,7 +35,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
-    const csvContent = "Date (YYYY-MM-DD),Description,Amount,Type (income/expense/transfer),Wallet Name,Category Name (or Target Wallet if transfer)\n2023-10-01,Gaji Bulanan,10000000,income,BCA,Salary\n2023-10-02,Makan Siang McD,50000,expense,Mandiri,Makan\n2023-10-03,Transfer Tabungan,1000000,transfer,BCA,BNI";
+    const csvContent = "Date (YYYY-MM-DD HH:mm),Description,Amount,Type (income/expense/transfer),Wallet Name,Category Name (or Target Wallet if transfer)\n2023-10-01 08:30,Gaji Bulanan,10000000,income,BCA,Salary\n2023-10-02 12:45,Makan Siang McD,50000,expense,Mandiri,Makan\n2023-10-03 15:00,Transfer Tabungan,1000000,transfer,BCA,BNI";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -52,11 +52,37 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
       skipEmptyLines: true,
       complete: (results) => {
         const parsedRows: ParsedRow[] = results.data.map((row: any, index: number) => {
-          const dateStr = row['Date (YYYY-MM-DD)']?.trim() || '';
-          const desc = row['Description']?.trim() || '';
-          const amountStr = row['Amount']?.toString().replace(/[^0-9.-]+/g, "") || '0';
+          let dateStr = row['Date (YYYY-MM-DD HH:mm)']?.trim() || row['Date (YYYY-MM-DD)']?.trim() || row['Tanggal & Waktu']?.trim() || '';
+          
+          // Try to normalize DD/MM/YY HH.mm format from e-statement to YYYY-MM-DDTHH:mm
+          if (dateStr && dateStr.includes('/')) {
+            const parts = dateStr.split(/[\s,]+/);
+            const dateParts = parts[0].split('/');
+            if (dateParts.length === 3) {
+              const day = dateParts[0].padStart(2, '0');
+              const month = dateParts[1].padStart(2, '0');
+              let year = dateParts[2];
+              if (year.length === 2) year = `20${year}`;
+              
+              let time = parts[1] ? parts[1].replace('.', ':') : '00:00';
+              if (time.length === 4) time = `0${time}`;
+              dateStr = `${year}-${month}-${day}T${time}`;
+            }
+          } else if (dateStr && !dateStr.includes('T')) {
+             dateStr = dateStr.replace(' ', 'T');
+          }
+
+          const desc = row['Description']?.trim() || row['Keterangan / Deskripsi']?.trim() || '';
+          const amountStr = (row['Amount']?.toString() || row['Nominal (IDR)']?.toString() || '0').replace(/[^0-9.-]+/g, "");
           const amount = parseFloat(amountStr);
-          const typeRaw = row['Type (income/expense/transfer)']?.toLowerCase().trim() || 'expense';
+          
+          let typeRaw = row['Type (income/expense/transfer)']?.toLowerCase().trim() || '';
+          if (!typeRaw) {
+            const jenis = row['Jenis']?.toLowerCase().trim();
+            if (jenis === 'keluar') typeRaw = 'expense';
+            else if (jenis === 'masuk') typeRaw = 'income';
+            else typeRaw = 'expense';
+          }
           const type = ['income', 'expense', 'transfer'].includes(typeRaw) ? typeRaw as any : 'expense';
           const walletName = row['Wallet Name']?.trim() || '';
           const catName = row['Category Name (or Target Wallet if transfer)']?.trim() || '';
@@ -147,7 +173,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
       categoryId: r.categoryId,
       walletId: r.walletId,
       toWalletId: r.toWalletId,
-      date: combineDateAndTimeToISO(r.date),
+      date: new Date(r.date).toISOString(),
       note: 'Imported via CSV',
     }));
 
@@ -269,7 +295,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
                             {row.isValid ? <CheckCircle2 size={16} className="text-primary" /> : <AlertCircle size={16} className="text-error" title={row.errors.join('\n')} />}
                           </td>
                           <td className="px-4 py-4">
-                            <input type="date" value={row.date} onChange={e => updateRow(row.id, { date: e.target.value })} className="bg-transparent text-xs font-mono uppercase focus:outline-none w-full" />
+                            <input type="datetime-local" value={row.date} onChange={e => updateRow(row.id, { date: e.target.value })} className="bg-transparent text-[10px] lg:text-xs font-mono focus:outline-none w-full min-w-[130px]" />
                           </td>
                           <td className="px-4 py-4">
                             <input type="text" value={row.description} onChange={e => updateRow(row.id, { description: e.target.value })} className="bg-transparent font-bold focus:outline-none w-full" />
