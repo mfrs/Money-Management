@@ -1020,13 +1020,15 @@ export default function AIChatAssistant() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsVoiceModalOpen(true)}
-                  title={language === 'id' ? "Panggilan Suara AI" : "AI Voice Call"}
-                  className="p-2 rounded-xl transition-all bg-secondary/10 text-secondary hover:bg-secondary/20 flex items-center gap-2"
-                >
-                  <Mic size={16} />
-                </button>
+                {user?.isAdmin && (
+                  <button
+                    onClick={() => setIsVoiceModalOpen(true)}
+                    title={language === 'id' ? "Panggilan Suara AI" : "AI Voice Call"}
+                    className="p-2 rounded-xl transition-all bg-secondary/10 text-secondary hover:bg-secondary/20 flex items-center gap-2"
+                  >
+                    <Mic size={16} />
+                  </button>
+                )}
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-on-surface/5 rounded-xl transition-all"
@@ -1537,12 +1539,14 @@ export default function AIChatAssistant() {
         )}
       </AnimatePresence>
 
-    <GeminiLiveVoiceModal 
-      isOpen={isVoiceModalOpen}
-      onClose={() => setIsVoiceModalOpen(false)}
-      onActionExecute={(text, autoConfirm) => executeActionText(text, autoConfirm)}
-      onActionConfirm={handleVoiceConfirm}
-    />
+    {user?.isAdmin && (
+      <GeminiLiveVoiceModal 
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onActionExecute={(text, autoConfirm) => executeActionText(text, autoConfirm)}
+        onActionConfirm={handleVoiceConfirm}
+      />
+    )}
 
     {/* FAB to open chat */}
     </>
