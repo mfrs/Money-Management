@@ -17,6 +17,7 @@ export interface Category {
   icon: string;
   color: string;
   budgetLimit: number;
+  excludeFromReport?: boolean;
   createdAt: string;
 }
 

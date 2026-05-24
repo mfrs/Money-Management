@@ -6,6 +6,7 @@ import {
   X,
   Save,
   Trash2,
+  EyeOff,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -29,6 +30,7 @@ export default function CategoriesView() {
   const [formIcon, setFormIcon] = useState('Utensils');
   const [formColor, setFormColor] = useState(categoryColors[0]);
   const [formBudget, setFormBudget] = useState('');
+  const [formExclude, setFormExclude] = useState(false);
 
   const filteredCategories = categories.filter(c => c.type === activeTab);
 
@@ -37,6 +39,7 @@ export default function CategoriesView() {
     setFormIcon('Utensils');
     setFormColor(categoryColors[0]);
     setFormBudget('');
+    setFormExclude(false);
     setEditingId(null);
     setShowForm(false);
   };
@@ -46,6 +49,7 @@ export default function CategoriesView() {
     setFormIcon(cat.icon);
     setFormColor(cat.color);
     setFormBudget(cat.budgetLimit > 0 ? cat.budgetLimit.toString() : '');
+    setFormExclude(cat.excludeFromReport || false);
     setEditingId(cat.id);
     setShowForm(true);
   };
@@ -60,6 +64,7 @@ export default function CategoriesView() {
         icon: formIcon,
         color: formColor,
         budgetLimit: parseFloat(formBudget) || 0,
+        excludeFromReport: formExclude,
       };
       if (editingId) {
         await updateCategory(editingId, data);
@@ -138,6 +143,11 @@ export default function CategoriesView() {
                   <IconComp size={24} />
                 </div>
                 <div className="flex gap-1">
+                  {cat.excludeFromReport && (
+                    <div className="h-9 lg:h-10 px-3 flex items-center justify-center rounded-xl glass-dark border border-error/20 text-error/60 text-[9px] uppercase tracking-widest font-bold">
+                      <EyeOff size={14} className="mr-1.5" /> Hidden
+                    </div>
+                  )}
                   <button
                     onClick={() => startEdit(cat)}
                     className="w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-xl glass-dark border border-on-surface/5 text-on-surface/20 hover:bg-on-surface/10 hover:text-on-surface transition-all"
@@ -278,6 +288,17 @@ export default function CategoriesView() {
                     </div>
                   </div>
                 )}
+
+                <label className="flex items-center justify-between p-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl cursor-pointer hover:bg-on-surface/10 transition-colors">
+                  <div>
+                    <span className="text-sm font-bold text-on-surface block">Sembunyikan dari Laporan</span>
+                    <span className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold">Abaikan dari total & grafik</span>
+                  </div>
+                  <div className={cn("w-12 h-6 rounded-full transition-colors relative", formExclude ? "bg-primary" : "bg-on-surface/10")}>
+                    <div className={cn("absolute top-1 bottom-1 w-4 rounded-full bg-white transition-all shadow-sm", formExclude ? "left-7" : "left-1")} />
+                  </div>
+                  <input type="checkbox" className="hidden" checked={formExclude} onChange={(e) => setFormExclude(e.target.checked)} />
+                </label>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">Color</label>

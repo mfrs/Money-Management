@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   // Top expense categories with spending data
   const categorySpending = useMemo(() => {
-    const expenseCats = categories.filter(c => c.type === 'expense');
+    const expenseCats = categories.filter(c => c.type === 'expense' && !c.excludeFromReport);
     return expenseCats
       .map(cat => ({
         ...cat,

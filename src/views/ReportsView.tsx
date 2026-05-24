@@ -159,7 +159,8 @@ export default function ReportsView() {
     mappedTransactions.forEach(tx => {
       const d = new Date(tx.date);
       const key = d.toLocaleDateString('en-US', { month: 'short' });
-      if (months[key]) {
+      const cat = categories.find(c => c.id === tx.categoryId);
+      if (months[key] && !cat?.excludeFromReport) {
         if (tx.type === 'income') months[key].income += tx.amount;
         else months[key].expenses += tx.amount;
       }
@@ -170,7 +171,7 @@ export default function ReportsView() {
 
   // Expense breakdown by category
   const breakdown = useMemo(() => {
-    const expenseCats = categories.filter(c => c.type === 'expense');
+    const expenseCats = categories.filter(c => c.type === 'expense' && !c.excludeFromReport);
     const items = expenseCats
       .map(cat => ({
         ...cat,
@@ -194,7 +195,11 @@ export default function ReportsView() {
   const burnRate = useMemo(() => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
     const recent = mappedTransactions
-      .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
+      .filter(t => {
+        if (t.type !== 'expense' || new Date(t.date) < thirtyDaysAgo) return false;
+        const cat = categories.find(c => c.id === t.categoryId);
+        return !cat?.excludeFromReport;
+      })
       .reduce((s, t) => s + t.amount, 0);
     return Math.round(recent / 30);
   }, [mappedTransactions]);
@@ -233,7 +238,7 @@ export default function ReportsView() {
 
     // Over-budget categories
     const overBudget = categories
-      .filter(c => c.type === 'expense' && c.budgetLimit > 0)
+      .filter(c => c.type === 'expense' && c.budgetLimit > 0 && !c.excludeFromReport)
       .filter(c => getCategorySpent(c.id) > c.budgetLimit * 0.8);
 
     if (overBudget.length > 0) {

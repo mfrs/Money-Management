@@ -62,6 +62,7 @@ model Category {
   icon        String   @default("HelpCircle")
   color       String   @default("#3B82F6")
   budgetLimit Float    @default(0)
+  excludeFromReport Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

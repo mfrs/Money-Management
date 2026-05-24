@@ -729,7 +729,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const totalIncome = useMemo(() => monthlyJournals.reduce((sum, j) => {
     const incomeLine = j.lines.find(l => l.categoryId && l.type === 'CREDIT');
-    if (incomeLine) return sum + incomeLine.amount;
+    if (incomeLine) {
+      const cat = categories.find(c => c.id === incomeLine.categoryId);
+      if (!cat?.excludeFromReport) return sum + incomeLine.amount;
+      return sum;
+    }
 
     const hasCategory = j.lines.some(l => l.categoryId);
     const walletLines = j.lines.filter(l => l.walletId);
@@ -737,11 +741,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return sum + walletLines[0].amount;
     }
     return sum;
-  }, 0), [monthlyJournals]);
+  }, 0), [monthlyJournals, categories]);
 
   const totalExpenses = useMemo(() => monthlyJournals.reduce((sum, j) => {
     const expenseLine = j.lines.find(l => l.categoryId && l.type === 'DEBIT');
-    if (expenseLine) return sum + expenseLine.amount;
+    if (expenseLine) {
+      const cat = categories.find(c => c.id === expenseLine.categoryId);
+      if (!cat?.excludeFromReport) return sum + expenseLine.amount;
+      return sum;
+    }
 
     const hasCategory = j.lines.some(l => l.categoryId);
     const walletLines = j.lines.filter(l => l.walletId);
@@ -749,7 +757,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return sum + walletLines[0].amount;
     }
     return sum;
-  }, 0), [monthlyJournals]);
+  }, 0), [monthlyJournals, categories]);
 
   const getCategorySpent = useCallback((categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
