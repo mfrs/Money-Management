@@ -97,40 +97,48 @@ Keep your verbal responses relatively short and conversational. Be extremely bri
           const res = JSON.parse(text);
           // Gemini returns Base64 PCM 16kHz/24kHz in serverContent.modelTurn.parts[...].inlineData.data
           if (res.serverContent && res.serverContent.modelTurn) {
+            console.log("Gemini Server Content:", res.serverContent.modelTurn);
             this.onAiSpeakingStateChange(true);
             const parts = res.serverContent.modelTurn.parts;
             for (const part of parts) {
               if (part.inlineData && part.inlineData.mimeType.includes('audio/pcm')) {
                 this.playPcmBase64(part.inlineData.data);
               }
-              if (part.functionCall) {
-                if (this.onFunctionCall) {
-                  this.onFunctionCall(
-                    { name: part.functionCall.name, args: part.functionCall.args },
-                    (res) => {
-                      // Send tool response back to Gemini
-                      if (this.ws?.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify({
-                          toolResponse: {
-                            functionResponses: [
-                              {
-                                id: part.functionCall.id,
-                                name: part.functionCall.name,
-                                response: res
-                              }
-                            ]
-                          }
-                        }));
-                      }
-                    }
-                  );
-                }
-              }
             }
           }
+          
           if (res.serverContent && res.serverContent.turnComplete) {
             // AI finished speaking
             setTimeout(() => this.onAiSpeakingStateChange(false), 500);
+          }
+
+          // Handle Tool Calls (Top level property in Gemini Live API)
+          const toolCallData = res.toolCall || res.tool_call;
+          if (toolCallData) {
+            const functionCalls = toolCallData.functionCalls || toolCallData.function_calls || [];
+            for (const call of functionCalls) {
+              if (this.onFunctionCall) {
+                this.onFunctionCall(
+                  { name: call.name, args: call.args },
+                  (functionResult) => {
+                    // Send tool response back to Gemini
+                    if (this.ws?.readyState === WebSocket.OPEN) {
+                      this.ws.send(JSON.stringify({
+                        toolResponse: {
+                          functionResponses: [
+                            {
+                              id: call.id,
+                              name: call.name,
+                              response: functionResult
+                            }
+                          ]
+                        }
+                      }));
+                    }
+                  }
+                );
+              }
+            }
           }
         } catch (e) {
           console.error("Failed to parse Gemini message", e);
