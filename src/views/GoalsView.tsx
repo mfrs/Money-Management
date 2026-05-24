@@ -7,7 +7,7 @@ import { cn, getLocalDateString } from '../lib/utils';
 import { getIcon } from '../lib/icons';
 
 export default function GoalsView() {
-  const { goals, addGoal, updateGoal, deleteGoal, t } = useApp();
+  const { goals, addGoal, updateGoal, deleteGoal, t, language } = useApp();
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
