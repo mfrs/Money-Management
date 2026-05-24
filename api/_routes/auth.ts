@@ -48,11 +48,11 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Create default asset types for new user
     const defaultAssetTypes = [
-      { id: 'investment', name: 'Investasi / Saham', isMandatory: true, color: '#6366F1' },
-      { id: 'property', name: 'Properti / Rumah', isMandatory: true, color: '#3B82F6' },
-      { id: 'vehicle', name: 'Kendaraan', isMandatory: true, color: '#F59E0B' },
-      { id: 'gold', name: 'Emas / Logam Mulia', isMandatory: true, color: '#FBBF24' },
-      { id: 'other', name: 'Aset Lainnya', isMandatory: true, color: '#EC4899' },
+      { name: 'Investasi / Saham', isMandatory: true, color: '#6366F1' },
+      { name: 'Properti / Rumah', isMandatory: true, color: '#3B82F6' },
+      { name: 'Kendaraan', isMandatory: true, color: '#F59E0B' },
+      { name: 'Emas / Logam Mulia', isMandatory: true, color: '#FBBF24' },
+      { name: 'Aset Lainnya', isMandatory: true, color: '#EC4899' },
     ];
     await prisma.assetType.createMany({
       data: defaultAssetTypes.map(t => ({ ...t, userId: user.id })),
