@@ -392,7 +392,7 @@ export default function AIChatAssistant() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const executeActionText = async (userText: string) => {
+  const executeActionText = async (userText: string, autoConfirm: boolean = false) => {
     if (!userText || isTyping) return;
 
     // Add user message
@@ -425,13 +425,14 @@ export default function AIChatAssistant() {
       );
 
       let spokenText = "";
+      const aiMsgId = Math.random().toString();
 
       if (data.action === 'answer') {
         spokenText = data.message;
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: data.message,
             timestamp: new Date()
@@ -442,7 +443,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date()
@@ -455,7 +456,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date(),
@@ -470,7 +471,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date(),
@@ -485,7 +486,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date(),
@@ -500,7 +501,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date(),
@@ -515,7 +516,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date(),
@@ -528,7 +529,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: spokenText,
             timestamp: new Date()
@@ -538,27 +539,27 @@ export default function AIChatAssistant() {
         spokenText = language === 'id'
           ? `Saya mendeteksi permintaan untuk membuat ${data.wallets?.length || 1} dompet baru. Apakah Anda ingin membuatnya?`
           : `I detected a request to create ${data.wallets?.length || 1} new wallets. Would you like to create them?`;
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+        setMessages(prev => [...prev, { id: aiMsgId, sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_goal') {
         spokenText = language === 'id'
           ? `Saya mendeteksi sasaran tabungan baru "${data.name}" dengan target ${formatCurrency(data.targetAmount)}. Apakah Anda ingin membuatnya?`
           : `I detected a new savings goal "${data.name}" for ${formatCurrency(data.targetAmount)}. Would you like to create it?`;
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+        setMessages(prev => [...prev, { id: aiMsgId, sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_asset') {
         spokenText = language === 'id'
           ? `Saya mendeteksi pembelian aset "${data.name}" seharga ${formatCurrency(data.purchasePrice)}. Apakah Anda ingin mencatatnya?`
           : `I detected an asset purchase "${data.name}" for ${formatCurrency(data.purchasePrice)}. Would you like to record it?`;
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+        setMessages(prev => [...prev, { id: aiMsgId, sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_income_source') {
         spokenText = language === 'id'
           ? `Saya mendeteksi sumber pemasukan baru "${data.name}" sebesar ${formatCurrency(data.amount)}. Apakah Anda ingin menambahkannya?`
           : `I detected a new income source "${data.name}" for ${formatCurrency(data.amount)}. Would you like to add it?`;
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+        setMessages(prev => [...prev, { id: aiMsgId, sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_fixed_expense') {
         spokenText = language === 'id'
           ? `Saya mendeteksi pengeluaran rutin "${data.name}" sebesar ${formatCurrency(data.amount)} tiap tanggal ${data.dueDate || 1}. Apakah Anda ingin menambahkannya?`
           : `I detected a new fixed expense "${data.name}" for ${formatCurrency(data.amount)} due on the ${data.dueDate || 1}. Would you like to add it?`;
-        setMessages(prev => [...prev, { id: Math.random().toString(), sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
+        setMessages(prev => [...prev, { id: aiMsgId, sender: 'ai', text: spokenText, timestamp: new Date(), parsedData: data, status: 'pending' }]);
       } else if (data.action === 'create_transactions') {
         let msgText = language === 'id'
           ? `Saya mendeteksi rincian ${data.transactions?.length || 1} transaksi berikut. Apakah datanya sudah sesuai?`
@@ -583,7 +584,7 @@ export default function AIChatAssistant() {
         setMessages(prev => [
           ...prev,
           {
-            id: Math.random().toString(),
+            id: aiMsgId,
             sender: 'ai',
             text: msgText,
             timestamp: new Date(),
@@ -596,6 +597,11 @@ export default function AIChatAssistant() {
       // Vocalize AI response if voice mode is enabled
       if (isVoiceEnabled && spokenText) {
         speakText(spokenText);
+      }
+
+      // Automatically execute if requested via voice
+      if (autoConfirm && data.action !== 'answer' && data.action !== 'delete_not_found') {
+        setTimeout(() => handleConfirm(aiMsgId, data), 100);
       }
     } catch (err: any) {
       console.error('Chat AI Assistant Error:', err);
@@ -1515,7 +1521,7 @@ export default function AIChatAssistant() {
     <GeminiLiveVoiceModal 
       isOpen={isVoiceModalOpen} 
       onClose={() => setIsVoiceModalOpen(false)}
-      onActionExecute={executeActionText}
+      onActionExecute={(text) => executeActionText(text, true)}
     />
     </>
   );
