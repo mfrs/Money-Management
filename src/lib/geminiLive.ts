@@ -10,6 +10,11 @@ export class GeminiLiveClient {
   public onStateChange: (state: 'disconnected' | 'connecting' | 'connected' | 'listening') => void = () => {};
   public onAiSpeakingStateChange: (speaking: boolean) => void = () => {};
 
+  constructor() {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    this.audioContext = new AudioContext({ sampleRate: 16000 });
+  }
+
   async connect(token: string) {
     this.onStateChange('connecting');
     
@@ -57,30 +62,33 @@ Keep your verbal responses relatively short and conversational. Do not read out 
       };
 
       this.ws.onmessage = async (event) => {
-        if (typeof event.data === 'string') {
-          try {
-            const res = JSON.parse(event.data);
-            // Gemini returns Base64 PCM 16kHz in serverContent.modelTurn.parts[...].inlineData.data
-            if (res.serverContent && res.serverContent.modelTurn) {
-              this.onAiSpeakingStateChange(true);
-              const parts = res.serverContent.modelTurn.parts;
-              for (const part of parts) {
-                if (part.inlineData && part.inlineData.mimeType.includes('audio/pcm')) {
-                  this.playPcmBase64(part.inlineData.data);
-                }
+        try {
+          let text = '';
+          if (typeof event.data === 'string') {
+            text = event.data;
+          } else if (event.data instanceof Blob) {
+            text = await event.data.text();
+          } else {
+            return;
+          }
+
+          const res = JSON.parse(text);
+          // Gemini returns Base64 PCM 16kHz/24kHz in serverContent.modelTurn.parts[...].inlineData.data
+          if (res.serverContent && res.serverContent.modelTurn) {
+            this.onAiSpeakingStateChange(true);
+            const parts = res.serverContent.modelTurn.parts;
+            for (const part of parts) {
+              if (part.inlineData && part.inlineData.mimeType.includes('audio/pcm')) {
+                this.playPcmBase64(part.inlineData.data);
               }
             }
-            if (res.serverContent && res.serverContent.turnComplete) {
-              // AI finished speaking
-              setTimeout(() => this.onAiSpeakingStateChange(false), 500);
-            }
-          } catch (e) {
-            console.error("Failed to parse Gemini message", e);
           }
-        } else if (event.data instanceof Blob) {
-           // Handle binary data if needed
-           const text = await event.data.text();
-           console.log(text);
+          if (res.serverContent && res.serverContent.turnComplete) {
+            // AI finished speaking
+            setTimeout(() => this.onAiSpeakingStateChange(false), 500);
+          }
+        } catch (e) {
+          console.error("Failed to parse Gemini message", e);
         }
       };
 
@@ -97,7 +105,10 @@ Keep your verbal responses relatively short and conversational. Do not read out 
 
   private async startMicrophone() {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
@@ -157,6 +168,10 @@ Keep your verbal responses relatively short and conversational. Do not read out 
 
   private async playPcmBase64(base64: string) {
     if (!this.audioContext) return;
+    
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
     
     // Convert base64 to Int16Array
     const binary = atob(base64);
