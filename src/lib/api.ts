@@ -54,6 +54,8 @@ export interface AuthUser {
   currency: string;
   theme: string;
   pin?: string | null;
+  appName?: string;
+  appLogo?: string;
 }
 
 export interface AuthResponse {

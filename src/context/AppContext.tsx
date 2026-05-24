@@ -56,6 +56,8 @@ interface AppContextType {
   setCurrentView: (view: ViewType) => void;
   isQuickEntryOpen: boolean;
   setIsQuickEntryOpen: (open: boolean) => void;
+  quickEntryDefaultType: 'expense' | 'income' | 'transfer';
+  setQuickEntryDefaultType: (type: 'expense' | 'income' | 'transfer') => void;
   isMobileSidebarOpen: boolean;
   setIsMobileSidebarOpen: (open: boolean) => void;
   searchQuery: string;
@@ -175,7 +177,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return saved || 'en';
   });
   const [appName, setAppName] = useState(() => localStorage.getItem('wm_appName') || 'Stashly');
-  const [appLogo, setAppLogo] = useState(() => localStorage.getItem('wm_appLogo') || 'CircleGauge');
+  const [appLogo, setAppLogo] = useState(() => localStorage.getItem('wm_appLogo') || '🐱');
 
   // Sensor state
   const [isSensored, setIsSensored] = useState<boolean>(() => {
@@ -193,6 +195,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Navigation
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [isQuickEntryOpen, setIsQuickEntryOpen] = useState(false);
+  const [quickEntryDefaultType, setQuickEntryDefaultType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -233,11 +236,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('wm_appName', appName);
     document.title = `${appName} — Personal Finance`;
-  }, [appName]);
+    import('@capacitor/preferences').then(({ Preferences }) => {
+      Preferences.set({ key: 'AppName', value: appName }).catch(() => {});
+    });
+    if (isAuthenticated) authApi.updateProfile({ appName }).catch(() => {});
+  }, [appName, isAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem('wm_appLogo', appLogo);
-  }, [appLogo]);
+    import('@capacitor/preferences').then(({ Preferences }) => {
+      Preferences.set({ key: 'AppLogo', value: appLogo }).catch(() => {});
+    });
+    if (isAuthenticated) authApi.updateProfile({ appLogo }).catch(() => {});
+  }, [appLogo, isAuthenticated]);
 
   const t = useCallback((key: string) => {
     return translations[language][key] || key;
@@ -280,6 +291,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(u);
         setIsAuthenticated(true);
         setTheme((u.theme as ThemeMode) || 'dark');
+        if (u.appName) setAppName(u.appName);
+        if (u.appLogo) setAppLogo(u.appLogo);
       })
       .catch(() => {
         clearToken();
@@ -300,6 +313,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser(res.user);
     setIsAuthenticated(true);
     setTheme((res.user.theme as ThemeMode) || 'dark');
+    if (res.user.appName) setAppName(res.user.appName);
+    if (res.user.appLogo) setAppLogo(res.user.appLogo);
     addToast(`Welcome back, ${res.user.name}!`);
   }, [addToast]);
 
@@ -309,6 +324,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser(res.user);
     setIsAuthenticated(true);
     setTheme('dark');
+    if (res.user.appName) setAppName(res.user.appName);
+    if (res.user.appLogo) setAppLogo(res.user.appLogo);
     addToast(`Welcome, ${res.user.name}! Your account has been created.`);
   }, [addToast]);
 
@@ -845,7 +862,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       appName, setAppName, appLogo, setAppLogo,
       isSensored, toggleSensored,
       currentView, setCurrentView: handleSetCurrentView,
-      isQuickEntryOpen, setIsQuickEntryOpen,
+      isQuickEntryOpen, setIsQuickEntryOpen, quickEntryDefaultType, setQuickEntryDefaultType,
       isMobileSidebarOpen, setIsMobileSidebarOpen,
       searchQuery, setSearchQuery,
       isLoading, authLoading,

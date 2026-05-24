@@ -31,6 +31,7 @@ export default function ReportsView() {
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'journal'>('analytics');
   const [selectedWalletId, setSelectedWalletId] = useState(wallets[0]?.id || '');
+  const [journalSortOrder, setJournalSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -309,8 +310,11 @@ export default function ReportsView() {
       currentBalance = currentBalance - debit + credit;
     }
 
+    if (journalSortOrder === 'oldest') {
+      return entries.reverse();
+    }
     return entries;
-  }, [mappedTransactions, selectedWalletId, activeTab, wallets]);
+  }, [mappedTransactions, selectedWalletId, activeTab, wallets, journalSortOrder]);
 
   return (
     <motion.div
@@ -533,15 +537,28 @@ export default function ReportsView() {
               <h3 className="font-display text-xl font-bold text-on-surface uppercase tracking-tight">{t('reports.walletJournal')}</h3>
               <p className="text-xs text-on-surface/40 uppercase tracking-widest font-medium">{t('reports.walletJournalSub')}</p>
             </div>
-            <div className="relative group min-w-[200px]">
-              <select
-                value={selectedWalletId}
-                onChange={(e) => setSelectedWalletId(e.target.value)}
-                className="w-full px-5 py-3.5 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-widest"
-              >
-                {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none">▼</div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="relative group min-w-[140px]">
+                <select
+                  value={journalSortOrder}
+                  onChange={(e) => setJournalSortOrder(e.target.value as any)}
+                  className="w-full px-5 py-3.5 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-widest"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none">▼</div>
+              </div>
+              <div className="relative group min-w-[200px]">
+                <select
+                  value={selectedWalletId}
+                  onChange={(e) => setSelectedWalletId(e.target.value)}
+                  className="w-full px-5 py-3.5 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-xs font-bold text-on-surface appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-widest"
+                >
+                  {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 pointer-events-none">▼</div>
+              </div>
             </div>
           </div>
 

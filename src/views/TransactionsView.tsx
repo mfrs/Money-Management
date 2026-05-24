@@ -243,6 +243,14 @@ export default function TransactionsView() {
               <option value="highest">Highest</option>
               <option value="lowest">Lowest</option>
             </select>
+            <select
+              value={filterWallet}
+              onChange={(e) => setFilterWallet(e.target.value)}
+              className="px-5 lg:px-6 py-2.5 rounded-full border border-on-surface/5 glass-dark text-[10px] font-bold text-on-surface/60 uppercase tracking-[0.2em] appearance-none cursor-pointer bg-transparent focus:outline-none"
+            >
+              <option value="">All Wallets</option>
+              {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
           </div>
           <div className="flex gap-1.5 glass-dark p-1 rounded-full border border-on-surface/5 w-full md:w-auto min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(['all', 'income', 'expense'] as const).map((tab) => (
@@ -281,17 +289,7 @@ export default function TransactionsView() {
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[9px] font-bold text-on-surface/20 uppercase tracking-widest">Wallet</label>
-                  <select
-                    value={filterWallet}
-                    onChange={(e) => setFilterWallet(e.target.value)}
-                    className="px-5 py-3 bg-on-surface/5 border border-on-surface/5 rounded-xl text-xs font-bold text-on-surface appearance-none cursor-pointer focus:outline-none min-w-[140px]"
-                  >
-                    <option value="">All Wallets</option>
-                    {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                  </select>
-                </div>
+
                 <button
                   onClick={() => { setFilterCategory(''); setFilterWallet(''); }}
                   className="self-end px-5 py-3 text-[10px] font-bold text-on-surface/30 hover:text-on-surface uppercase tracking-widest transition-colors"

@@ -23,7 +23,7 @@ import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capa
 import { toolsApi } from '../lib/api';
 
 export default function QuickEntryModal() {
-  const { isQuickEntryOpen, setIsQuickEntryOpen, wallets, categories, goals, addJournal, addToast, language } = useApp();
+  const { isQuickEntryOpen, setIsQuickEntryOpen, quickEntryDefaultType, wallets, categories, goals, addJournal, addToast, language } = useApp();
   const [entryStep, setEntryStep] = useState<'selection' | 'form'>('selection');
   const [type, setType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
@@ -207,13 +207,16 @@ export default function QuickEntryModal() {
   // Set defaults when opening
   useEffect(() => {
     if (isQuickEntryOpen) {
-      setEntryStep('selection');
+      setType(quickEntryDefaultType);
+      // If it's a specific type from widget (expense/income), skip to form
+      setEntryStep('form');
+      
       if (!walletId && wallets.length > 0) setWalletId(wallets[0].id);
       if (!toWalletId && wallets.length > 1) setToWalletId(wallets[1].id);
       if (!categoryId && filteredCategories.length > 0) setCategoryId(filteredCategories[0].id);
       setDate(getLocalDateString());
     }
-  }, [isQuickEntryOpen]);
+  }, [isQuickEntryOpen, quickEntryDefaultType]);
 
   // Update category when type changes
   useEffect(() => {

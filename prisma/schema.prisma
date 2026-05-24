@@ -16,6 +16,8 @@ model User {
   currency  String   @default("IDR")
   theme     String   @default("dark")  // dark, light
   pin       String?
+  appName   String   @default("Stashly")
+  appLogo   String   @default("🐱")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastOnline DateTime? @default(now())

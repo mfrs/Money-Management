@@ -99,7 +99,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId! },
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true, createdAt: true }
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true, createdAt: true, appName: true, appLogo: true }
     });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -112,18 +112,20 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
 
 router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, email, currency, theme, pin } = req.body;
+    const { name, email, currency, theme, pin, appName, appLogo } = req.body;
     const data: any = {};
     if (name) data.name = name;
     if (email) data.email = email;
     if (currency) data.currency = currency;
     if (theme) data.theme = theme;
     if (pin !== undefined) data.pin = pin;
+    if (appName !== undefined) data.appName = appName;
+    if (appLogo !== undefined) data.appLogo = appLogo;
 
     const user = await prisma.user.update({
       where: { id: req.userId! },
       data,
-      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true },
+      select: { id: true, name: true, email: true, isAdmin: true, currency: true, theme: true, pin: true, appName: true, appLogo: true },
     });
     res.json(user);
   } catch (err: any) {

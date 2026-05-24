@@ -29,6 +29,7 @@ import {
 import { motion } from 'motion/react';
 import CategoriesView from './CategoriesView';
 import AssetTypesView from './AssetTypesView';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -38,6 +39,7 @@ export default function SettingsView() {
   const { resetAllData, addToast, user, updateProfile, changePassword, theme, toggleTheme, language, setLanguage, t, appName, setAppName, appLogo, setAppLogo, setCurrentView } = useApp();
   const [activeTab, setActiveTab] = useState('profile');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Profile form state
   const [name, setName] = useState(user?.name || '');
@@ -432,13 +434,36 @@ export default function SettingsView() {
                     
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-[0.2em] ml-1">{t('settings.appLogo')}</label>
-                      <input
-                        type="text"
-                        value={appLogo}
-                        onChange={(e) => setAppLogo(e.target.value)}
-                        placeholder="e.g. 💰 or https://..."
-                        className="w-full px-5 py-4 bg-th-input border border-th-input rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-th-input-focus transition-all"
-                      />
+                      <div className="relative flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="absolute left-2 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-on-surface/10 transition-colors z-10 text-xl"
+                        >
+                          {appLogo.length <= 2 && !appLogo.startsWith('http') ? appLogo : '😀'}
+                        </button>
+                        <input
+                          type="text"
+                          value={appLogo}
+                          onChange={(e) => setAppLogo(e.target.value)}
+                          placeholder="e.g. 💰 or https://..."
+                          className="w-full pl-14 pr-5 py-4 bg-th-input border border-th-input rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-th-input-focus transition-all"
+                        />
+                        {showEmojiPicker && (
+                          <div className="absolute top-14 left-0 z-50">
+                            <div className="fixed inset-0" onClick={() => setShowEmojiPicker(false)} />
+                            <div className="relative z-10 shadow-2xl rounded-2xl overflow-hidden">
+                              <EmojiPicker 
+                                theme={theme as 'light' | 'dark'} 
+                                onEmojiClick={(emoji: EmojiClickData) => {
+                                  setAppLogo(emoji.emoji);
+                                  setShowEmojiPicker(false);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

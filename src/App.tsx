@@ -29,7 +29,34 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 
 function AppContent() {
-  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading, logout } = useApp();
+  const { currentView, setCurrentView, isAuthenticated, user, isLoading, authLoading, logout, setIsQuickEntryOpen, setQuickEntryDefaultType } = useApp();
+
+  // Handle opening modal from widget intent
+  React.useEffect(() => {
+    const checkPendingModal = async () => {
+      try {
+        const { Preferences } = await import('@capacitor/preferences');
+        const res = await Preferences.get({ key: 'pending_modal_open' });
+        if (res.value === 'expense' || res.value === 'income') {
+          setQuickEntryDefaultType(res.value as 'expense' | 'income');
+          setIsQuickEntryOpen(true);
+          await Preferences.remove({ key: 'pending_modal_open' });
+        }
+      } catch (e) {}
+    };
+
+    // Check on mount
+    checkPendingModal();
+
+    // Check on resume
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkPendingModal();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [setIsQuickEntryOpen, setQuickEntryDefaultType]);
   const [isPinVerified, setIsPinVerified] = React.useState(false);
 
   // Sync /pgmonitor pathname to view state
