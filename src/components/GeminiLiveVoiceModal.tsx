@@ -15,6 +15,7 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
   const { language } = useApp();
   const [state, setState] = useState<'disconnected' | 'connecting' | 'connected' | 'listening'>('disconnected');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [pendingData, setPendingData] = useState<any>(null);
   const clientRef = useRef<GeminiLiveClient | null>(null);
 
   useEffect(() => {
@@ -26,12 +27,14 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
         if (call.name === 'stage_transaction' && onActionExecute) {
           try {
             const result = await onActionExecute(call.args.action_text, false);
+            setPendingData(result);
             respond({ result: result || "Success, UI updated." });
           } catch (e: any) {
             respond({ error: e.message || "Failed to process" });
           }
         } else if (call.name === 'confirm_transaction' && onActionConfirm) {
           onActionConfirm();
+          setPendingData(null);
           respond({ result: "Transaction confirmed and saved." });
         } else {
           respond({ error: "Unknown function" });
@@ -48,6 +51,7 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
       clientRef.current = null;
       setState('disconnected');
       setIsAiSpeaking(false);
+      setPendingData(null);
     }
     return () => {
       clientRef.current?.stop();
@@ -120,6 +124,35 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
                 : ''}
             </p>
           </div>
+
+          {/* Pending Data Preview */}
+          {pendingData && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-sm bg-white/10 rounded-2xl p-4 space-y-3 backdrop-blur-md border border-white/20"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-widest text-primary/80 border-b border-white/10 pb-2">
+                {language === 'id' ? 'KONFIRMASI TRANSAKSI' : 'CONFIRM TRANSACTION'}
+              </div>
+              {pendingData.action === 'create_transactions' && pendingData.transactions?.map((tx: any, idx: number) => (
+                <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-white text-sm">{tx.description}</span>
+                    <span className={`font-bold text-sm ${tx.type === 'expense' ? 'text-red-400' : 'text-green-400'}`}>
+                      {tx.type === 'expense' ? '-' : '+'} Rp {tx.amount.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="text-xs text-white/50">
+                    {tx.walletId ? tx.walletId : 'Dompet'}
+                  </div>
+                </div>
+              ))}
+              <div className="text-xs text-center text-white/60 pt-2">
+                {language === 'id' ? 'Jawab "Ya, sudah benar" untuk menyimpan.' : 'Say "Yes, correct" to save.'}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Controls */}
