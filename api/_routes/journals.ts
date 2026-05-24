@@ -58,6 +58,56 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.post('/bulk', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const transactions = req.body;
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({ error: 'Valid array of transactions required' });
+    }
+
+    const prismaOperations: any[] = [];
+
+    for (const tx of transactions) {
+      const { description, amount, type, categoryId, walletId, toWalletId, date, note } = tx;
+      const lines: any[] = [];
+      if (type === 'transfer') {
+        lines.push({ walletId, amount, type: 'CREDIT' });
+        lines.push({ walletId: toWalletId, amount, type: 'DEBIT' });
+      } else if (type === 'expense') {
+        lines.push({ walletId, amount, type: 'CREDIT' });
+        lines.push({ categoryId, amount, type: 'DEBIT' });
+      } else if (type === 'income') {
+        lines.push({ walletId, amount, type: 'DEBIT' });
+        lines.push({ categoryId, amount, type: 'CREDIT' });
+      }
+
+      prismaOperations.push(
+        prisma.journal.create({
+          data: {
+            description, date: new Date(date), note: note || '', userId: req.userId!,
+            lines: { create: lines }
+          },
+          include: { lines: true }
+        })
+      );
+      
+      const walletUpdates = lines.filter((l: any) => l.walletId).map((l: any) => 
+        prisma.wallet.update({
+          where: { id: l.walletId, userId: req.userId! },
+          data: { balance: { [l.type === 'DEBIT' ? 'increment' : 'decrement']: amount } }
+        })
+      );
+      prismaOperations.push(...walletUpdates);
+    }
+
+    await prisma.$transaction(prismaOperations);
+    res.status(201).json({ success: true, count: transactions.length });
+  } catch (err: any) {
+    console.error('Failed to bulk post journal entries:', err);
+    res.status(500).json({ error: err.message || 'Failed to post bulk transactions' });
+  }
+});
+
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const journal = await prisma.journal.findFirst({

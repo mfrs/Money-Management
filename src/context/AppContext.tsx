@@ -88,6 +88,7 @@ interface AppContextType {
 
   // Journal CRUD
   addJournal: (payload: any) => void;
+  bulkAddJournals: (payloads: any[]) => Promise<void>;
   updateJournal: (id: string, updates: Partial<Journal>) => void;
   deleteJournal: (id: string) => void;
 
@@ -494,6 +495,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { addToast('Failed to add journal', 'error'); }
   }, [addToast]);
 
+  const bulkAddJournals = useCallback(async (payloads: any[]) => {
+    try {
+      await journalApi.bulkCreate(payloads);
+      await loadAllData(true);
+      addToast(`${payloads.length} transactions imported successfully`);
+    } catch {
+      addToast('Failed to import transactions', 'error');
+      throw new Error('Failed');
+    }
+  }, [addToast, loadAllData]);
+
   const updateJournal = useCallback(async (_id: string, _updates: Partial<Journal>) => {
     try {
       addToast('Journal updated');
@@ -833,7 +845,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       budget: { incomeSources, fixedExpenses, walletAllocations },
       addWallet, updateWallet, deleteWallet,
       addCategory, updateCategory, deleteCategory,
-      addJournal, updateJournal, deleteJournal,
+      addJournal, bulkAddJournals, updateJournal, deleteJournal,
       addIncomeSource, updateIncomeSource, deleteIncomeSource,
       addFixedExpense, updateFixedExpense, deleteFixedExpense,
       addWalletAllocation, updateWalletAllocation, deleteWalletAllocation,

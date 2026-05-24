@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ImportTransactionsModal from '../components/ImportTransactionsModal';
 import {
   Filter,
   ArrowUpDown,
@@ -34,6 +35,7 @@ export default function TransactionsView() {
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const [showImport, setShowImport] = useState(false);
   // Quick add form
   const [showForm, setShowForm] = useState(false);
   const [formAmount, setFormAmount] = useState('');
@@ -200,13 +202,21 @@ export default function TransactionsView() {
             {filtered.length} transactions • Net: {formatCurrency(filteredTotal)}
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-primary text-on-surface font-bold text-[10px] uppercase tracking-widest px-8 py-3.5 rounded-full hover:bg-primary/80 transition-all flex items-center gap-3 active:scale-95 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-        >
-          <Plus size={16} />
-          Add Transaction
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowImport(true)}
+            className="bg-on-surface/10 text-on-surface font-bold text-[10px] uppercase tracking-widest px-6 py-3.5 rounded-full hover:bg-on-surface/20 transition-all flex items-center gap-2 active:scale-95"
+          >
+            Import CSV
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-primary text-on-surface font-bold text-[10px] uppercase tracking-widest px-8 py-3.5 rounded-full hover:bg-primary/80 transition-all flex items-center gap-3 active:scale-95 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+          >
+            <Plus size={16} />
+            Add Transaction
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -580,6 +590,8 @@ export default function TransactionsView() {
           </div>
         )}
       </AnimatePresence>
+
+      <ImportTransactionsModal isOpen={showImport} onClose={() => setShowImport(false)} />
 
       <ConfirmDialog
         isOpen={!!deleteId}

@@ -115,7 +115,8 @@ export const categoryApi = {
 // ===================== JOURNALS =====================
 export const journalApi = {
   getAll: () => request<any[]>('/journals'),
-  create: (data: any) => request<any>('/journals', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data: Partial<Journal>) => request<Journal>('/journals', { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (data: Partial<Journal>[]) => request<{ success: boolean, count: number }>('/journals/bulk', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => request<any>(`/journals/${id}`, { method: 'DELETE' }),
 };
 
