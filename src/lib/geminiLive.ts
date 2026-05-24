@@ -32,7 +32,7 @@ export class GeminiLiveClient {
         // 3. Send setup message
         this.ws?.send(JSON.stringify({
           setup: {
-            model: 'models/gemini-live-2.5-flash-native-audio',
+            model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
             systemInstruction: {
               parts: [{
                 text: `You are Stashly's AI Voice Assistant, an intelligent financial advisor. 
