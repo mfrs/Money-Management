@@ -51,6 +51,7 @@ export default function AIChatAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [categoryLimits, setCategoryLimits] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
+  const isTypingRef = useRef(false);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -252,7 +253,6 @@ export default function AIChatAssistant() {
 
       const userMsgId = Math.random().toString();
       setIsTyping(true);
-
       const dataUrl = `data:image/${image.format || 'jpeg'};base64,${image.base64String}`;
       
       setMessages(prev => [
@@ -393,7 +393,7 @@ export default function AIChatAssistant() {
   }, [messages, isTyping]);
 
   const executeActionText = async (userText: string, autoConfirm: boolean = false) => {
-    if (!userText || isTyping) return;
+    if (!userText || isTypingRef.current) return;
 
     // Add user message
     const userMsgId = Math.random().toString();
@@ -407,6 +407,7 @@ export default function AIChatAssistant() {
       }
     ]);
 
+    isTypingRef.current = true;
     setIsTyping(true);
 
     try {
@@ -625,6 +626,7 @@ export default function AIChatAssistant() {
         speakText(errText);
       }
     } finally {
+      isTypingRef.current = false;
       setIsTyping(false);
     }
   };
