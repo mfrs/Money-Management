@@ -418,12 +418,14 @@ export default function TransactionsView() {
                       {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
                     </td>
                     <td className="px-2 md:px-4 lg:px-6 py-4 lg:py-7">
-                      <button
-                        onClick={() => setDeleteId(tx.id)}
-                        className="text-on-surface/10 hover:text-error transition-colors p-1"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {!tx.isReversed && !tx.description.startsWith('[REVERSAL]') && (
+                        <button
+                          onClick={() => setDeleteId(tx.id)}
+                          className="text-on-surface/10 hover:text-error transition-colors p-1"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -478,9 +480,11 @@ export default function TransactionsView() {
                       <span className="text-[9px] text-on-surface/20">•</span>
                       <span className="text-[9px] font-bold text-on-surface/40 uppercase tracking-widest">{categoryName}</span>
                     </div>
-                    <button onClick={() => setDeleteId(tx.id)} className="p-2 text-on-surface/20 hover:text-error transition-colors -mr-2">
-                      <Trash2 size={14} />
-                    </button>
+                    {!tx.isReversed && !tx.description.startsWith('[REVERSAL]') && (
+                      <button onClick={() => setDeleteId(tx.id)} className="p-2 text-on-surface/20 hover:text-error transition-colors -mr-2">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
