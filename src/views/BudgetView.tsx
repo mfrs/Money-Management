@@ -435,9 +435,9 @@ export default function BudgetView() {
                   <option value="06-MONTH">{t('budget.semiAnnual')}</option>
                   <option value="12-MONTH">{t('budget.annual')}</option>
                 </select>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">{t('budget.dueDay')}</span>
-                  <input type="number" min="1" max="31" value={expDueDate} onChange={(e) => setExpDueDate(e.target.value)} placeholder="1" className="w-full pl-40 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest ml-1">{t('budget.dueDay')}</label>
+                  <input type="number" min="1" max="31" value={expDueDate} onChange={(e) => setExpDueDate(e.target.value)} placeholder="1" className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
                 </div>
                 <button onClick={handleAddExpense} disabled={!expName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
                   <Save size={16} /> {t('common.save')}
@@ -473,9 +473,9 @@ export default function BudgetView() {
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 font-bold">{aiType === 'nominal' ? 'Rp' : '%'}</span>
                   <input type="number" value={aiAmount} onChange={(e) => setAiAmount(e.target.value)} placeholder="0" className="w-full pl-12 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                 </div>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/20 text-[10px] font-bold uppercase tracking-widest">Trigger Date</span>
-                  <input type="number" min="1" max="31" value={aiTriggerDate} onChange={(e) => setAiTriggerDate(e.target.value)} placeholder="1" className="w-full pl-36 pr-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-on-surface/30 uppercase tracking-widest ml-1">Trigger Date</label>
+                  <input type="number" min="1" max="31" value={aiTriggerDate} onChange={(e) => setAiTriggerDate(e.target.value)} placeholder="1" className="w-full px-5 py-4 bg-on-surface/5 border border-on-surface/5 rounded-2xl text-sm font-bold text-on-surface focus:outline-none focus:border-on-surface/20 transition-all placeholder:text-on-surface/15" />
                 </div>
                 <button onClick={handleAddAutoInvest} disabled={!aiName.trim()} className="w-full py-4 bg-secondary text-on-surface text-sm font-bold uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all shadow-lg disabled:opacity-30 flex items-center justify-center gap-2">
                   <Save size={16} /> {t('common.save')}
