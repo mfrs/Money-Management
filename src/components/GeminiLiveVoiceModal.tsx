@@ -7,10 +7,11 @@ import { useApp } from '../context/AppContext';
 interface GeminiLiveVoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onActionExecute?: (actionText: string) => void;
+  onActionExecute?: (actionText: string, autoConfirm: boolean) => Promise<any>;
+  onActionConfirm?: () => void;
 }
 
-export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute }: GeminiLiveVoiceModalProps) {
+export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute, onActionConfirm }: GeminiLiveVoiceModalProps) {
   const { language } = useApp();
   const [state, setState] = useState<'disconnected' | 'connecting' | 'connected' | 'listening'>('disconnected');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -21,10 +22,17 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute 
       const client = new GeminiLiveClient();
       client.onStateChange = (s) => setState(s);
       client.onAiSpeakingStateChange = (speaking) => setIsAiSpeaking(speaking);
-      client.onFunctionCall = (call, respond) => {
-        if (call.name === 'execute_action' && onActionExecute) {
-          onActionExecute(call.args.action_text);
-          respond({ result: "Success, backend processing." });
+      client.onFunctionCall = async (call, respond) => {
+        if (call.name === 'stage_transaction' && onActionExecute) {
+          try {
+            const result = await onActionExecute(call.args.action_text, false);
+            respond({ result: result || "Success, UI updated." });
+          } catch (e: any) {
+            respond({ error: e.message || "Failed to process" });
+          }
+        } else if (call.name === 'confirm_transaction' && onActionConfirm) {
+          onActionConfirm();
+          respond({ result: "Transaction confirmed and saved." });
         } else {
           respond({ error: "Unknown function" });
         }

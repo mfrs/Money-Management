@@ -25,7 +25,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { toolsApi } from '../lib/api';
-import { cn, compressImage, formatCurrency, getLocalDateString } from '../lib/utils';
+import { formatCurrency } from '../lib/types';
+import { cn, compressImage, getLocalDateString } from '../lib/utils';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import GeminiLiveVoiceModal from './GeminiLiveVoiceModal';
 
@@ -52,6 +53,7 @@ export default function AIChatAssistant() {
   const [categoryLimits, setCategoryLimits] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
   const isTypingRef = useRef(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -238,6 +240,14 @@ export default function AIChatAssistant() {
       setShowSourcePicker(false);
     }
   };
+  const handleVoiceConfirm = () => {
+    // Find the last message that is pending
+    const lastPendingMsg = [...messages].reverse().find(m => m.status === 'pending');
+    if (lastPendingMsg && lastPendingMsg.parsedData) {
+      handleConfirm(lastPendingMsg.id, lastPendingMsg.parsedData);
+    }
+  };
+
   const handleNativeCamera = async () => {
     setShowSourcePicker(false);
     
@@ -608,6 +618,7 @@ export default function AIChatAssistant() {
           console.error('Auto-confirm error:', e);
         }
       }
+      return data;
     } catch (err: any) {
       console.error('Chat AI Assistant Error:', err);
       const errText = language === 'id'
@@ -1527,10 +1538,13 @@ export default function AIChatAssistant() {
       </AnimatePresence>
 
     <GeminiLiveVoiceModal 
-      isOpen={isVoiceModalOpen} 
+      isOpen={isVoiceModalOpen}
       onClose={() => setIsVoiceModalOpen(false)}
-      onActionExecute={(text) => executeActionText(text, true)}
+      onActionExecute={(text, autoConfirm) => executeActionText(text, autoConfirm)}
+      onActionConfirm={handleVoiceConfirm}
     />
+
+    {/* FAB to open chat */}
     </>
   );
 }

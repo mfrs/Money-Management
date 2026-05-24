@@ -43,8 +43,8 @@ export class GeminiLiveClient {
               {
                 functionDeclarations: [
                   {
-                    name: "execute_action",
-                    description: "Execute a user's financial action (like adding an expense, income, updating a wallet, etc). You MUST use this tool whenever the user asks you to record or change something.",
+                    name: "stage_transaction",
+                    description: "Parse and show a pending financial transaction to the user for review. Use this when the user asks to record an expense, income, etc., OR when the user asks to revise a pending transaction. You MUST pass the complete context in action_text.",
                     parameters: {
                       type: "OBJECT",
                       properties: {
@@ -55,6 +55,14 @@ export class GeminiLiveClient {
                       },
                       required: ["action_text"]
                     }
+                  },
+                  {
+                    name: "confirm_transaction",
+                    description: "Confirm and save the staged transaction to the database. Call this ONLY after staging, and ONLY when the user explicitly says the transaction is correct or agrees to save it.",
+                    parameters: {
+                      type: "OBJECT",
+                      properties: {}
+                    }
                   }
                 ]
               }
@@ -63,7 +71,10 @@ export class GeminiLiveClient {
               parts: [{
                 text: `You are Stashly's AI Voice Assistant, an intelligent financial advisor. 
 You communicate concisely, naturally, and warmly in the user's spoken language. 
-When the user asks to record an expense, income, or make any financial change, you MUST call the execute_action tool. Do not just say you did it without calling the tool!
+Workflow for recording transactions:
+1. When the user asks to record a transaction, call stage_transaction. Then verbally ask the user "Apakah datanya sudah benar?" or similar.
+2. If the user asks for a revision, call stage_transaction AGAIN with the FULL, corrected details.
+3. When the user confirms it's correct, call confirm_transaction to save it, and celebrate briefly.
 Keep your verbal responses relatively short and conversational. Be extremely brief but helpful.`
               }]
             },
