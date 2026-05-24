@@ -17,6 +17,13 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [pendingData, setPendingData] = useState<any>(null);
   const clientRef = useRef<GeminiLiveClient | null>(null);
+  const onActionExecuteRef = useRef(onActionExecute);
+  const onActionConfirmRef = useRef(onActionConfirm);
+
+  useEffect(() => {
+    onActionExecuteRef.current = onActionExecute;
+    onActionConfirmRef.current = onActionConfirm;
+  }, [onActionExecute, onActionConfirm]);
 
   useEffect(() => {
     if (isOpen) {
@@ -24,16 +31,16 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
       client.onStateChange = (s) => setState(s);
       client.onAiSpeakingStateChange = (speaking) => setIsAiSpeaking(speaking);
       client.onFunctionCall = async (call, respond) => {
-        if (call.name === 'stage_transaction' && onActionExecute) {
+        if (call.name === 'stage_transaction' && onActionExecuteRef.current) {
           try {
-            const result = await onActionExecute(call.args.action_text, false);
+            const result = await onActionExecuteRef.current(call.args.action_text, false);
             setPendingData(result);
             respond({ result: result || "Success, UI updated." });
           } catch (e: any) {
             respond({ error: e.message || "Failed to process" });
           }
-        } else if (call.name === 'confirm_transaction' && onActionConfirm) {
-          onActionConfirm();
+        } else if (call.name === 'confirm_transaction' && onActionConfirmRef.current) {
+          onActionConfirmRef.current();
           setPendingData(null);
           respond({ result: "Transaction confirmed and saved." });
         } else {
