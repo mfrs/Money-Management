@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Delete, LogOut, CheckCircle2, Fingerprint } from 'lucide-react';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
+import { Capacitor } from '@capacitor/core';
 import { useApp } from '../context/AppContext';
 import { authApi } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -20,9 +21,13 @@ export default function PinLockView({ onVerified, onLogout }: PinLockViewProps) 
   const [hasBiometric, setHasBiometric] = useState(false);
 
   useEffect(() => {
-    NativeBiometric.isAvailable().then(result => {
-      setHasBiometric(result.isAvailable);
-    }).catch(() => setHasBiometric(false));
+    if (Capacitor.isNativePlatform()) {
+      NativeBiometric.isAvailable().then(result => {
+        setHasBiometric(result.isAvailable);
+      }).catch(() => setHasBiometric(false));
+    } else {
+      setHasBiometric(false);
+    }
   }, []);
 
   useEffect(() => {
