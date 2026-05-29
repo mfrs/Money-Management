@@ -233,22 +233,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('wm_language', language);
   }, [language]);
 
+  // Sync AppName changes locally
   useEffect(() => {
     localStorage.setItem('wm_appName', appName);
     document.title = `${appName} — Personal Finance`;
     import('@capacitor/preferences').then(({ Preferences }) => {
       Preferences.set({ key: 'AppName', value: appName }).catch(() => {});
     });
-    if (isAuthenticated) authApi.updateProfile({ appName }).catch(() => {});
-  }, [appName, isAuthenticated]);
+  }, [appName]);
 
+  // Sync AppLogo changes locally
   useEffect(() => {
     localStorage.setItem('wm_appLogo', appLogo);
     import('@capacitor/preferences').then(({ Preferences }) => {
       Preferences.set({ key: 'AppLogo', value: appLogo }).catch(() => {});
     });
-    if (isAuthenticated) authApi.updateProfile({ appLogo }).catch(() => {});
-  }, [appLogo, isAuthenticated]);
+  }, [appLogo]);
+
+  // Sync settings with the backend ONLY when they differ from the loaded database profile
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const needsUpdateAppName = appName !== user.appName;
+      const needsUpdateAppLogo = appLogo !== user.appLogo;
+
+      if (needsUpdateAppName || needsUpdateAppLogo) {
+        const updatePayload: any = {};
+        if (needsUpdateAppName) updatePayload.appName = appName;
+        if (needsUpdateAppLogo) updatePayload.appLogo = appLogo;
+
+        authApi.updateProfile(updatePayload).catch((err) => {
+          console.warn('Failed to update app profile settings on server:', err);
+        });
+      }
+    }
+  }, [appName, appLogo, isAuthenticated, user]);
 
   const t = useCallback((key: string) => {
     return translations[language][key] || key;
