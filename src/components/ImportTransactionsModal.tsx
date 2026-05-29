@@ -53,7 +53,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
       complete: (results) => {
         const parsedRows: ParsedRow[] = results.data.map((row: any, index: number) => {
           let dateStr = row['Date (YYYY-MM-DD HH:mm)']?.trim() || row['Date (YYYY-MM-DD)']?.trim() || row['Tanggal & Waktu']?.trim() || '';
-          
+
           // Try to normalize DD/MM/YY HH.mm format from e-statement to YYYY-MM-DDTHH:mm
           if (dateStr && dateStr.includes('/')) {
             const parts = dateStr.split(/[\s,]+/);
@@ -63,19 +63,19 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
               const month = dateParts[1].padStart(2, '0');
               let year = dateParts[2];
               if (year.length === 2) year = `20${year}`;
-              
+
               let time = parts[1] ? parts[1].replace('.', ':') : '00:00';
               if (time.length === 4) time = `0${time}`;
               dateStr = `${year}-${month}-${day}T${time}`;
             }
           } else if (dateStr && !dateStr.includes('T')) {
-             dateStr = dateStr.replace(' ', 'T');
+            dateStr = dateStr.replace(' ', 'T');
           }
 
           const desc = row['Description']?.trim() || row['Keterangan / Deskripsi']?.trim() || '';
           const amountStr = (row['Amount']?.toString() || row['Nominal (IDR)']?.toString() || '0').replace(/[^0-9.-]+/g, "");
           const amount = parseFloat(amountStr);
-          
+
           let typeRaw = row['Type (income/expense/transfer)']?.toLowerCase().trim() || '';
           if (!typeRaw) {
             const jenis = row['Jenis']?.toLowerCase().trim();
@@ -88,7 +88,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
           const catName = row['Category Name (or Target Wallet if transfer)']?.trim() || '';
 
           const errors: string[] = [];
-          
+
           if (!dateStr || isNaN(new Date(dateStr).getTime())) errors.push('Invalid Date');
           if (!desc) errors.push('Description missing');
           if (isNaN(amount) || amount <= 0) errors.push('Invalid Amount');
@@ -142,7 +142,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
     setRows(prev => prev.map(r => {
       if (r.id !== id) return r;
       const updated = { ...r, ...updates };
-      
+
       // Revalidate
       updated.errors = [];
       if (!updated.date || isNaN(new Date(updated.date).getTime())) updated.errors.push('Invalid Date');
@@ -213,7 +213,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
           <AnimatePresence mode="wait">
             {step === 'upload' ? (
               <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 max-w-2xl mx-auto">
-                
+
                 <div className="bg-on-surface/5 rounded-[24px] p-6 lg:p-8 border border-on-surface/5">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
@@ -242,7 +242,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
                         Upload your filled CSV file here. We will review it together before saving.
                       </p>
                       <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-                      <div 
+                      <div
                         onClick={() => fileInputRef.current?.click()}
                         className="w-full border-2 border-dashed border-on-surface/20 rounded-[20px] p-10 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
                       >
@@ -256,11 +256,11 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
               </motion.div>
             ) : (
               <motion.div key="review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
-                
+
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                   <p className="text-sm text-on-surface/60">
-                    Found <span className="font-bold text-on-surface">{rows.length}</span> rows. 
-                    <span className="text-primary font-bold ml-2">{rows.filter(r => r.isValid).length} ready</span>, 
+                    Found <span className="font-bold text-on-surface">{rows.length}</span> rows.
+                    <span className="text-primary font-bold ml-2">{rows.filter(r => r.isValid).length} ready</span>,
                     <span className="text-error font-bold ml-2">{rows.filter(r => !r.isValid).length} needs fixing</span>
                   </p>
                   <div className="flex gap-3 w-full lg:w-auto">

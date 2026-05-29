@@ -22,6 +22,7 @@ import QuickEntryModal from './components/QuickEntryModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import ToastContainer from './components/ToastContainer';
 import AIChatAssistant from './components/AIChatAssistant';
+import DevDebugBar from './components/DevDebugBar';
 import { AnimatePresence } from 'motion/react';
 import { ShieldAlert } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -57,7 +58,12 @@ function AppContent() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [setIsQuickEntryOpen, setQuickEntryDefaultType]);
-  const [isPinVerified, setIsPinVerified] = React.useState(false);
+  const [isPinVerified, setIsPinVerified] = React.useState(() => {
+    if (import.meta.env.DEV && sessionStorage.getItem('wm_bypass_pin') === 'true') {
+      return true;
+    }
+    return false;
+  });
 
   // Sync /pgmonitor pathname to view state
   React.useEffect(() => {
@@ -81,9 +87,29 @@ function AppContent() {
     }
   }, [currentView]);
 
-  // Show nothing while checking if user has a saved session
+  const renderView = () => {
+    switch (currentView) {
+      case 'dashboard': return <DashboardView />;
+      case 'wallets': return <WalletsView />;
+      case 'budget': return <BudgetView />;
+      case 'transactions': return <TransactionsView />;
+      case 'reports': return <ReportsView />;
+      case 'settings': return <SettingsView />;
+      case 'goals': return <GoalsView />;
+      case 'admin': return <AdminView />;
+      case 'ledger': return <LedgerView />;
+      case 'achievements': return <AchievementsView />;
+      case 'assets': return <AssetsView />;
+      case 'debts': return <DebtsView />;
+      case 'pgmonitor': return <PGMonitorView />;
+      default: return <DashboardView />;
+    }
+  };
+
+  let viewContent;
+
   if (authLoading) {
-    return (
+    viewContent = (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
           <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -91,19 +117,12 @@ function AppContent() {
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return <SignInView />;
-  }
-
-  if (!isPinVerified) {
-    return <PinLockView onVerified={() => setIsPinVerified(true)} onLogout={logout} />;
-  }
-
-  // Admin access check for PGMonitor URL
-  if (window.location.pathname === '/pgmonitor' && user && !user.isAdmin) {
-    return (
+  } else if (!isAuthenticated) {
+    viewContent = <SignInView />;
+  } else if (!isPinVerified) {
+    viewContent = <PinLockView onVerified={() => setIsPinVerified(true)} onLogout={logout} />;
+  } else if (window.location.pathname === '/pgmonitor' && user && !user.isAdmin) {
+    viewContent = (
       <div className="min-h-screen bg-surface flex items-center justify-center p-4">
         <div className="max-w-md w-full glass p-8 rounded-3xl border border-error/20 text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center border border-error/20 mx-auto">
@@ -127,10 +146,8 @@ function AppContent() {
         </div>
       </div>
     );
-  }
-
-  if (isLoading) {
-    return (
+  } else if (isLoading) {
+    viewContent = (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
           <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -141,54 +158,47 @@ function AppContent() {
         </div>
       </div>
     );
+  } else {
+    viewContent = (
+      <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30 w-full max-w-[100vw] overflow-x-hidden">
+        <Sidebar />
+
+        <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full w-full">
+          <TopBar />
+          <div className="pt-[calc(env(safe-area-inset-top,0px)+104px)] pb-[calc(env(safe-area-inset-bottom,0px)+80px)] lg:pb-0 lg:pt-[calc(env(safe-area-inset-top,0px)+112px)] px-4 lg:px-10 w-full max-w-[1440px] mx-auto min-h-screen min-w-0">
+            <AnimatePresence mode="wait">
+              <React.Fragment key={currentView}>
+                {renderView()}
+              </React.Fragment>
+            </AnimatePresence>
+          </div>
+        </main>
+
+        <MobileBottomNav />
+        <QuickEntryModal />
+        <AIChatAssistant />
+        <ToastContainer />
+
+        {/* Dynamic background accents */}
+        <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ opacity: 'var(--th-accent-glow)' }}>
+          <div className="absolute top-[-100px] left-[-100px] w-[400px] h-[400px] bg-[#3b82f6] rounded-full blur-[100px] opacity-40 animate-pulse" />
+          <div className="absolute bottom-[-150px] right-[20%] w-[500px] h-[500px] bg-[#8b5cf6] rounded-full blur-[140px] opacity-30" />
+          <div className="absolute top-[20%] right-[-100px] w-[350px] h-[350px] bg-[#ec4899] rounded-full blur-[120px] opacity-20" />
+        </div>
+      </div>
+    );
   }
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard': return <DashboardView />;
-      case 'wallets': return <WalletsView />;
-      case 'budget': return <BudgetView />;
-      case 'transactions': return <TransactionsView />;
-      case 'reports': return <ReportsView />;
-      case 'settings': return <SettingsView />;
-      case 'goals': return <GoalsView />;
-      case 'admin': return <AdminView />;
-      case 'ledger': return <LedgerView />;
-      case 'achievements': return <AchievementsView />;
-      case 'assets': return <AssetsView />;
-      case 'debts': return <DebtsView />;
-      case 'pgmonitor': return <PGMonitorView />;
-      default: return <DashboardView />;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-surface flex selection:bg-secondary-container/30 w-full max-w-[100vw] overflow-x-hidden">
-      <Sidebar />
-
-      <main className="flex-1 lg:ml-[280px] min-w-0 flex flex-col max-w-full w-full">
-        <TopBar />
-        <div className="pt-[calc(env(safe-area-inset-top,0px)+104px)] pb-[calc(env(safe-area-inset-bottom,0px)+80px)] lg:pb-0 lg:pt-[calc(env(safe-area-inset-top,0px)+112px)] px-4 lg:px-10 w-full max-w-[1440px] mx-auto min-h-screen min-w-0">
-          <AnimatePresence mode="wait">
-            <React.Fragment key={currentView}>
-              {renderView()}
-            </React.Fragment>
-          </AnimatePresence>
-        </div>
-      </main>
-
-      <MobileBottomNav />
-      <QuickEntryModal />
-      <AIChatAssistant />
-      <ToastContainer />
-
-      {/* Dynamic background accents */}
-      <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ opacity: 'var(--th-accent-glow)' }}>
-        <div className="absolute top-[-100px] left-[-100px] w-[400px] h-[400px] bg-[#3b82f6] rounded-full blur-[100px] opacity-40 animate-pulse" />
-        <div className="absolute bottom-[-150px] right-[20%] w-[500px] h-[500px] bg-[#8b5cf6] rounded-full blur-[140px] opacity-30" />
-        <div className="absolute top-[20%] right-[-100px] w-[350px] h-[350px] bg-[#ec4899] rounded-full blur-[120px] opacity-20" />
-      </div>
-    </div>
+    <>
+      {viewContent}
+      {import.meta.env.DEV && (
+        <DevDebugBar 
+          isPinVerified={isPinVerified} 
+          setIsPinVerified={setIsPinVerified} 
+        />
+      )}
+    </>
   );
 }
 

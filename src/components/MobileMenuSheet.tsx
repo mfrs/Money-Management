@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  Target, 
-  Diamond, 
-  Handshake, 
-  Award, 
-  ArrowLeftRight, 
-  BookOpen, 
-  ShieldCheck, 
+import {
+  X,
+  Target,
+  Diamond,
+  Handshake,
+  Award,
+  ArrowLeftRight,
+  BookOpen,
+  ShieldCheck,
   Database,
   User
 } from 'lucide-react';
@@ -45,15 +45,15 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-end lg:hidden">
           {/* Backdrop */}
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={onClose} 
-            className="absolute inset-0 bg-black/80" 
+            onClick={onClose}
+            className="absolute inset-0 bg-black/80"
           />
-          
+
           {/* Sheet */}
           <motion.div
             initial={{ y: "100%" }}
@@ -75,7 +75,7 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-6 pb-4">
-              
+
               {/* Menu Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <MenuCard icon={Target} color="bg-primary/20 text-primary" label={t('nav.goals')} onClick={() => handleNav('goals')} />
@@ -84,7 +84,7 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
                 <MenuCard icon={Award} color="bg-tertiary/20 text-tertiary" label={t('nav.achievements')} onClick={() => handleNav('achievements')} />
                 <MenuCard icon={ArrowLeftRight} color="bg-emerald-500/20 text-emerald-500" label={t('nav.transactions')} onClick={() => handleNav('transactions')} />
                 <MenuCard icon={BookOpen} color="bg-blue-400/20 text-blue-400" label={t('nav.ledger')} onClick={() => handleNav('ledger')} />
-                
+
                 {user?.role === 'admin' && (
                   <>
                     <MenuCard icon={ShieldCheck} color="bg-purple-500/20 text-purple-500" label="Admin" onClick={() => handleNav('admin')} />
@@ -95,8 +95,8 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
 
               {/* Profile & Settings Button */}
               <div className="pt-2 border-t border-on-surface/5">
-                <button 
-                  onClick={() => handleNav('settings')} 
+                <button
+                  onClick={() => handleNav('settings')}
                   className="w-full flex items-center justify-between p-4 rounded-2xl bg-on-surface/5 border border-on-surface/5 hover:bg-on-surface/10 active:scale-95 transition-all group"
                 >
                   <div className="flex items-center gap-4">
@@ -121,8 +121,8 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
 
 function MenuCard({ icon: Icon, label, color, onClick }: { icon: any, label: string, color: string, onClick: () => void }) {
   return (
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className="flex flex-col items-center justify-center p-5 rounded-[20px] bg-on-surface/5 border border-on-surface/5 hover:bg-on-surface/10 hover:border-on-surface/10 transition-all active:scale-[0.98] gap-3 group"
     >
       <div className={cn("w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300", color)}>
