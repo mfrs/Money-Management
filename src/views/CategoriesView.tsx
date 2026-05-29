@@ -102,7 +102,7 @@ export default function CategoriesView() {
       </header>
 
       {/* Tab Toggle */}
-      <div className="flex items-center glass-dark rounded-full p-1.5 border border-on-surface/5 shadow-inner w-fit backdrop-blur-xl">
+      <div className="flex items-center glass-dark rounded-full p-1.5 border border-on-surface/5 shadow-inner w-fit ">
         <button
           onClick={() => setActiveTab('expense')}
           className={cn(
@@ -249,7 +249,7 @@ export default function CategoriesView() {
       <AnimatePresence>
         {showForm && (
           <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm} className="absolute inset-0 bg-black/60 " />
             <motion.div
               initial={{ opacity: 0, y: "100%" }}
               animate={{ opacity: 1, y: 0 }}

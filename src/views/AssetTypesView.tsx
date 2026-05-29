@@ -122,7 +122,7 @@ export default function AssetTypesView() {
       {/* Form Dialog */}
       <AnimatePresence>
         {showForm && (
-          <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-4 bg-black/60 ">
             <motion.div
               initial={{ opacity: 0, y: "100%" }}
               animate={{ opacity: 1, y: 0 }}
@@ -195,8 +195,7 @@ export default function AssetTypesView() {
         isOpen={!!deleteId}
         title="Delete Asset Type"
         message="Are you sure you want to delete this asset type? Assets using this type might lose their categorization."
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmLabel="Delete"
         onConfirm={() => {
           if (deleteId) deleteAssetType(deleteId);
           setDeleteId(null);

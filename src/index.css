@@ -233,3 +233,20 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* Disable all heavy GPU blur filters and background glow animations when any modal/sheet is open */
+body:has(.fixed.inset-0:not(.pointer-events-none)) .glass,
+body:has(.fixed.inset-0:not(.pointer-events-none)) .glass-dark,
+body:has(.fixed.inset-0:not(.pointer-events-none)) .liquid-glass,
+body:has(.fixed.inset-0:not(.pointer-events-none)) [class*="blur-"],
+body:has(.fixed.inset-0:not(.pointer-events-none)) [class*="backdrop-blur-"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+/* Specifically hide the background accents container to save massive GPU resources during modal display */
+body:has(.fixed.inset-0:not(.pointer-events-none)) .fixed.inset-0.pointer-events-none.z-\[-1\] {
+  display: none !important;
+}

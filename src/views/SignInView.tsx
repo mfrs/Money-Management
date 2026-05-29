@@ -124,7 +124,7 @@ export default function SignInView() {
       <div className="relative z-10 w-full max-w-md p-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-lg mb-4 backdrop-blur-xl">
+          <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center shadow-lg mb-4 ">
             <CircleGauge className="text-white" size={24} />
           </div>
           <span className="font-display text-sm font-bold text-white/40 tracking-[0.25em] uppercase">Stashly</span>
@@ -133,7 +133,7 @@ export default function SignInView() {
         {/* Auth Card */}
         <motion.div
           layout
-          className="glass rounded-[32px] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-3xl bg-white/[0.02]"
+          className="glass rounded-[32px] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden  bg-white/[0.02]"
         >
           {/* Subtle gradient glow inside the card */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />

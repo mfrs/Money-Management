@@ -31,7 +31,7 @@ export default function ToastContainer() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               className={cn(
-                "pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl border backdrop-blur-xl shadow-2xl min-w-[280px]",
+                "pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl border  shadow-2xl min-w-[280px]",
                 colors[toast.type]
               )}
             >

@@ -424,7 +424,6 @@ export default function ReportsView() {
                   borderRadius: '24px',
                   border: '1px solid rgba(255,255,255,0.1)',
                   backgroundColor: 'rgba(15, 15, 25, 0.95)',
-                  backdropFilter: 'blur(10px)',
                   boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
                   padding: '20px'
                 }}
@@ -510,14 +509,14 @@ export default function ReportsView() {
           <div className="absolute -left-10 -bottom-10 w-64 h-64 bg-tertiary-container/30 rounded-full blur-[80px] pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-5 mb-8 lg:mb-10 glass-dark w-fit px-6 lg:px-8 py-3 lg:py-4 rounded-3xl border border-on-surface/20 backdrop-blur-3xl shadow-2xl">
+            <div className="flex items-center gap-5 mb-8 lg:mb-10 glass-dark w-fit px-6 lg:px-8 py-3 lg:py-4 rounded-3xl border border-on-surface/20  shadow-2xl">
               <Lightbulb className="text-on-surface" size={22} />
               <h3 className="font-display text-base lg:text-lg font-bold text-on-surface tracking-widest uppercase leading-none">{t('reports.smartInsights')}</h3>
             </div>
 
             <ul className="flex flex-col gap-4">
               {insights.map((insight, i) => (
-                <li key={i} className="flex items-start gap-5 lg:gap-6 glass-dark p-5 lg:p-7 rounded-[24px] lg:rounded-[32px] border border-on-surface/10 backdrop-blur-sm group hover:bg-on-surface/10 transition-all cursor-default">
+                <li key={i} className="flex items-start gap-5 lg:gap-6 glass-dark p-5 lg:p-7 rounded-[24px] lg:rounded-[32px] border border-on-surface/10  group hover:bg-on-surface/10 transition-all cursor-default">
                   <insight.icon className={cn("mt-1 shrink-0 group-hover:scale-110 transition-transform", insight.positive ? "text-on-surface" : "text-on-surface/60")} size={22} />
                   <div>
                     <p className="text-sm font-bold text-on-surface uppercase tracking-widest mb-2 leading-none">{insight.title}</p>

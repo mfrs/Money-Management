@@ -192,7 +192,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 " />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -292,7 +292,7 @@ export default function ImportTransactionsModal({ isOpen, onClose }: ImportTrans
                       {rows.map(row => (
                         <tr key={row.id} className={cn("transition-colors", !row.isValid ? "bg-error/5" : "hover:bg-on-surface/5")}>
                           <td className="px-4 py-4">
-                            {row.isValid ? <CheckCircle2 size={16} className="text-primary" /> : <AlertCircle size={16} className="text-error" title={row.errors.join('\n')} />}
+                            {row.isValid ? <CheckCircle2 size={16} className="text-primary" /> : <span title={row.errors.join('\n')}><AlertCircle size={16} className="text-error" /></span>}
                           </td>
                           <td className="px-4 py-4">
                             <input type="datetime-local" value={row.date} onChange={e => updateRow(row.id, { date: e.target.value })} className="bg-transparent text-[10px] lg:text-xs font-mono focus:outline-none w-full min-w-[130px]" />

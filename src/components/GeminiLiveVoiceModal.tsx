@@ -73,7 +73,7 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6"
+        className="fixed inset-0 z-[200] bg-black/90  flex flex-col items-center justify-center p-6"
       >
         <button
           onClick={onClose}
@@ -137,7 +137,7 @@ export default function GeminiLiveVoiceModal({ isOpen, onClose, onActionExecute,
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-sm bg-white/10 rounded-2xl p-4 space-y-3 backdrop-blur-md border border-white/20"
+              className="w-full max-w-sm bg-white/10 rounded-2xl p-4 space-y-3  border border-white/20"
             >
               <div className="text-[10px] font-bold uppercase tracking-widest text-primary/80 border-b border-white/10 pb-2">
                 {language === 'id' ? 'KONFIRMASI TRANSAKSI' : 'CONFIRM TRANSACTION'}
