@@ -704,9 +704,6 @@ export default function ReportsView() {
               <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold">
                 Periode : {journalStartDate ? formatTransDate(journalStartDate) : ''} Until {journalEndDate ? formatTransDate(journalEndDate) : ''}
               </p>
-              <p className="text-[10px] text-on-surface/30 uppercase tracking-widest font-medium">
-                COA: 111100 UNTIL 140000
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-4 items-center">
