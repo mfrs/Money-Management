@@ -227,13 +227,15 @@ export default function DevDebugBar({ isPinVerified, setIsPinVerified }: DevDebu
                 </button>
               </div>
             ) : (
-              <button
-                onClick={handleQuickLogin}
-                disabled={isLoggingIn}
-                className="text-primary hover:underline font-bold cursor-pointer disabled:opacity-50"
-              >
-                {isLoggingIn ? 'Logging in...' : 'Quick Login (Demo)'}
-              </button>
+              import.meta.env.DEV && (
+                <button
+                  onClick={handleQuickLogin}
+                  disabled={isLoggingIn}
+                  className="text-primary hover:underline font-bold cursor-pointer disabled:opacity-50"
+                >
+                  {isLoggingIn ? 'Logging in...' : 'Quick Login (Demo)'}
+                </button>
+              )
             )}
           </div>
 

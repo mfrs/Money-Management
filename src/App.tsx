@@ -58,12 +58,16 @@ function AppContent() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [setIsQuickEntryOpen, setQuickEntryDefaultType]);
-  const [isPinVerified, setIsPinVerified] = React.useState(() => {
-    if (import.meta.env.DEV && sessionStorage.getItem('wm_bypass_pin') === 'true') {
-      return true;
+  const [isPinVerified, setIsPinVerified] = React.useState(false);
+
+  // Auto-bypass PIN lock for developers and admins if bypass is enabled in sessionStorage
+  React.useEffect(() => {
+    const isDev = import.meta.env.DEV;
+    const isAdmin = isAuthenticated && user?.isAdmin;
+    if (!authLoading && (isDev || isAdmin) && sessionStorage.getItem('wm_bypass_pin') === 'true') {
+      setIsPinVerified(true);
     }
-    return false;
-  });
+  }, [authLoading, isAuthenticated, user, setIsPinVerified]);
 
   // Sync /pgmonitor pathname to view state
   React.useEffect(() => {
@@ -189,10 +193,12 @@ function AppContent() {
     );
   }
 
+  const showDebugBar = import.meta.env.DEV || (isAuthenticated && user?.isAdmin);
+
   return (
     <>
       {viewContent}
-      {import.meta.env.DEV && (
+      {showDebugBar && (
         <DevDebugBar 
           isPinVerified={isPinVerified} 
           setIsPinVerified={setIsPinVerified} 
