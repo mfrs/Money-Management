@@ -226,3 +226,10 @@
   20%, 60% { transform: translateX(-10px); }
   40%, 80% { transform: translateX(10px); }
 }
+
+/* Disable backdrop blur on full-screen modal overlays to prevent GPU performance lag on mobile/low-end devices */
+.fixed.inset-0[class*="backdrop-blur-"],
+.absolute.inset-0[class*="backdrop-blur-"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
