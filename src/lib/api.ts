@@ -34,6 +34,23 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
+  const queriesHeader = res.headers.get('X-Debug-Queries');
+  if (queriesHeader) {
+    try {
+      const queries = JSON.parse(decodeURIComponent(queriesHeader));
+      window.dispatchEvent(new CustomEvent('wm_api_queries', {
+        detail: {
+          url,
+          method: options?.method || 'GET',
+          timestamp: new Date().toLocaleTimeString(),
+          queries,
+        }
+      }));
+    } catch (e) {
+      console.warn('Failed to parse X-Debug-Queries header:', e);
+    }
+  }
+
   if (!res.ok) {
     if (res.status === 401) {
       // Intentionally not calling clearToken() here to support unlimited session

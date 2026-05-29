@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { queryStorage } from './_db.js';
 
 // Import Feature-based Modular Routers
 import adminRouter from './_routes/admin.js';
@@ -21,7 +22,35 @@ const app = express();
 const PORT = 3001;
 
 // Global Middlewares
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-Debug-Queries']
+}));
+
+// Query Logger Middleware (Laravel-style)
+app.use((req, res, next) => {
+  const queries: any[] = [];
+  queryStorage.run(queries, () => {
+    // Intercept response send to inject headers
+    const originalSend = res.send;
+    res.send = function (body: any) {
+      if (queries.length > 0) {
+        try {
+          // Limit to first 50 queries and truncate each to avoid huge headers
+          const safeQueries = queries.slice(0, 50).map(q => ({
+            ...q,
+            query: q.query.length > 1000 ? q.query.substring(0, 1000) + '...' : q.query
+          }));
+          res.setHeader('X-Debug-Queries', encodeURIComponent(JSON.stringify(safeQueries)));
+        } catch (e) {
+          console.error('Failed to inject X-Debug-Queries header', e);
+        }
+      }
+      return originalSend.apply(this, arguments as any);
+    };
+    next();
+  });
+});
+
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 image receipt scanning uploads
 
 // Mount Feature Routes
