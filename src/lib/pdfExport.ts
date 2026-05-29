@@ -44,8 +44,10 @@ const CW = PAGE_W - M * 2; // content width = 178mm
 // ════════════════════════════════════════════════════
 
 function drawPageBg(pdf: jsPDF) {
+  const pw = pdf.internal.pageSize.getWidth();
+  const ph = pdf.internal.pageSize.getHeight();
   pdf.setFillColor(...C.pageBg);
-  pdf.rect(0, 0, PAGE_W, PAGE_H, 'F');
+  pdf.rect(0, 0, pw, ph, 'F');
 }
 
 function newPageWithBg(pdf: jsPDF): number {
@@ -55,7 +57,8 @@ function newPageWithBg(pdf: jsPDF): number {
 }
 
 function ensureSpace(pdf: jsPDF, y: number, needed: number): number {
-  if (y + needed > PAGE_H - 20) {
+  const ph = pdf.internal.pageSize.getHeight();
+  if (y + needed > ph - 20) {
     return newPageWithBg(pdf);
   }
   return y;
@@ -87,14 +90,15 @@ function drawRoundedCard(pdf: jsPDF, x: number, y: number, w: number, h: number,
 }
 
 function drawHeaderBanner(pdf: jsPDF, title: string, subtitle: string, dateStr: string, appName?: string): number {
+  const pw = pdf.internal.pageSize.getWidth();
   // Dark banner
   const bannerH = 36;
   pdf.setFillColor(...C.headerBg);
-  pdf.rect(0, 0, PAGE_W, bannerH, 'F');
+  pdf.rect(0, 0, pw, bannerH, 'F');
 
   // Accent line
   pdf.setFillColor(...C.primary);
-  pdf.rect(0, bannerH, PAGE_W, 1.2, 'F');
+  pdf.rect(0, bannerH, pw, 1.2, 'F');
 
   // App name / brand
   const brand = appName || 'STASHLY';
@@ -119,7 +123,7 @@ function drawHeaderBanner(pdf: jsPDF, title: string, subtitle: string, dateStr: 
   pdf.setFontSize(9);
   pdf.setTextColor(180, 190, 210);
   const dw = pdf.getTextWidth(dateStr);
-  pdf.text(dateStr, PAGE_W - M - dw, 22);
+  pdf.text(dateStr, pw - M - dw, 22);
 
   return bannerH + 1.2 + 10; // y after banner + spacing
 }
@@ -141,6 +145,8 @@ function drawSectionHeader(pdf: jsPDF, y: number, title: string, accentColor?: R
 }
 
 function drawFooter(pdf: jsPDF, lang: string) {
+  const pw = pdf.internal.pageSize.getWidth();
+  const ph = pdf.internal.pageSize.getHeight();
   const totalPages = pdf.getNumberOfPages();
   const now = new Date().toLocaleString(lang === 'id' ? 'id-ID' : 'en-GB');
   for (let i = 1; i <= totalPages; i++) {
@@ -148,16 +154,16 @@ function drawFooter(pdf: jsPDF, lang: string) {
     // Separator line
     pdf.setDrawColor(...C.border);
     pdf.setLineWidth(0.3);
-    pdf.line(M, PAGE_H - 16, PAGE_W - M, PAGE_H - 16);
+    pdf.line(M, ph - 16, pw - M, ph - 16);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7);
     pdf.setTextColor(...C.textLight);
-    pdf.text(`${lang === 'id' ? 'Dibuat' : 'Generated'}: ${now}`, M, PAGE_H - 11);
+    pdf.text(`${lang === 'id' ? 'Dibuat' : 'Generated'}: ${now}`, M, ph - 11);
 
     const pg = `${lang === 'id' ? 'Halaman' : 'Page'} ${i} / ${totalPages}`;
-    const pw = pdf.getTextWidth(pg);
-    pdf.text(pg, PAGE_W - M - pw, PAGE_H - 11);
+    const pgw = pdf.getTextWidth(pg);
+    pdf.text(pg, pw - M - pgw, ph - 11);
   }
 }
 
@@ -411,19 +417,31 @@ export interface WalletJournalData {
   walletName: string;
   entries: {
     date: string;
-    description: string;
-    type: string;
+    dateFormatted: string;
+    glAccount: string;
+    accountShortText: string;
+    docNumber: string;
+    costCenter: string;
+    transactionType: string;
+    regNumber: string;
     debit: number;
     credit: number;
     runningBalance: number;
+    description: string;
+    shortText: string;
+    userEntry: string;
   }[];
   language: string;
 }
 
 export function exportWalletJournal(data: WalletJournalData) {
   const lang = data.language;
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  // Initialize in Landscape mode ('l') for wide ledger reports
+  const pdf = new jsPDF('l', 'mm', 'a4');
   drawPageBg(pdf);
+
+  const pageW = 297;
+  const cw = pageW - M * 2; // 265mm content width
 
   const dateStr = new Date().toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
@@ -431,27 +449,27 @@ export function exportWalletJournal(data: WalletJournalData) {
 
   let y = drawHeaderBanner(
     pdf,
-    lang === 'id' ? 'MUTASI REKENING' : 'WALLET JOURNAL',
-    `${data.walletName} — ${lang === 'id' ? 'Buku Besar Dompet (Double-Entry)' : 'Double-Entry Wallet Ledger'}`,
+    lang === 'id' ? 'OVERVIEW LEDGER' : 'OVERVIEW LEDGER',
+    `${data.walletName} — ${lang === 'id' ? 'Buku Besar Akun (Double-Entry)' : 'Double-Entry Ledger Account'}`,
     dateStr,
   );
 
-  // Summary card
+  // Summary cards stretched across landscape page
   const totalDebit = data.entries.reduce((s, e) => s + e.debit, 0);
   const totalCredit = data.entries.reduce((s, e) => s + e.credit, 0);
   const lastBalance = data.entries.length > 0 ? data.entries[0].runningBalance : 0;
 
-  const summaryW = (CW - 6) / 3;
+  const summaryW = (cw - 6) / 3;
   const summaryItems = [
-    { label: lang === 'id' ? 'TOTAL MASUK' : 'TOTAL IN', value: formatCurrency(totalDebit), color: C.green },
-    { label: lang === 'id' ? 'TOTAL KELUAR' : 'TOTAL OUT', value: formatCurrency(totalCredit), color: C.red },
+    { label: lang === 'id' ? 'TOTAL MASUK (DEBET)' : 'TOTAL IN (DEBIT)', value: formatCurrency(totalDebit), color: C.green },
+    { label: lang === 'id' ? 'TOTAL KELUAR (KREDIT)' : 'TOTAL OUT (CREDIT)', value: formatCurrency(totalCredit), color: C.red },
     { label: lang === 'id' ? 'SALDO AKHIR' : 'ENDING BALANCE', value: formatCurrency(lastBalance), color: C.primary },
   ];
 
   summaryItems.forEach((item, i) => {
     const x = M + i * (summaryW + 3);
     drawRoundedCard(pdf, x, y, summaryW, 22);
-    // Top accent
+    // Top accent line
     pdf.setFillColor(...item.color);
     pdf.rect(x + 6, y + 1, 16, 1.2, 'F');
 
@@ -467,23 +485,47 @@ export function exportWalletJournal(data: WalletJournalData) {
 
   y += 30;
 
-  // Table
-  y = drawSectionHeader(pdf, y, lang === 'id' ? 'Rincian Transaksi' : 'Transaction Details');
+  // Section header
+  y = drawSectionHeader(pdf, y, lang === 'id' ? 'Rincian Buku Besar' : 'Ledger Details');
 
   const head = [[
-    lang === 'id' ? 'TANGGAL' : 'DATE',
-    lang === 'id' ? 'DESKRIPSI' : 'DESCRIPTION',
-    lang === 'id' ? 'DEBIT (MASUK)' : 'DEBIT (IN)',
-    lang === 'id' ? 'KREDIT (KELUAR)' : 'CREDIT (OUT)',
-    lang === 'id' ? 'SALDO' : 'BALANCE',
+    lang === 'id' ? 'Tgl. Trans' : 'Trans Date',
+    'GL Account',
+    lang === 'id' ? 'Account Short Tex' : 'Account Short Text',
+    'Doc Number',
+    'Cost Center',
+    'Transaction Type',
+    'Reg. Number',
+    lang === 'id' ? 'Debet' : 'Debit',
+    'Credit',
+    'Balance',
+    'Description',
+    'Short Text',
+    'User Entry'
   ]];
 
+  // Standard Indonesian number formatting (thousand separator '.', decimal ',')
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  };
+
   const body = data.entries.map((e) => [
-    new Date(e.date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-GB'),
+    e.dateFormatted,
+    e.glAccount,
+    e.accountShortText,
+    e.docNumber,
+    e.costCenter || '-',
+    e.transactionType,
+    e.regNumber || '-',
+    formatNumber(e.debit),
+    formatNumber(e.credit),
+    formatNumber(e.runningBalance),
     e.description,
-    e.debit > 0 ? formatCurrency(e.debit) : '-',
-    e.credit > 0 ? formatCurrency(e.credit) : '-',
-    formatCurrency(e.runningBalance),
+    e.shortText || '-',
+    e.userEntry
   ]);
 
   const hook = makePageBgHook(pdf);
@@ -498,18 +540,18 @@ export function exportWalletJournal(data: WalletJournalData) {
     tableLineWidth: 0.2,
     styles: {
       font: 'helvetica',
-      fontSize: 8,
+      fontSize: 6.5,
       textColor: C.textBody,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
       lineColor: C.border,
-      lineWidth: 0.15,
-      overflow: 'linebreak',
+      lineWidth: 0.1,
+      overflow: 'ellipsize',
     },
     headStyles: {
       fillColor: C.tableHead,
       textColor: [255, 255, 255] as RGB,
       fontStyle: 'bold',
-      fontSize: 7,
+      fontSize: 6,
     },
     bodyStyles: {
       fillColor: C.white,
@@ -518,17 +560,25 @@ export function exportWalletJournal(data: WalletJournalData) {
       fillColor: C.tableRow1,
     },
     columnStyles: {
-      0: { cellWidth: 24, fontSize: 7 },
-      1: { cellWidth: 'auto' },
-      2: { halign: 'right', cellWidth: 28, textColor: C.green },
-      3: { halign: 'right', cellWidth: 28, textColor: C.red },
-      4: { halign: 'right', cellWidth: 30, fontStyle: 'bold', textColor: C.primary },
+      0: { cellWidth: 22 }, // Trans Date
+      1: { cellWidth: 16, fontStyle: 'bold' }, // GL Account
+      2: { cellWidth: 26, fontStyle: 'bold' }, // Account Short Text
+      3: { cellWidth: 16, fontStyle: 'bold' }, // Doc Number
+      4: { cellWidth: 12, halign: 'center' }, // Cost Center
+      5: { cellWidth: 22 }, // Transaction Type
+      6: { cellWidth: 12, halign: 'center' }, // Reg. Number
+      7: { halign: 'right', cellWidth: 20, textColor: C.green }, // Debet
+      8: { halign: 'right', cellWidth: 20, textColor: C.red }, // Credit
+      9: { halign: 'right', cellWidth: 22, fontStyle: 'bold', textColor: C.primary }, // Balance
+      10: { cellWidth: 'auto' }, // Description
+      11: { cellWidth: 18 }, // Short Text
+      12: { cellWidth: 16 } // User Entry
     },
     ...hook,
   });
 
   drawFooter(pdf, lang);
-  pdf.save(`Stashly_WalletJournal_${data.walletName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  pdf.save(`Stashly_Ledger_Overview_${data.walletName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 // ════════════════════════════════════════════════════
