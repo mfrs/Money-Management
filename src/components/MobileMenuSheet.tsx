@@ -85,7 +85,7 @@ export default function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProp
                 <MenuCard icon={ArrowLeftRight} color="bg-emerald-500/20 text-emerald-500" label={t('nav.transactions')} onClick={() => handleNav('transactions')} />
                 <MenuCard icon={BookOpen} color="bg-blue-400/20 text-blue-400" label={t('nav.ledger')} onClick={() => handleNav('ledger')} />
 
-                {user?.role === 'admin' && (
+                {user?.isAdmin && (
                   <>
                     <MenuCard icon={ShieldCheck} color="bg-purple-500/20 text-purple-500" label="Admin" onClick={() => handleNav('admin')} />
                     <MenuCard icon={Database} color="bg-amber-500/20 text-amber-500" label="Monitor" onClick={() => handleNav('pg_monitor')} />
