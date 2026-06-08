@@ -524,18 +524,65 @@ export default function BudgetView() {
       </AnimatePresence>
     </motion.div>
   );
-}
-
-// Inline editable row that buffers changes and only calls API on blur
+}// Inline editable row that buffers changes and calls API on 4s idle typing or blur
 function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void }) {
   const { isSensored } = useApp();
   const [localName, setLocalName] = useState(source.name);
   const [localAmount, setLocalAmount] = useState(source.amount?.toString() || '');
 
+  const lastSavedName = useRef(source.name);
+  const lastSavedAmount = useRef(source.amount);
+
   React.useEffect(() => {
     setLocalName(source.name);
     setLocalAmount(source.amount?.toString() || '');
+    lastSavedName.current = source.name;
+    lastSavedAmount.current = source.amount;
   }, [source.name, source.amount]);
+
+  // Debounce saving for name (4s idle)
+  React.useEffect(() => {
+    if (localName === lastSavedName.current) return;
+
+    const timer = setTimeout(() => {
+      if (localName !== lastSavedName.current) {
+        onUpdate(source.id, { name: localName });
+        lastSavedName.current = localName;
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [localName, source.id, onUpdate]);
+
+  // Debounce saving for amount (4s idle)
+  React.useEffect(() => {
+    const v = parseFloat(localAmount) || 0;
+    if (v === lastSavedAmount.current) return;
+
+    const timer = setTimeout(() => {
+      if (v !== lastSavedAmount.current) {
+        onUpdate(source.id, { amount: v });
+        lastSavedAmount.current = v;
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [localAmount, source.id, onUpdate]);
+
+  const handleBlurName = () => {
+    if (localName !== lastSavedName.current) {
+      onUpdate(source.id, { name: localName });
+      lastSavedName.current = localName;
+    }
+  };
+
+  const handleBlurAmount = () => {
+    const v = parseFloat(localAmount) || 0;
+    if (v !== lastSavedAmount.current) {
+      onUpdate(source.id, { amount: v });
+      lastSavedAmount.current = v;
+    }
+  };
 
   return (
     <div className="flex items-end gap-4 lg:gap-6 p-4 lg:p-6 rounded-2xl bg-on-surface/[0.03] border border-on-surface/5 hover:border-on-surface/10 transition-all group">
@@ -545,7 +592,7 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
           type="text"
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
-          onBlur={() => { if (localName !== source.name) onUpdate(source.id, { name: localName }); }}
+          onBlur={handleBlurName}
           className="w-full bg-transparent border-none p-0 font-display text-base lg:text-lg text-on-surface focus:ring-0 font-bold placeholder:text-on-surface/10 outline-none"
         />
       </div>
@@ -557,7 +604,7 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
             type="number"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
-            onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== source.amount) onUpdate(source.id, { amount: v }); }}
+            onBlur={handleBlurAmount}
             style={{ width: localAmount ? `${localAmount.length}ch` : '3ch' }}
             className={cn("bg-transparent border-none p-0 font-display text-xl lg:text-2xl text-on-surface focus:ring-0 font-bold tabular-nums text-right outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
           />
@@ -573,14 +620,40 @@ function IncomeSourceRow({ source, onUpdate, onDelete }: { source: any; onUpdate
   );
 }
 
-// Inline editable row that buffers changes and only calls API on blur for wallets
+// Inline editable row that buffers changes and calls API on 4s idle typing or blur for wallets
 function WalletAllocationRow({ alloc, wallet, isSensored, onUpdate, onDelete }: { alloc: any; wallet: any; isSensored: boolean; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void }) {
   const IconComp = getIcon(wallet.icon);
   const [localAmount, setLocalAmount] = useState(alloc.amount?.toString() || '');
 
+  const lastSavedAmount = useRef(alloc.amount);
+
   React.useEffect(() => {
     setLocalAmount(alloc.amount?.toString() || '');
+    lastSavedAmount.current = alloc.amount;
   }, [alloc.amount]);
+
+  // Debounce saving for amount (4s idle)
+  React.useEffect(() => {
+    const v = parseFloat(localAmount) || 0;
+    if (v === lastSavedAmount.current) return;
+
+    const timer = setTimeout(() => {
+      if (v !== lastSavedAmount.current) {
+        onUpdate(alloc.id, { amount: v });
+        lastSavedAmount.current = v;
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [localAmount, alloc.id, onUpdate]);
+
+  const handleBlurAmount = () => {
+    const v = parseFloat(localAmount) || 0;
+    if (v !== lastSavedAmount.current) {
+      onUpdate(alloc.id, { amount: v });
+      lastSavedAmount.current = v;
+    }
+  };
 
   return (
     <div className="p-5 lg:p-6 rounded-2xl border border-on-surface/5 bg-on-surface/[0.01] flex flex-col gap-4 relative overflow-hidden group hover:bg-on-surface/[0.04] hover:border-on-surface/10 transition-all">
@@ -606,7 +679,7 @@ function WalletAllocationRow({ alloc, wallet, isSensored, onUpdate, onDelete }: 
             type="number"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
-            onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== alloc.amount) onUpdate(alloc.id, { amount: v }); }}
+            onBlur={handleBlurAmount}
             className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
@@ -615,13 +688,39 @@ function WalletAllocationRow({ alloc, wallet, isSensored, onUpdate, onDelete }: 
   );
 }
 
-// Inline editable row for Auto Invest
+// Inline editable row for Auto Invest with 4s idle auto-save or blur
 function AutoInvestRow({ rule, onUpdate, onDelete, isSensored }: { rule: any; onUpdate: (id: string, data: any) => void; onDelete: (id: string) => void; isSensored: boolean }) {
   const [localAmount, setLocalAmount] = useState(rule.amount?.toString() || '');
 
+  const lastSavedAmount = useRef(rule.amount);
+
   React.useEffect(() => {
     setLocalAmount(rule.amount?.toString() || '');
+    lastSavedAmount.current = rule.amount;
   }, [rule.amount]);
+
+  // Debounce saving for amount (4s idle)
+  React.useEffect(() => {
+    const v = parseFloat(localAmount) || 0;
+    if (v === lastSavedAmount.current) return;
+
+    const timer = setTimeout(() => {
+      if (v !== lastSavedAmount.current) {
+        onUpdate(rule.id, { amount: v });
+        lastSavedAmount.current = v;
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [localAmount, rule.id, onUpdate]);
+
+  const handleBlurAmount = () => {
+    const v = parseFloat(localAmount) || 0;
+    if (v !== lastSavedAmount.current) {
+      onUpdate(rule.id, { amount: v });
+      lastSavedAmount.current = v;
+    }
+  };
 
   return (
     <div className="p-5 lg:p-6 rounded-2xl border border-on-surface/5 bg-on-surface/[0.01] flex flex-col gap-4 relative overflow-hidden group hover:bg-on-surface/[0.04] hover:border-on-surface/10 transition-all">
@@ -660,7 +759,7 @@ function AutoInvestRow({ rule, onUpdate, onDelete, isSensored }: { rule: any; on
             type="number"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
-            onBlur={() => { const v = parseFloat(localAmount) || 0; if (v !== rule.amount) onUpdate(rule.id, { amount: v }); }}
+            onBlur={handleBlurAmount}
             className={cn("w-full bg-on-surface/5 border border-on-surface/5 rounded-xl py-3 pl-10 pr-4 font-display text-sm text-on-surface focus:outline-none focus:border-on-surface/20 focus:ring-1 focus:ring-on-surface/20 transition-all font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none", isSensored && rule.type === 'nominal' && "blur-[6px] select-none pointer-events-none")}
           />
         </div>
